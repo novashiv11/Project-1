@@ -25,3 +25,8 @@
 - `app/lifeos.html`: JS port of parser/ask/views, published as a private claude.ai artifact
   (https://claude.ai/artifact/EjccpLbiwHgHC6A3J9Z9Xy). Data in per-person private db (`data/users/<id>/items`), localStorage fallback.
 - JS parser checked against the Python test cases (same outputs). Keep both in sync when changing parse rules.
+
+## 2026-10-14 · Session 4 — reset with role agents
+- Founder confused by notebook build ("same page nai"). Ran 4 role agents (product, market, tech, critic) → `docs/STRATEGY.md`.
+- Pivot: Telegram chat Jarvis, LLM core, proactive nudges, wedge = dog + documents. CLAUDE.md rewritten (comms rules first).
+- Blocked on founder: Telegram ok?, host choice, bot token. Then P0.

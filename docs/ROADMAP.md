@@ -11,13 +11,17 @@
 
 - v0.4a (2026-10-14) — `life serve`: one-box mobile web UI over the CLI, ✔ buttons, dark mode, token auth when exposed
 
-## Now (v0.4b — always-on Jarvis) — needs owner input
-- [ ] LLM fallback for classify/ask when `ANTHROPIC_API_KEY` is set (regex path stays default)
-- [ ] Telegram bot capture (needs bot token from user) — chat from anywhere, not just home Wi-Fi
-- [ ] Daily morning nudge message (today view) via Telegram
-- [ ] Hosting: small always-on box (Raspberry Pi / cheap VPS) so phone access works outside home
+## Now (P0: Telegram Jarvis, see STRATEGY.md) needs: bot token, host choice
+- [ ] `lifeos/telegram.py`: long-polling bot, allowlisted chat_id, every message → existing pipeline
+- [ ] Nudge loop (15 min) + 08:45 IST brief only if something due; [Done][Snooze][Kal] buttons
+- [ ] Read back parsed dates for confirmation; 7-day validation log (captures/day, nudges acted on)
 
-## Later (v0.5+ — Jarvis)
+## Next (P1: real chat) needs: Anthropic API key
+- [ ] `lifeos/brain.py`: Claude tool use (add/query/update/complete/set_reminder/log_metric/get_view), Haiku, cached prompt
+- [ ] Fast path: parser handles confident captures + commands at 0 tokens; LLM gets parser hint
+- [ ] SQLite store + JSONL importer; usage table with $3/mo cap → parser-only fallback
+
+## Later (P2)
 - [ ] Voice capture; phone share-sheet
 - [ ] Two-way Google Calendar sync
 - [ ] Package tracking via carrier APIs
