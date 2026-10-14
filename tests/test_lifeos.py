@@ -68,7 +68,7 @@ if __name__ == "__main__":
     unittest.main()
 
 
-class V02Test(unittest.TestCase):
+class StoreCase(unittest.TestCase):
     TODAY = date(2026, 10, 14)
 
     def setUp(self):
@@ -84,6 +84,8 @@ class V02Test(unittest.TestCase):
             main(list(argv), store=self.store, today=self.TODAY)
         return buf.getvalue()
 
+
+class V02Test(StoreCase):
     def test_repeat_parsing(self):
         self.assertEqual(parse("dog flea meds every 30 days", NOW)["repeat"], {"every": 30, "unit": "day"})
         self.assertEqual(parse("pay rent monthly", NOW)["repeat"], {"every": 1, "unit": "month"})
@@ -138,3 +140,53 @@ class V02Test(unittest.TestCase):
         review = self.cli("review")
         for s in ("Captured 4", "Ideas this week", "treat subscription", "Mood", "Journal prompt"):
             self.assertIn(s, review)
+
+
+class V03Test(StoreCase):
+    def test_hinglish_dates(self):
+        self.assertEqual(parse("kal dentist", NOW)["due"], "2026-10-15")
+        self.assertEqual(parse("parso bijli bill", NOW)["due"], "2026-10-16")
+        self.assertEqual(parse("aaj dog grooming", NOW)["due"], "2026-10-14")
+        self.assertEqual(parse("agle hafte trip", NOW)["due"], "2026-10-21")
+        self.assertEqual(parse("vet 3 din baad", NOW)["due"], "2026-10-17")
+        self.assertEqual(parse("shukravar ko party 8pm", NOW)["due"], "2026-10-16T20:00")
+        self.assertEqual(parse("ravivar ko walk", NOW)["due"], "2026-10-18")
+        self.assertIsNone(parse("kalpana called", NOW)["due"])
+
+    def test_ask(self):
+        self.cli("dog rabies vaccine 2026-10-20")
+        self.cli("dog deworming 2026-11-05")
+        self.cli("passport expires 2027-03-14")
+        out = self.cli("when", "is", "the", "dog's", "next", "vaccination?")
+        self.assertTrue(out.startswith("👉 dog rabies vaccine"), out)
+        self.assertIn("in 6d", out)
+        self.assertIn("2027-03-14", self.cli("ask", "passport", "kab", "hai"))
+        self.assertIn("Nothing", self.cli("ask", "zebra"))
+        self.assertIn("Saved", self.cli("idea:", "what", "if", "dogs", "talked?"))
+
+    def test_edit_and_undo(self):
+        self.cli("vet tomorrow")
+        self.assertIn("2026-10-17", self.cli("edit", "1", "vet", "saturday"))
+        self.assertEqual(self.store.get(1)["due"], "2026-10-17")
+        self.assertIn("Undid edit #1", self.cli("undo"))
+        self.assertEqual(self.store.get(1)["due"], "2026-10-15")
+        self.assertIn("Undid add #1", self.cli("undo"))
+        self.assertIsNone(self.store.get(1))
+        self.assertIn("Nothing to undo", self.cli("undo"))
+        self.assertIn("Saved", self.cli("edit", "the", "essay"))  # not a command
+
+    def test_ics(self):
+        self.cli("dog flea meds every 30 days")
+        self.cli("passport expires 2027-03-14")
+        self.cli("call mom tomorrow 6pm")
+        self.cli("random undated note")
+        ics = self.cli("export", "ics")
+        self.assertEqual(ics.count("BEGIN:VEVENT"), 3)
+        self.assertIn("RRULE:FREQ=DAILY;INTERVAL=30", ics)
+        self.assertIn("DTSTART;VALUE=DATE:20270314", ics)
+        self.assertIn("TRIGGER:-P30D", ics)
+        self.assertIn("DTSTART:20261015T180000", ics)
+
+    def test_ics_escaping(self):
+        from lifeos.ics import _esc
+        self.assertEqual(_esc("a,b;c\\d\ne"), "a\\,b\\;c\\\\d\\ne")

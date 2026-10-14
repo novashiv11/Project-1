@@ -1,13 +1,16 @@
 """`life` command line. Anything that isn't a subcommand is captured as a new item."""
 import argparse
+import re
 import sys
 from datetime import date, datetime
 
+from .ask import answer
+from .ics import to_ics
 from .parse import parse
 from .store import Store
 from .views import fmt, lines, today_view, dog_view, review_view
 
-BARE = {"today", "dog", "review"}  # commands only when typed alone ("today I felt..." is a note)
+BARE = {"today", "dog", "review", "undo"}  # commands only when typed alone ("today I felt..." is a note)
 
 
 def is_command(argv):
@@ -20,7 +23,19 @@ def is_command(argv):
         return not rest or rest[0].startswith("-")
     if head == "done":
         return len(rest) == 1 and rest[0].isdigit()
+    if head == "edit":
+        return len(rest) >= 2 and rest[0].isdigit()
+    if head == "export":
+        return rest in ([], ["ics"])
+    if head == "ask":
+        return bool(rest)
     return head in {"add", "search"} or head.startswith("-")
+
+
+def is_question(argv):
+    """`life when is the vet?` asks; `life idea: what if dogs talked?` still captures."""
+    text = " ".join(argv).strip()
+    return text.endswith("?") and not re.match(r"\w+\s*:", text)
 
 
 def main(argv=None, store=None, today=None):
@@ -28,7 +43,7 @@ def main(argv=None, store=None, today=None):
     store = store or Store()
     today = today or date.today()
     if not is_command(argv):
-        argv = ["add", *argv]
+        argv = ["ask" if is_question(argv) else "add", *argv]
 
     ap = argparse.ArgumentParser(prog="life", description="LifeOS — throw your life at it.")
     sub = ap.add_subparsers(dest="cmd")
@@ -41,6 +56,13 @@ def main(argv=None, store=None, today=None):
     sub.add_parser("done", help="complete an item (recurring ones roll forward)").add_argument("id", type=int)
     sub.add_parser("dog", help="dog dashboard")
     sub.add_parser("review", help="weekly review + journal prompt")
+    sub.add_parser("ask", help="question over your journal (or just end with '?')").add_argument("q", nargs="+")
+    ed = sub.add_parser("edit", help="replace an item's text (re-parsed)")
+    ed.add_argument("id", type=int)
+    ed.add_argument("text", nargs="+")
+    sub.add_parser("undo", help="undo the last change")
+    sub.add_parser("export", help="export dated items: life export ics > life.ics").add_argument(
+        "fmt", nargs="?", default="ics", choices=["ics"])
     args = ap.parse_args(argv)
 
     items = store.items
@@ -60,6 +82,18 @@ def main(argv=None, store=None, today=None):
         out = dog_view(items(), today)
     elif args.cmd == "review":
         out = review_view(items(), today)
+    elif args.cmd == "ask":
+        out = answer(" ".join(args.q), items(), today)
+    elif args.cmd == "edit":
+        fields = parse(" ".join(args.text), datetime.combine(today, datetime.now().time()))
+        item = store.edit(args.id, fields)
+        out = [("Edited " + fmt(item, today)) if item else f"No item {args.id}."]
+    elif args.cmd == "undo":
+        what = store.undo()
+        out = [f"↩️  Undid {what}" if what else "Nothing to undo."]
+    elif args.cmd == "export":
+        sys.stdout.write(to_ics(items()))
+        return 0
     else:
         out = today_view(items(), today)
     print("\n".join(out))

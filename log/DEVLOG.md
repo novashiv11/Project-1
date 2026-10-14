@@ -11,3 +11,7 @@
   `life dog`, `life review`, prefix override, command-vs-note disambiguation, pyproject `life` script. 10 tests green.
 - Split views into `lifeos/views.py`; CLI passes `today` into parse so tests are date-independent (except review test, uses real today).
 - Next: v0.3 — `ask`, ICS export, edit/undo, Hinglish dates.
+
+## 2026-10-14 · Session 2b — v0.3 ask & export
+- Shipped: `ask` / `?` questions (`lifeos/ask.py`), ICS export (`lifeos/ics.py`), edit/undo ops, Hinglish dates. 15 tests green.
+- Next: v0.4 `life serve` local web app for phone capture.

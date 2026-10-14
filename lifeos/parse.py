@@ -17,6 +17,9 @@ ICONS_DOMAINS = {d for d, _ in DOMAINS} | {"journal"}
 DOMAIN_RE = [(d, re.compile(rf"\b(?:{p})\b", re.I)) for d, p in DOMAINS]
 
 WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+# Hinglish weekday names, same index as WEEKDAYS.
+HI_WEEKDAYS = ["som[vw]ar", "mangal[vw]ar", "budh[vw]ar", "guru[vw]ar|brihaspati[vw]ar",
+               "shukra[vw]ar", "shani[vw]ar", "ravi[vw]ar|it[vw]ar"]
 MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
 _MON = r"(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*"
 
@@ -81,10 +84,16 @@ def parse_date(text, today):
             return date(int(m[3]), int(m[2]), int(m[1]))
         except ValueError:
             pass
-    if re.search(r"\b(today|tonight)\b", t):
+    if re.search(r"\b(today|tonight|aaj|aj)\b", t):
         return today
-    if re.search(r"\b(tomorrow|tmrw|tmr)\b", t):
+    if re.search(r"\b(tomorrow|tmrw|tmr|kal)\b", t):  # "kal" is read as tomorrow: we capture plans
         return today + timedelta(days=1)
+    if re.search(r"\b(parso|parson)\b", t):
+        return today + timedelta(days=2)
+    if re.search(r"\b(next week|agle hafte|agle week)\b", t):
+        return today + timedelta(days=7)
+    if m := re.search(r"\b(\d+)\s+din\s+(?:baad|bad|mein|me)\b", t):
+        return today + timedelta(days=int(m[1]))
     if m := re.search(r"\bin\s+(\d+)\s+(day|week|month|year)s?\b", t):
         n, unit = int(m[1]), m[2]
         days = {"day": 1, "week": 7, "month": 30, "year": 365}[unit] * n
@@ -92,6 +101,9 @@ def parse_date(text, today):
     if m := re.search(rf"\b(next\s+)?({'|'.join(WEEKDAYS)})\b", t):
         delta = (WEEKDAYS.index(m[2]) - today.weekday()) % 7 or 7
         return today + timedelta(days=delta)
+    for idx, pat in enumerate(HI_WEEKDAYS):
+        if re.search(rf"\b(?:{pat})(?:\s+ko)?\b", t):
+            return today + timedelta(days=(idx - today.weekday()) % 7 or 7)
     if m := re.search(rf"\b(\d{{1,2}})(?:st|nd|rd|th)?\s+{_MON}(?:\s+(\d{{4}}))?\b", t):
         return _month_day(m[2], m[1], m[3], today)
     if m := re.search(rf"\b{_MON}\s+(\d{{1,2}})(?:st|nd|rd|th)?(?:,?\s+(\d{{4}}))?\b", t):

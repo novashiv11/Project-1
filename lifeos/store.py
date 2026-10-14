@@ -3,6 +3,8 @@
 Each line is an item, or an op on an earlier item:
   {"op": "done", "id": N, "at": ts}               mark complete
   {"op": "advance", "id": N, "due": d, "at": ts}  recurring item moved to its next due date
+  {"op": "edit", "id": N, "fields": {...}}        item re-parsed from new text
+  {"op": "undo", "at": ts}                        cancels the latest record not already undone
 """
 import json
 import os
@@ -35,14 +37,26 @@ class Store:
         with self.path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
+    def _effective(self):
+        recs = []
+        for rec in self._lines():
+            if rec.get("op") == "undo":
+                if recs:
+                    recs.pop()
+            else:
+                recs.append(rec)
+        return recs
+
     def items(self):
         items = {}
-        for rec in self._lines():
+        for rec in self._effective():
             op, item = rec.get("op"), items.get(rec.get("id"))
             if op is None:
                 items[rec["id"]] = {"repeat": None, "metric": None, **rec}
             elif item and op == "done":
                 item.update(done=True, done_at=rec.get("at"))
+            elif item and op == "edit":
+                item.update(rec["fields"])
             elif item and op == "advance":
                 item["due"] = rec["due"]
                 item.setdefault("completions", []).append(rec.get("at"))
@@ -56,6 +70,21 @@ class Store:
         rec = {"id": next_id, "created": _now(), "done": False, **fields}
         self._append(rec)
         return rec
+
+    def edit(self, item_id, fields):
+        if not self.get(item_id):
+            return None
+        self._append({"op": "edit", "id": item_id, "fields": fields, "at": _now()})
+        return self.get(item_id)
+
+    def undo(self):
+        """Cancel the latest change. Returns a description of what was undone, or None."""
+        recs = self._effective()
+        if not recs:
+            return None
+        self._append({"op": "undo", "at": _now()})
+        last = recs[-1]
+        return f"{last.get('op', 'add')} #{last['id']}"
 
     def done(self, item_id, today=None):
         """Complete an item. Recurring items roll forward instead. Returns the updated item or None."""

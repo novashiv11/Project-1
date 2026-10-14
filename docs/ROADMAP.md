@@ -6,17 +6,17 @@
   metrics (dog/my weight, mood) parsed from text; `life dog` dashboard; `life review` weekly + journal prompt;
   `domain:` prefix override; `pip install -e .` gives a `life` command
 
-## Now (v0.3 — ask & export)
-- [ ] `life ask "when is the dog's next vaccine?"` — keyword answer over the store (no LLM yet)
-- [ ] `life export ics` — calendar file of all dated items (import into Google/Apple Calendar)
-- [ ] `life edit <id> <new text>` + `life undo` (append-only ops)
-- [ ] Hinglish date words: kal (tomorrow), parso, agle hafte
+- v0.3 (2026-10-14) — questions (`life ...?` or `life ask`) via keyword+synonym match; `life export ics`
+  (RRULE for repeats, 30-day alarm on documents); `edit` + `undo` ops; Hinglish dates (aaj/kal/parso/agle hafte/N din baad/somvar…)
 
-## Later (v0.4+ — Jarvis)
-- [ ] LLM parsing fallback (Claude API) for ambiguous input; keep regex path for offline
-- [ ] Chat interface: "when is the dog's next vaccine?" answered from the store
-- [ ] Input channels: Telegram bot → phone share-sheet → voice
-- [ ] Calendar sync (ICS export first, then Google Calendar)
+## Now (v0.4 — phone access)
+- [ ] `life serve` — local web app (stdlib http.server): capture box, today view, ask; works from phone on home Wi-Fi
+- [ ] LLM fallback for classify/ask when `ANTHROPIC_API_KEY` is set (regex path stays default)
+- [ ] Telegram bot capture (needs bot token from user)
+
+## Later (v0.5+ — Jarvis)
+- [ ] Voice capture; phone share-sheet
+- [ ] Two-way Google Calendar sync
 - [ ] Package tracking via carrier APIs
 - [ ] Web/mobile UI; encrypted sync
 - [ ] Move to dedicated repo (`lifeos`) once v0.2 is stable

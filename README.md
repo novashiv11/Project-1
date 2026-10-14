@@ -13,6 +13,10 @@ python3 -m lifeos "dog weight 24.5kg"             # tracked metric
 python3 -m lifeos today          # overdue + coming up (documents show 90 days ahead)
 python3 -m lifeos dog            # dog dashboard: weight trend, schedule, vet history
 python3 -m lifeos review         # weekly review + journal prompt
+python3 -m lifeos "dog ki next vaccine kab hai?"  # end with ? to ask
+python3 -m lifeos kal amazon parcel aayega       # Hinglish dates: aaj, kal, parso, agle hafte, shukravar…
+python3 -m lifeos edit 3 vet saturday 10am       # fix an item; `undo` reverts the last change
+python3 -m lifeos export ics > life.ics          # import into Google/Apple Calendar
 python3 -m lifeos list --domain dog
 python3 -m lifeos search passport
 python3 -m lifeos done 3
