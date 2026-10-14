@@ -11,6 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DIST = ROOT / "dist"
+PUBLIC_URL = "https://novashiv11.github.io/lifeos/"  # where dist/ is served (GitHub Pages)
 CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
 
 subprocess.run([sys.executable, str(ROOT / "scripts/build_app.py")], check=True)
@@ -36,6 +37,7 @@ version = hashlib.sha1((html + (ROOT / "pwa/pwa.js").read_text()).encode()).hexd
 (DIST / "manifest.json").write_text(json.dumps({
     "name": "LifeOS", "short_name": "LifeOS", "id": "./", "start_url": "./", "scope": "./",
     "description": "Type anything about your life. LifeOS sorts it, dates it and reminds you.",
+    "related_applications": [{"platform": "webapp", "url": f"{PUBLIC_URL}manifest.json"}],
     "display": "standalone", "orientation": "portrait", "background_color": "#eef2ee", "theme_color": "#0d6b58",
     "icons": [{"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
               {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}],

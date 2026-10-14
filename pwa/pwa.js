@@ -43,7 +43,42 @@
     reg.showNotification("Reminders on ✓", { body: "LifeOS will nudge you when something is due.", icon: "icon-192.png" });
   }
 
+  // ---- one-tap install -------------------------------------------------
+  const standalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  let installEvt = null;
+  function headerButton(id, text, onClick) {
+    let b = document.getElementById(id);
+    if (!b) {
+      b = document.createElement("button");
+      b.id = id; b.type = "button"; b.className = "go"; b.style.padding = "10px 14px";
+      document.querySelector("header").appendChild(b);
+    }
+    b.textContent = text; b.onclick = onClick; b.hidden = false;
+    return b;
+  }
+  window.addEventListener("beforeinstallprompt", e => {
+    e.preventDefault(); installEvt = e;
+    headerButton("install", "📲 Install app", async () => {
+      installEvt.prompt();
+      const { outcome } = await installEvt.userChoice;
+      if (outcome === "accepted") document.getElementById("install").hidden = true;
+      installEvt = null;
+    });
+  });
+  window.addEventListener("appinstalled", () => {
+    const b = document.getElementById("install"); if (b) b.hidden = true;
+    toast("Installed. Open LifeOS from your home screen.", false);
+  });
+  async function alreadyInstalledHint() {
+    if (standalone() || !navigator.getInstalledRelatedApps) return;
+    try {
+      const apps = await navigator.getInstalledRelatedApps();
+      if (apps.length) note("Installed ✓ · open LifeOS from your home screen");
+    } catch (e) {}
+  }
+
   window.addEventListener("load", async () => {
+    alreadyInstalledHint();
     const reg = await navigator.serviceWorker.register("sw.js");
     await navigator.serviceWorker.ready;
     mirror();
