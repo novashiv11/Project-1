@@ -1,0 +1,11 @@
+[project]
+name = "lifeos"
+version = "0.2.0"
+description = "Capture anything, get nudged at the right time — for you and your dog."
+requires-python = ">=3.11"
+
+[project.scripts]
+life = "lifeos.cli:main"
+
+[tool.setuptools]
+packages = ["lifeos"]

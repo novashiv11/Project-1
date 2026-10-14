@@ -1,12 +1,23 @@
-"""Append-only JSONL store. Each line is an item or an op ({"op": "done", "id": N})."""
+"""Append-only JSONL store.
+
+Each line is an item, or an op on an earlier item:
+  {"op": "done", "id": N, "at": ts}               mark complete
+  {"op": "advance", "id": N, "due": d, "at": ts}  recurring item moved to its next due date
+"""
 import json
 import os
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
+
+from .parse import add_interval
 
 
 def home():
     return Path(os.environ.get("LIFEOS_HOME", Path.home() / ".lifeos"))
+
+
+def _now():
+    return datetime.now().isoformat(timespec="seconds")
 
 
 class Store:
@@ -27,21 +38,39 @@ class Store:
     def items(self):
         items = {}
         for rec in self._lines():
-            if rec.get("op") == "done":
-                if rec["id"] in items:
-                    items[rec["id"]]["done"] = True
-            else:
-                items[rec["id"]] = rec
+            op, item = rec.get("op"), items.get(rec.get("id"))
+            if op is None:
+                items[rec["id"]] = {"repeat": None, "metric": None, **rec}
+            elif item and op == "done":
+                item.update(done=True, done_at=rec.get("at"))
+            elif item and op == "advance":
+                item["due"] = rec["due"]
+                item.setdefault("completions", []).append(rec.get("at"))
         return list(items.values())
+
+    def get(self, item_id):
+        return next((i for i in self.items() if i["id"] == item_id), None)
 
     def add(self, fields):
         next_id = max((i["id"] for i in self.items()), default=0) + 1
-        rec = {"id": next_id, "created": datetime.now().isoformat(timespec="seconds"), "done": False, **fields}
+        rec = {"id": next_id, "created": _now(), "done": False, **fields}
         self._append(rec)
         return rec
 
-    def done(self, item_id):
-        if not any(i["id"] == item_id for i in self.items()):
-            return False
-        self._append({"op": "done", "id": item_id, "at": datetime.now().isoformat(timespec="seconds")})
-        return True
+    def done(self, item_id, today=None):
+        """Complete an item. Recurring items roll forward instead. Returns the updated item or None."""
+        item = self.get(item_id)
+        if not item:
+            return None
+        rep = item.get("repeat")
+        if rep and item.get("due"):
+            d, _, t = item["due"].partition("T")
+            nxt = add_interval(date.fromisoformat(d), rep["every"], rep["unit"])
+            # Catch up so the next due date is never in the past.
+            while nxt < (today or date.today()):
+                nxt = add_interval(nxt, rep["every"], rep["unit"])
+            due = nxt.isoformat() + (f"T{t}" if t else "")
+            self._append({"op": "advance", "id": item_id, "due": due, "at": _now()})
+        else:
+            self._append({"op": "done", "id": item_id, "at": _now()})
+        return self.get(item_id)

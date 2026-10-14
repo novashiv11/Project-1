@@ -13,6 +13,7 @@ DOMAINS = [
     ("idea", r"idea|what if|app that|startup|business"),
     ("calendar", r"meeting|appointment|call|birthday|anniversary|event|party|flight|trip"),
 ]
+ICONS_DOMAINS = {d for d, _ in DOMAINS} | {"journal"}
 DOMAIN_RE = [(d, re.compile(rf"\b(?:{p})\b", re.I)) for d, p in DOMAINS]
 
 WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
@@ -21,10 +22,21 @@ _MON = r"(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*"
 
 TRACKING_RE = re.compile(r"\b(1Z[0-9A-Z]{16}|[A-Z]{2}\d{9}[A-Z]{2}|\d{12,22})\b")
 TAG_RE = re.compile(r"(?<!\w)#(\w+)")
+REPEAT_RE = re.compile(
+    r"\bevery\s+(?:(\d+|other)\s+)?(day|week|month|year)s?\b"
+    r"|\b(daily|weekly|monthly|yearly|annually)\b"
+    rf"|\bevery\s+({'|'.join(WEEKDAYS)})\b", re.I)
+_ADVERB = {"daily": "day", "weekly": "week", "monthly": "month", "yearly": "year", "annually": "year"}
+METRIC_RE = re.compile(r"\b(dog|my)?\s*weight\s*(?:is\s*|=\s*|:\s*)?(\d+(?:\.\d+)?)\s*kg\b"
+                       r"|\bmood\s*(?:is\s*|:\s*)?(\d{1,2})(?:\s*/\s*10)?\b", re.I)
 TIME_RE = re.compile(r"\b(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b|\b(\d{1,2}):(\d{2})\b", re.I)
 
 
 def classify(text):
+    # Explicit prefix wins: "idea: dog treat subscription" is an idea, not a dog item.
+    if m := re.match(r"\s*(\w+)\s*:", text):
+        if (d := m[1].lower()) in ICONS_DOMAINS:
+            return d
     for domain, rx in DOMAIN_RE:
         if rx.search(text):
             return domain
@@ -87,9 +99,49 @@ def parse_date(text, today):
     return None
 
 
+def parse_repeat(text):
+    m = REPEAT_RE.search(text)
+    if not m:
+        return None
+    if m[2]:
+        n = 2 if (m[1] or "").lower() == "other" else int(m[1] or 1)
+        return {"every": n, "unit": m[2].lower()}
+    if m[3]:
+        return {"every": 1, "unit": _ADVERB[m[3].lower()]}
+    return {"every": 1, "unit": "week"}
+
+
+def parse_metric(text):
+    m = METRIC_RE.search(text)
+    if not m:
+        return None
+    if m[2]:
+        who = "dog" if (m[1] or "").lower() == "dog" or re.search(r"\bdog\b", text, re.I) else "me"
+        return {"name": f"{who}.weight", "value": float(m[2])}
+    return {"name": "mood", "value": float(m[3])}
+
+
+def add_interval(d, every, unit):
+    """Add a repeat interval to a date, clamping month-ends (Jan 31 + 1 month = Feb 28)."""
+    if unit in ("day", "week"):
+        return d + timedelta(days=every * (7 if unit == "week" else 1))
+    months = every * (12 if unit == "year" else 1)
+    y, m = divmod(d.month - 1 + months, 12)
+    y, m = d.year + y, m + 1
+    for day in range(d.day, 27, -1):
+        try:
+            return d.replace(year=y, month=m, day=day)
+        except ValueError:
+            continue
+    return d.replace(year=y, month=m, day=min(d.day, 28))
+
+
 def parse(text, now=None):
     now = now or datetime.now()
     due = parse_date(text, now.date())
+    repeat = parse_repeat(text)
+    if repeat and not due:
+        due = now.date()
     due_str = None
     if due:
         tm = _parse_time(text)
@@ -98,7 +150,8 @@ def parse(text, now=None):
     domain = classify(text)
     if tracking and domain == "journal":
         domain = "package"
-    if due and domain in ("journal", "idea") and not re.search(r"\bidea\b", text, re.I):
+    explicit = re.match(r"\s*(?:idea|journal)\s*:", text, re.I)
+    if due and domain in ("journal", "idea") and not explicit and not re.search(r"\bidea\b", text, re.I):
         domain = "calendar"
     return {
         "text": text.strip(),
@@ -106,4 +159,6 @@ def parse(text, now=None):
         "due": due_str,
         "tags": TAG_RE.findall(text),
         "tracking": tracking,
+        "repeat": repeat,
+        "metric": parse_metric(text),
     }

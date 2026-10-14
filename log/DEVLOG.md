@@ -5,3 +5,9 @@
 - Set up product org: CLAUDE.md (self-prompt), VISION, ROADMAP, DECISIONS, this log, role agents.
 - Shipped v0.1 CLI: capture → domain/date/tracking parse → JSONL; `today`, `list`, `search`, `done`. Tests green.
 - Next: v0.2 expiry nudges + recurring items.
+
+## 2026-10-14 · Session 2 — v0.2 smart nudges
+- Shipped: 90-day document lead time, recurring items (`every N days/weeks`, `monthly`, `every monday`), metrics (weight/mood),
+  `life dog`, `life review`, prefix override, command-vs-note disambiguation, pyproject `life` script. 10 tests green.
+- Split views into `lifeos/views.py`; CLI passes `today` into parse so tests are date-independent (except review test, uses real today).
+- Next: v0.3 — `ask`, ICS export, edit/undo, Hinglish dates.

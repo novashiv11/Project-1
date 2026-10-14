@@ -16,7 +16,8 @@ house chore, vet visit, mood) and it gets sorted, dated, and surfaced at the rig
 ## Map
 - `lifeos/parse.py` — text → {domain, due, tags, tracking}. Add keywords/date patterns here.
 - `lifeos/store.py` — JSONL append-only store.
-- `lifeos/cli.py` — `life` command. Entry: `python3 -m lifeos`.
+- `lifeos/cli.py` — `life` command + arg routing. `lifeos/views.py` — today/dog/review rendering.
+- Install: `pip install -e .` → `life ...` (or `python3 -m lifeos ...`).
 - `docs/VISION.md` product · `docs/ROADMAP.md` plan · `docs/DECISIONS.md` ADRs · `log/DEVLOG.md` journal
 - `.claude/agents/` — role subagents (pm, engineer, reviewer). Spawn only for big parallel work.
 
