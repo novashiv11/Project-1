@@ -42,3 +42,5 @@
   Offline, data on phone (localStorage + IndexedDB mirror), daily due notification (periodic sync + on-open fallback). Tested in Chromium.
 - Added Ireland life admin (IRP/GNIB 84d, NCT 30d, motor tax, PPSN, RTB, Revenue) and € spending.
 - Blocked: GitHub integration can't create repos. Founder to create public repo `lifeos`; then push dist + enable Pages.
+- Founder created public repo novashiv11/lifeos; pushed PWA build to main (5d635b8). Needs Pages enabled (Settings → Pages → main / root). URL: https://novashiv11.github.io/lifeos/
+- Deploy recipe: `python3 scripts/build_pwa.py && cp -r dist/. ../lifeos/ && (cd ../lifeos && git commit -am ... && git push origin main)`
