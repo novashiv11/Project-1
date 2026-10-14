@@ -33,8 +33,6 @@ if DIST.exists():
 DIST.mkdir()
 (DIST / "index.html").write_text(html, encoding="utf-8")
 shutil.copy(ROOT / "pwa/pwa.js", DIST / "pwa.js")
-version = hashlib.sha1((html + (ROOT / "pwa/pwa.js").read_text()).encode()).hexdigest()[:10]
-(DIST / "sw.js").write_text((ROOT / "pwa/sw.js").read_text().replace("__VERSION__", version), encoding="utf-8")
 (DIST / "manifest.json").write_text(json.dumps({
     # `id` resolves against the ORIGIN, not the manifest URL: "./" would mean the whole novashiv11.github.io site and
     # collide with other apps hosted there (it made Chrome think LifeOS was "already installed"). Use the full path.
@@ -55,4 +53,8 @@ with sync_playwright() as pw:
         pg.screenshot(path=str(DIST / f"icon-{size}.png"))
     browser.close()
 (DIST / ".nojekyll").write_text("")
+# Cache version covers every cached file, so any change (incl. manifest/icons) reaches installed apps.
+version = hashlib.sha1(b"".join((DIST / n).read_bytes() for n in sorted(("index.html", "pwa.js", "manifest.json", "icon-192.png", "icon-512.png")))
+                       + (ROOT / "pwa/sw.js").read_bytes()).hexdigest()[:10]
+(DIST / "sw.js").write_text((ROOT / "pwa/sw.js").read_text().replace("__VERSION__", version), encoding="utf-8")
 print(f"Built {DIST.relative_to(ROOT)} (version {version}):", ", ".join(sorted(p.name for p in DIST.iterdir())))
