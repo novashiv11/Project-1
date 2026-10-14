@@ -46,3 +46,4 @@
 - Deploy recipe: `python3 scripts/build_pwa.py && cp -r dist/. ../lifeos/ && (cd ../lifeos && git commit -am ... && git push origin main)`
 - Pages live: https://novashiv11.github.io/lifeos/ (founder confirmed on phone). Starter examples now Ireland-first (life.json start_examples).
 - Added one-tap Install button (beforeinstallprompt) + 'already installed' hint (getInstalledRelatedApps); deployed.
+- BUG fixed: manifest id './' resolved to origin root → Chrome matched another app on novashiv11.github.io ('already installed', 'Could not open app'). id now '/lifeos/'.

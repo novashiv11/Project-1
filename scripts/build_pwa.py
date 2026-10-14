@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parent.parent
 DIST = ROOT / "dist"
@@ -35,7 +36,9 @@ shutil.copy(ROOT / "pwa/pwa.js", DIST / "pwa.js")
 version = hashlib.sha1((html + (ROOT / "pwa/pwa.js").read_text()).encode()).hexdigest()[:10]
 (DIST / "sw.js").write_text((ROOT / "pwa/sw.js").read_text().replace("__VERSION__", version), encoding="utf-8")
 (DIST / "manifest.json").write_text(json.dumps({
-    "name": "LifeOS", "short_name": "LifeOS", "id": "./", "start_url": "./", "scope": "./",
+    # `id` resolves against the ORIGIN, not the manifest URL: "./" would mean the whole novashiv11.github.io site and
+    # collide with other apps hosted there (it made Chrome think LifeOS was "already installed"). Use the full path.
+    "name": "LifeOS", "short_name": "LifeOS", "id": urlparse(PUBLIC_URL).path, "start_url": "./", "scope": "./",
     "description": "Type anything about your life. LifeOS sorts it, dates it and reminds you.",
     "related_applications": [{"platform": "webapp", "url": f"{PUBLIC_URL}manifest.json"}],
     "display": "standalone", "orientation": "portrait", "background_color": "#eef2ee", "theme_color": "#0d6b58",
