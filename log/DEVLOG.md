@@ -35,4 +35,4 @@
 - Founder: "dog/passport were just samples, cover all of life". Built a 16-area life map (`lifeos/life.json`, `docs/LIFE_MAP.md`).
 - Python: domains.py, legacy migration (dog→pet, house→home, package→shopping, metric→metrics), wheel/area/areas views, all metrics in review.
 - Web app: Life tab (area cards → detail with stats, examples, tip), republished. 22 tests incl. JS parity (56 cases, 0 diffs).
-- Open: channel (WhatsApp vs own app) + monetisation choice (A vet clinics / B agents / C consumer).
+- Open: founder is in Ireland → proposed wedge: Play Store app for immigrants (IRP/visa/passport/NCT/motor tax/rent) €1.99/mo; B2B later. Awaiting pick.

@@ -18,3 +18,4 @@
 - 2026-10-14 · Process: no build without founder's "haan"; updates ≤5 lines Hinglish.
 - 2026-10-14 · Founder: no Telegram. Channel = WhatsApp (focused utility, not general AI bot) or own app. Pending decision.
 - 2026-10-14 · Life areas are data (`lifeos/life.json`), injected into the web app at build time; a node parity test keeps the JS parser identical.
+- 2026-10-14 · Founder is in Ireland: market = Ireland/EU (EUR pricing, GDPR), not India. Monetisation options: Play Store €1–2/mo vs B2B. Pending.
