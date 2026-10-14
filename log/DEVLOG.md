@@ -36,3 +36,9 @@
 - Python: domains.py, legacy migration (dog→pet, house→home, package→shopping, metric→metrics), wheel/area/areas views, all metrics in review.
 - Web app: Life tab (area cards → detail with stats, examples, tip), republished. 22 tests incl. JS parity (56 cases, 0 diffs).
 - Open: founder is in Ireland → proposed wedge: Play Store app for immigrants (IRP/visa/passport/NCT/motor tax/rent) €1.99/mo; B2B later. Awaiting pick.
+
+## 2026-10-14 · Session 6: phone app (PWA)
+- Founder wants a real phone app, not claude.ai. Built PWA: `pwa/` (pwa.js, sw.js, icon) + `scripts/build_pwa.py` → `dist/`.
+  Offline, data on phone (localStorage + IndexedDB mirror), daily due notification (periodic sync + on-open fallback). Tested in Chromium.
+- Added Ireland life admin (IRP/GNIB 84d, NCT 30d, motor tax, PPSN, RTB, Revenue) and € spending.
+- Blocked: GitHub integration can't create repos. Founder to create public repo `lifeos`; then push dist + enable Pages.

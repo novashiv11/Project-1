@@ -19,3 +19,4 @@
 - 2026-10-14 · Founder: no Telegram. Channel = WhatsApp (focused utility, not general AI bot) or own app. Pending decision.
 - 2026-10-14 · Life areas are data (`lifeos/life.json`), injected into the web app at build time; a node parity test keeps the JS parser identical.
 - 2026-10-14 · Founder is in Ireland: market = Ireland/EU (EUR pricing, GDPR), not India. Monetisation options: Play Store €1–2/mo vs B2B. Pending.
+- 2026-10-14 · Founder wants a real phone app: ship as PWA on GitHub Pages first, wrap for Play Store (TWA) later. claude.ai artifact is no longer the main surface.

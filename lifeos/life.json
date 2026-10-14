@@ -55,7 +55,7 @@
    "label": "Vehicle",
    "icon": "🚗",
    "lead": 7,
-   "covers": "Servicing, insurance renewal, PUC, FASTag, fuel, tyres, challans, RC",
+   "covers": "Servicing, NCT, motor tax, insurance renewal, PUC, FASTag/tolls, fuel, tyres, fines",
    "keywords": [
     "car",
     "bike",
@@ -71,12 +71,17 @@
     "challan",
     "tyre\\w*",
     "service center",
-    "rc"
+    "rc",
+    "nct",
+    "motor tax",
+    "toll",
+    "eflow",
+    "parking"
    ],
    "examples": [
+    "NCT due 2027-02-10",
     "car insurance expires 2027-02-10",
-    "bike service every 3 months",
-    "puc expires 12 dec"
+    "motor tax every 3 months"
    ],
    "tip": "Add insurance and PUC expiry once; you'll be nudged ahead of time."
   },
@@ -142,7 +147,7 @@
    "label": "Documents & IDs",
    "icon": "🛂",
    "lead": 90,
-   "covers": "Passport, visa, licence, Aadhaar/PAN updates, insurance policies, certificates, warranties",
+   "covers": "Passport, visa, IRP/GNIB residence permit, PPSN, licence, insurance policies, certificates, warranties",
    "keywords": [
     "passport",
     "visa",
@@ -157,10 +162,19 @@
     "id card",
     "expir\\w*",
     "renew\\w*",
-    "kyc"
+    "kyc",
+    "irp",
+    "gnib",
+    "stamp ?[0-9]",
+    "ppsn?",
+    "residence permit",
+    "immigration",
+    "embassy",
+    "work permit"
    ],
    "examples": [
     "passport expires 2027-03-14",
+    "IRP card expires 2027-01-20",
     "health insurance renew 5 jan",
     "rent agreement expires 2027-08-01"
    ],
@@ -283,7 +297,15 @@
     "milk",
     "pest control",
     "chore\\w*",
-    "warranty"
+    "warranty",
+    "rtb",
+    "lease",
+    "deposit",
+    "bin\\w*",
+    "esb",
+    "electric ireland",
+    "bord gais",
+    "eircode"
    ],
    "examples": [
     "rent every month",
@@ -325,7 +347,12 @@
     "bank",
     "fd",
     "bill",
-    "fees"
+    "fees",
+    "revenue",
+    "usc",
+    "prsi",
+    "tax credit\\w*",
+    "rent credit"
    ],
    "examples": [
     "credit card bill due 5th every month",
@@ -533,6 +560,16 @@
    "why": "many countries require 6+ months passport validity to enter"
   },
   {
+   "pattern": "irp|gnib|residence permit|work permit",
+   "days": 84,
+   "why": "Irish permission renewals open 12 weeks before expiry"
+  },
+  {
+   "pattern": "nct",
+   "days": 30,
+   "why": "NCT slots book up weeks ahead"
+  },
+  {
    "pattern": "rent agreement|lease",
    "days": 60,
    "why": "time to renegotiate or move"
@@ -582,8 +619,8 @@
   },
   {
    "name": "spent",
-   "unit": "₹",
-   "pattern": "(?:\\b(?:spent|kharcha|paid)\\s*(?:rs\\.?|inr|₹)?\\s*|₹\\s*)(\\d[\\d,]*(?:\\.\\d+)?)",
+   "unit": "€",
+   "pattern": "(?:\\b(?:spent|kharcha|paid)\\s*(?:rs\\.?|inr|eur|₹|€)?\\s*|[₹€]\\s*)(\\d[\\d,]*(?:\\.\\d+)?)",
    "sum": true
   },
   {

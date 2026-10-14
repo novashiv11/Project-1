@@ -1,6 +1,6 @@
 # LifeOS / Jarvis: self-prompt (read first, every session)
 
-**Product:** a Telegram chat assistant. Founder texts anything in Hinglish → it stores structured records → it messages him first when something is due → he can ask about his own history. Wedge: dog care + document expiries. Full plan: `docs/STRATEGY.md`.
+**Product:** LifeOS phone app (PWA → Play Store) for life admin, Ireland/EU first (founder in Ireland; NOT Telegram). Type anything → sorted, dated, reminded. Full plan: `docs/STRATEGY.md` (partly superseded by DECISIONS.md).
 
 ## Talking to the founder (most important)
 - Reply in **≤5 lines, Hinglish, plain words**. No walls of text. Details go in files, not chat.
@@ -22,7 +22,8 @@
 - `lifeos/parse.py` dates/repeats (fast path + LLM hint) · `store.py` append-only store · `views.py` today/dog/review text
 - `lifeos/ask.py` keyword Q&A · `ics.py` calendar export · `web.py` local web UI · `cli.py` `life` command
 - `app/lifeos.html` live web app (https://claude.ai/artifact/EjccpLbiwHgHC6A3J9Z9Xy); JS mirror of parse.py, guarded by tests/test_parity.py
-- Next: `lifeos/telegram.py` (P0 bot), then `lifeos/brain.py` (Claude tool use)
+- `pwa/` + `scripts/build_pwa.py` → `dist/`: installable phone app (offline, notifications); deploy dist to public repo `lifeos` (GitHub Pages)
+- Next: Play Store (TWA wrap of the PWA), then AI chat
 
 ## Kickoff line the founder can paste
 > "Jarvis: continue. Next 'Now' item, ask me if blocked, ship, 5-line update."

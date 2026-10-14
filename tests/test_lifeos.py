@@ -108,6 +108,7 @@ class V02Test(StoreCase):
         self.assertEqual(m("mood 7/10, chill day"), {"mood": 7.0})
         self.assertEqual(m("slept 6.5 hours, 8000 steps, mood 5"), {"sleep": 6.5, "steps": 8000, "mood": 5})
         self.assertEqual(m("spent ₹1,250 on groceries"), {"spent": 1250})
+        self.assertEqual(m("€45 at tesco"), {"spent": 45})
         self.assertEqual(m("ran 5km then paani 2 litres"), {"distance": 5, "water": 2})
         self.assertEqual(m("bp 128/84 sugar 110"), {"bp": 128, "sugar": 110})
 
@@ -262,6 +263,8 @@ class AreasTest(StoreCase):
         self.assertEqual(lead("rent agreement expires 2027-08-01"), 60)
         self.assertEqual(lead("flight to goa 20 dec"), 14)
         self.assertEqual(lead("mom birthday 3 jan"), 7)
+        self.assertEqual(lead("IRP card expires 2027-01-20"), 84)
+        self.assertEqual(lead("NCT due 2027-02-10"), 30)
 
     def test_wheel_area_and_legacy_records(self):
         import json
