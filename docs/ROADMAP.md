@@ -11,8 +11,13 @@
 
 - v0.4a (2026-10-14) — `life serve`: one-box mobile web UI over the CLI, ✔ buttons, dark mode, token auth when exposed
 
-## Now (P0: Telegram Jarvis, see STRATEGY.md) needs: bot token, host choice
-- [ ] `lifeos/telegram.py`: long-polling bot, allowlisted chat_id, every message → existing pipeline
+- v0.5 (2026-10-14): whole-life coverage. 16 areas in `lifeos/life.json` (pets, vehicle, kids, travel, documents, family,
+  work, home, money, health, mind, growth, shopping, social, ideas, calendar), per-item lead times (passport 180d, rent agreement 60d,
+  insurance 30d), 9 metrics (sleep, steps, spent, water, distance, weight, mood, bp, sugar), `life wheel` / `area` / `areas`,
+  web app Life tab. JS/Python parity test.
+
+## Now (P0: chat channel, NOT Telegram per founder) needs: channel decision (WhatsApp Cloud API vs own app)
+- [ ] Channel adapter: every message → existing pipeline; allowlisted user
 - [ ] Nudge loop (15 min) + 08:45 IST brief only if something due; [Done][Snooze][Kal] buttons
 - [ ] Read back parsed dates for confirmation; 7-day validation log (captures/day, nudges acted on)
 

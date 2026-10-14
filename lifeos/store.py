@@ -11,11 +11,21 @@ import os
 from datetime import date, datetime
 from pathlib import Path
 
+from .domains import LEGACY
 from .parse import add_interval
 
 
 def home():
     return Path(os.environ.get("LIFEOS_HOME", Path.home() / ".lifeos"))
+
+
+def _upgrade(item):
+    """Read records written before v0.5: old area ids and a single `metric` field."""
+    item["domain"] = LEGACY.get(item.get("domain"), item.get("domain"))
+    if "metrics" not in item:
+        m = item.pop("metric", None)
+        item["metrics"] = [{**m, "name": m["name"].replace("dog.", "pet.")}] if m else []
+    return item
 
 
 def _now():
@@ -52,11 +62,12 @@ class Store:
         for rec in self._effective():
             op, item = rec.get("op"), items.get(rec.get("id"))
             if op is None:
-                items[rec["id"]] = {"repeat": None, "metric": None, **rec}
+                items[rec["id"]] = _upgrade({"repeat": None, **rec})
             elif item and op == "done":
                 item.update(done=True, done_at=rec.get("at"))
             elif item and op == "edit":
                 item.update(rec["fields"])
+                _upgrade(item)
             elif item and op == "advance":
                 item["due"] = rec["due"]
                 item.setdefault("completions", []).append(rec.get("at"))

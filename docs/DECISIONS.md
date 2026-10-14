@@ -16,3 +16,5 @@
 - 2026-10-14 · Primary channel = Telegram bot (free, proactive OK). WhatsApp deferred (Meta's Jan 2026 ban on general AI bots + template fees).
 - 2026-10-14 · Wedge = dog care + document expiries. Store expiry dates only, never document numbers.
 - 2026-10-14 · Process: no build without founder's "haan"; updates ≤5 lines Hinglish.
+- 2026-10-14 · Founder: no Telegram. Channel = WhatsApp (focused utility, not general AI bot) or own app. Pending decision.
+- 2026-10-14 · Life areas are data (`lifeos/life.json`), injected into the web app at build time; a node parity test keeps the JS parser identical.

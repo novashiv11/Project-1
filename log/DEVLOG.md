@@ -30,3 +30,9 @@
 - Founder confused by notebook build ("same page nai"). Ran 4 role agents (product, market, tech, critic) → `docs/STRATEGY.md`.
 - Pivot: Telegram chat Jarvis, LLM core, proactive nudges, wedge = dog + documents. CLAUDE.md rewritten (comms rules first).
 - Blocked on founder: Telegram ok?, host choice, bot token. Then P0.
+
+## 2026-10-14 · Session 5: whole-life coverage (v0.5)
+- Founder: "dog/passport were just samples, cover all of life". Built a 16-area life map (`lifeos/life.json`, `docs/LIFE_MAP.md`).
+- Python: domains.py, legacy migration (dog→pet, house→home, package→shopping, metric→metrics), wheel/area/areas views, all metrics in review.
+- Web app: Life tab (area cards → detail with stats, examples, tip), republished. 22 tests incl. JS parity (56 cases, 0 diffs).
+- Open: channel (WhatsApp vs own app) + monetisation choice (A vet clinics / B agents / C consumer).

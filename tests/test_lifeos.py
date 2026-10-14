@@ -20,20 +20,20 @@ class ParseTest(unittest.TestCase):
         return p
 
     def test_domains_and_dates(self):
-        self.check("dog vet appointment next friday 5pm", "dog", "2026-10-16T17:00")
+        self.check("dog vet appointment next friday 5pm", "pet", "2026-10-16T17:00")
         self.check("passport expires 2027-03-14", "document", "2027-03-14")
-        self.check("call landlord about rent tomorrow", "house", "2026-10-15")
+        self.check("call landlord about rent tomorrow", "home", "2026-10-15")
         self.check("idea: app that rates chai stalls", "idea")
         self.check("feeling great today, ran 5k", "health", "2026-10-14")
-        self.check("mom birthday 3 jan", "calendar", "2027-01-03")
+        self.check("mom birthday 3 jan", "family", "2027-01-03")
         self.check("dentist in 2 weeks", "health", "2026-10-28")
-        self.check("lunch with Ravi on Nov 2nd at 13:30", "calendar", "2026-11-02T13:30")
+        self.check("lunch with Ravi on Nov 2nd at 13:30", "social", "2026-11-02T13:30")
         self.check("just a quiet evening", "journal")
         self.check("idea: dog treat subscription", "idea")
         self.check("journal: the dog was hilarious today", "journal", "2026-10-14")
 
     def test_tracking_and_tags(self):
-        p = self.check("1Z999AA10123456784 arriving tomorrow #amazon", "package", "2026-10-15")
+        p = self.check("1Z999AA10123456784 arriving tomorrow #amazon", "shopping", "2026-10-15")
         self.assertEqual(p["tracking"], ["1Z999AA10123456784"])
         self.assertEqual(p["tags"], ["amazon"])
 
@@ -102,9 +102,14 @@ class V02Test(StoreCase):
         self.assertEqual(add_interval(date(2026, 12, 15), 2, "month"), date(2027, 2, 15))
 
     def test_metrics(self):
-        self.assertEqual(parse("dog weight 24.5kg", NOW)["metric"], {"name": "dog.weight", "value": 24.5})
-        self.assertEqual(parse("my weight is 72 kg", NOW)["metric"], {"name": "me.weight", "value": 72.0})
-        self.assertEqual(parse("mood 7/10, chill day", NOW)["metric"], {"name": "mood", "value": 7.0})
+        m = lambda t: {x["name"]: x["value"] for x in parse(t, NOW)["metrics"]}
+        self.assertEqual(m("dog weight 24.5kg"), {"pet.weight": 24.5})
+        self.assertEqual(m("my weight is 72 kg"), {"me.weight": 72.0})
+        self.assertEqual(m("mood 7/10, chill day"), {"mood": 7.0})
+        self.assertEqual(m("slept 6.5 hours, 8000 steps, mood 5"), {"sleep": 6.5, "steps": 8000, "mood": 5})
+        self.assertEqual(m("spent ₹1,250 on groceries"), {"spent": 1250})
+        self.assertEqual(m("ran 5km then paani 2 litres"), {"distance": 5, "water": 2})
+        self.assertEqual(m("bp 128/84 sugar 110"), {"bp": 128, "sugar": 110})
 
     def test_document_shows_90_days_ahead(self):
         self.cli("passport expires 2026-12-20")       # 67 days out → visible
@@ -126,7 +131,7 @@ class V02Test(StoreCase):
         self.assertIn("Saved", self.cli("today", "I", "felt", "great"))
         self.assertIn("Saved", self.cli("dog", "vet", "tomorrow"))
         self.assertIn("Saved", self.cli("done", "with", "taxes"))
-        self.assertIn("Dog dashboard", self.cli("dog"))
+        self.assertIn("Pets", self.cli("dog"))
 
     def test_dog_and_review(self):
         self.TODAY = date.today()  # review windows on real creation timestamps
@@ -135,10 +140,10 @@ class V02Test(StoreCase):
         self.cli("idea: dog treat subscription")
         self.cli("mood 8")
         dog = self.cli("dog")
-        self.assertIn("Weight: 24", dog)
+        self.assertIn("pet.weight: 24 kg", dog)
         self.assertIn("rabies", dog)
         review = self.cli("review")
-        for s in ("Captured 4", "Ideas this week", "treat subscription", "Mood", "Journal prompt"):
+        for s in ("Captured 4", "Ideas this week", "treat subscription", "mood: 8", "Journal prompt"):
             self.assertIn(s, review)
 
 
@@ -231,3 +236,46 @@ class WebTest(StoreCase):
             self.post(url, q="hello", t="wrong")
         self.assertIn("Saved", self.post(url, q="hello", t="s3cret"))
         self.assertEqual(len(self.store.items()), 1)
+
+
+class AreasTest(StoreCase):
+    def test_every_area_classifies_its_own_examples(self):
+        from lifeos.domains import AREAS
+        for a in AREAS:
+            for ex in a["examples"]:
+                self.assertEqual(parse(ex, NOW)["domain"], a["id"], ex)
+
+    def test_tricky_routing(self):
+        cases = {"car insurance renew 10 jan": "vehicle", "health insurance renew 5 jan": "document",
+                 "credit card bill due 5th": "money", "gym fees due friday": "money",
+                 "pay rent friday": "home", "parcel due tomorrow": "shopping", "ac service kal": "home",
+                 "papa ki dawai khatam": "family", "feeling low today": "mind", "read atomic habits": "growth",
+                 "dentist kal 4pm": "health", "client call friday": "work", "random thought": "journal"}
+        for text, want in cases.items():
+            self.assertEqual(parse(text, NOW)["domain"], want, text)
+
+    def test_lead_times(self):
+        from lifeos.domains import lead_days
+        lead = lambda t: lead_days(parse(t, NOW))
+        self.assertEqual(lead("passport expires 2027-03-14"), 180)
+        self.assertEqual(lead("car insurance expires 2027-02-10"), 30)
+        self.assertEqual(lead("rent agreement expires 2027-08-01"), 60)
+        self.assertEqual(lead("flight to goa 20 dec"), 14)
+        self.assertEqual(lead("mom birthday 3 jan"), 7)
+
+    def test_wheel_area_and_legacy_records(self):
+        import json
+        self.store.path.write_text(json.dumps({"id": 1, "created": "2026-10-01T10:00:00", "done": False,
+            "text": "dog weight 20kg", "domain": "dog", "due": None, "tags": [], "tracking": [],
+            "metric": {"name": "dog.weight", "value": 20.0}}) + "\n")
+        self.cli("dog weight 22kg")
+        self.cli("rent every month")
+        pet = self.cli("area", "pet")
+        self.assertIn("pet.weight: 20 → 22 kg", pet)
+        wheel = self.cli("wheel")
+        self.assertIn("Pets: 2 open", wheel)
+        self.assertIn("Home: 1 open", wheel)
+        self.assertIn("Not tracking yet:", wheel)
+        self.assertIn("Vehicle", self.cli("areas"))
+        self.assertIn("Saved", self.cli("area", "of", "focus"))  # not a command
+        self.assertIn("rent every month", self.cli("list", "--domain", "house"))

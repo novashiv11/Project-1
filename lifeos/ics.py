@@ -1,8 +1,9 @@
 """Export dated, open items as an iCalendar file (RFC 5545) for Google/Apple Calendar import."""
 from datetime import date, datetime, timedelta
 
+
 FREQ = {"day": "DAILY", "week": "WEEKLY", "month": "MONTHLY", "year": "YEARLY"}
-ALARM_DAYS = {"document": 30}  # renewals need lead time
+from .domains import lead_days
 
 
 def _esc(s):
@@ -25,7 +26,7 @@ def to_ics(items, stamp=None):
             out += [f"DTSTART;VALUE=DATE:{d:%Y%m%d}", f"DTEND;VALUE=DATE:{d + timedelta(days=1):%Y%m%d}"]
         if r := it.get("repeat"):
             out.append(f"RRULE:FREQ={FREQ[r['unit']]};INTERVAL={r['every']}")
-        if n := ALARM_DAYS.get(it["domain"]):
+        if (n := min(lead_days(it), 30)) > 7:  # long-lead items (renewals) get an early alarm
             out += ["BEGIN:VALARM", "ACTION:DISPLAY", f"DESCRIPTION:{_esc(it['text'])}",
                     f"TRIGGER:-P{n}D", "END:VALARM"]
         out.append("END:VEVENT")

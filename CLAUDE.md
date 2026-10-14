@@ -18,9 +18,10 @@
 7. Python 3.11+ stdlib until a dependency clearly pays for itself.
 
 ## Map
-- `lifeos/parse.py` rules and Hinglish dates (fast path + LLM hint) · `store.py` append-only store · `views.py` today/dog/review text
+- `lifeos/life.json` **life map: 16 areas, keywords, lead times, metrics** (single source; run `scripts/build_app.py` after editing) · `domains.py` loads it
+- `lifeos/parse.py` dates/repeats (fast path + LLM hint) · `store.py` append-only store · `views.py` today/dog/review text
 - `lifeos/ask.py` keyword Q&A · `ics.py` calendar export · `web.py` local web UI · `cli.py` `life` command
-- `app/lifeos.html` claude.ai dashboard page (https://claude.ai/artifact/EjccpLbiwHgHC6A3J9Z9Xy); mirror parse.py changes here
+- `app/lifeos.html` live web app (https://claude.ai/artifact/EjccpLbiwHgHC6A3J9Z9Xy); JS mirror of parse.py, guarded by tests/test_parity.py
 - Next: `lifeos/telegram.py` (P0 bot), then `lifeos/brain.py` (Claude tool use)
 
 ## Kickoff line the founder can paste

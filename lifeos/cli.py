@@ -8,9 +8,10 @@ from .ask import answer
 from .ics import to_ics
 from .parse import parse
 from .store import Store
-from .views import fmt, lines, today_view, dog_view, review_view
+from .domains import BY_ID, LEGACY
+from .views import area_view, areas_view, fmt, lines, review_view, today_view, wheel_view
 
-BARE = {"today", "dog", "review", "undo"}  # commands only when typed alone ("today I felt..." is a note)
+BARE = {"today", "review", "undo", "wheel", "areas", "dog", "pet"}  # commands only when typed alone ("today I felt..." is a note)
 
 
 def is_command(argv):
@@ -29,6 +30,8 @@ def is_command(argv):
         return rest in ([], ["ics"])
     if head == "serve":
         return all(a.startswith("-") or a.isdigit() or "." in a or a == "localhost" for a in rest)
+    if head == "area":
+        return len(rest) == 1 and LEGACY.get(rest[0], rest[0]) in BY_ID
     if head == "ask":
         return bool(rest)
     return head in {"add", "search"} or head.startswith("-")
@@ -56,7 +59,11 @@ def main(argv=None, store=None, today=None):
     sub.add_parser("today", help="overdue + coming up (default)")
     sub.add_parser("search").add_argument("query", nargs="+")
     sub.add_parser("done", help="complete an item (recurring ones roll forward)").add_argument("id", type=int)
-    sub.add_parser("dog", help="dog dashboard")
+    sub.add_parser("wheel", help="every life area at a glance")
+    sub.add_parser("areas", help="what LifeOS covers, with examples")
+    sub.add_parser("area", help="one life area: life area home").add_argument("name", choices=sorted(BY_ID) + sorted(LEGACY))
+    sub.add_parser("pet", help="pet dashboard")
+    sub.add_parser("dog", help="alias of pet")
     sub.add_parser("review", help="weekly review + journal prompt")
     sub.add_parser("ask", help="question over your journal (or just end with '?')").add_argument("q", nargs="+")
     ed = sub.add_parser("edit", help="replace an item's text (re-parsed)")
@@ -75,7 +82,7 @@ def main(argv=None, store=None, today=None):
         out = ["Saved " + fmt(store.add(parse(" ".join(args.text), datetime.combine(today, datetime.now().time()))), today)]
     elif args.cmd == "list":
         out = lines([i for i in items() if (args.all or not i["done"])
-                     and (not args.domain or i["domain"] == args.domain)], today=today)
+                     and (not args.domain or i["domain"] == LEGACY.get(args.domain, args.domain))], today=today)
     elif args.cmd == "search":
         q = " ".join(args.query).lower()
         out = lines([i for i in items() if q in i["text"].lower()], "No matches.")
@@ -83,8 +90,12 @@ def main(argv=None, store=None, today=None):
         item = store.done(args.id, today)
         out = [f"No item {args.id}." if not item
                else f"Done ✔ next: {item['due']}" if not item["done"] else "Done ✔"]
-    elif args.cmd == "dog":
-        out = dog_view(items(), today)
+    elif args.cmd == "wheel":
+        out = wheel_view(items(), today)
+    elif args.cmd == "areas":
+        out = areas_view()
+    elif args.cmd in ("area", "pet", "dog"):
+        out = area_view(items(), getattr(args, "name", "pet"), today)
     elif args.cmd == "review":
         out = review_view(items(), today)
     elif args.cmd == "ask":
