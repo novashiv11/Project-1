@@ -633,5 +633,17 @@
    "unit": "mg/dL",
    "pattern": "\\b(?:sugar|glucose)\\s*(\\d{2,3})\\b"
   }
+ ],
+ "start_examples": [
+  "IRP card expires 2027-01-20",
+  "NCT due 2027-02-10",
+  "rent every month",
+  "motor tax every 3 months",
+  "passport expires 2027-03-14",
+  "dentist kal 4pm",
+  "mom birthday 3 jan",
+  "spent €45 at tesco",
+  "idea: side project app",
+  "mood 7"
  ]
 }
