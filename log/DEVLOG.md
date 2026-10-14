@@ -15,3 +15,8 @@
 ## 2026-10-14 · Session 2b — v0.3 ask & export
 - Shipped: `ask` / `?` questions (`lifeos/ask.py`), ICS export (`lifeos/ics.py`), edit/undo ops, Hinglish dates. 15 tests green.
 - Next: v0.4 `life serve` local web app for phone capture.
+
+## 2026-10-14 · Session 2c — v0.4a web UI
+- Shipped `lifeos/web.py` + `life serve` (stdlib only). Tested: capture, ask, done buttons, HTML escaping, token 403s. 17 tests green.
+- Verified 390px phone layout via Playwright (no horizontal scroll).
+- Blocked on owner: Telegram bot token, Anthropic API key, hosting choice.

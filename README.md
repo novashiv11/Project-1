@@ -17,6 +17,7 @@ python3 -m lifeos "dog ki next vaccine kab hai?"  # end with ? to ask
 python3 -m lifeos kal amazon parcel aayega       # Hinglish dates: aaj, kal, parso, agle hafte, shukravar…
 python3 -m lifeos edit 3 vet saturday 10am       # fix an item; `undo` reverts the last change
 python3 -m lifeos export ics > life.ics          # import into Google/Apple Calendar
+python3 -m lifeos serve --host 0.0.0.0           # phone web app on home Wi-Fi (prints a private URL)
 python3 -m lifeos list --domain dog
 python3 -m lifeos search passport
 python3 -m lifeos done 3

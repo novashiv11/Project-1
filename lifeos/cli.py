@@ -27,6 +27,8 @@ def is_command(argv):
         return len(rest) >= 2 and rest[0].isdigit()
     if head == "export":
         return rest in ([], ["ics"])
+    if head == "serve":
+        return all(a.startswith("-") or a.isdigit() or "." in a or a == "localhost" for a in rest)
     if head == "ask":
         return bool(rest)
     return head in {"add", "search"} or head.startswith("-")
@@ -61,6 +63,9 @@ def main(argv=None, store=None, today=None):
     ed.add_argument("id", type=int)
     ed.add_argument("text", nargs="+")
     sub.add_parser("undo", help="undo the last change")
+    sv = sub.add_parser("serve", help="web UI; --host 0.0.0.0 to use from your phone")
+    sv.add_argument("--host", default="127.0.0.1")
+    sv.add_argument("--port", type=int, default=8765)
     sub.add_parser("export", help="export dated items: life export ics > life.ics").add_argument(
         "fmt", nargs="?", default="ics", choices=["ics"])
     args = ap.parse_args(argv)
@@ -91,6 +96,9 @@ def main(argv=None, store=None, today=None):
     elif args.cmd == "undo":
         what = store.undo()
         out = [f"↩️  Undid {what}" if what else "Nothing to undo."]
+    elif args.cmd == "serve":
+        from .web import serve
+        return serve(store, args.host, args.port)
     elif args.cmd == "export":
         sys.stdout.write(to_ics(items()))
         return 0

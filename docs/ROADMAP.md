@@ -9,10 +9,13 @@
 - v0.3 (2026-10-14) — questions (`life ...?` or `life ask`) via keyword+synonym match; `life export ics`
   (RRULE for repeats, 30-day alarm on documents); `edit` + `undo` ops; Hinglish dates (aaj/kal/parso/agle hafte/N din baad/somvar…)
 
-## Now (v0.4 — phone access)
-- [ ] `life serve` — local web app (stdlib http.server): capture box, today view, ask; works from phone on home Wi-Fi
+- v0.4a (2026-10-14) — `life serve`: one-box mobile web UI over the CLI, ✔ buttons, dark mode, token auth when exposed
+
+## Now (v0.4b — always-on Jarvis) — needs owner input
 - [ ] LLM fallback for classify/ask when `ANTHROPIC_API_KEY` is set (regex path stays default)
-- [ ] Telegram bot capture (needs bot token from user)
+- [ ] Telegram bot capture (needs bot token from user) — chat from anywhere, not just home Wi-Fi
+- [ ] Daily morning nudge message (today view) via Telegram
+- [ ] Hosting: small always-on box (Raspberry Pi / cheap VPS) so phone access works outside home
 
 ## Later (v0.5+ — Jarvis)
 - [ ] Voice capture; phone share-sheet

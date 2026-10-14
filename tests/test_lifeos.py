@@ -190,3 +190,44 @@ class V03Test(StoreCase):
     def test_ics_escaping(self):
         from lifeos.ics import _esc
         self.assertEqual(_esc("a,b;c\\d\ne"), "a\\,b\\;c\\\\d\\ne")
+
+
+class WebTest(StoreCase):
+    def start(self, token=""):
+        import threading
+        from http.server import ThreadingHTTPServer
+        from lifeos.web import make_handler
+        srv = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(self.store, token, self.TODAY))
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        self.addCleanup(srv.server_close)
+        self.addCleanup(srv.shutdown)
+        return f"http://127.0.0.1:{srv.server_port}/"
+
+    def post(self, url, **form):
+        from urllib.parse import urlencode
+        from urllib.request import urlopen
+        with urlopen(url, data=urlencode(form).encode()) as r:
+            return r.read().decode()
+
+    def test_capture_ask_done_and_escaping(self):
+        url = self.start()
+        out = self.post(url, q="dog vet tomorrow <script>")
+        self.assertIn("Saved", out)
+        self.assertIn("&lt;script&gt;", out)
+        self.assertNotIn("<script>", out)
+        self.assertIn('value="done 1"', self.post(url, q="today"))
+        self.assertIn("👉 dog vet", self.post(url, q="vet kab hai?"))
+        self.assertIn("Done", self.post(url, q="done 1"))
+        self.assertIn("LifeOS", self.post(url, q="list --bogus"))  # argparse error doesn't crash
+
+    def test_token_required_when_set(self):
+        from urllib.error import HTTPError
+        from urllib.request import urlopen
+        url = self.start(token="s3cret")
+        with self.assertRaises(HTTPError) as e:
+            urlopen(url)
+        self.assertEqual(e.exception.code, 403)
+        with self.assertRaises(HTTPError):
+            self.post(url, q="hello", t="wrong")
+        self.assertIn("Saved", self.post(url, q="hello", t="s3cret"))
+        self.assertEqual(len(self.store.items()), 1)
