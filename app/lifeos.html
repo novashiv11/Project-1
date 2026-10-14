@@ -1,0 +1,373 @@
+<title>LifeOS</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: one column "field notebook" — capture bar on top, tabs, then a single list of item rows with a left date gutter. */
+:root{
+  --bg:#eef2ee; --card:#fbfcfa; --fg:#18211c; --muted:#5c6a62; --line:#d5ddd6;
+  --accent:#0d6b58; --accent-ink:#f4fbf8; --warn:#a85b00; --warn-bg:#fbeedd; --late:#b3261e; --late-bg:#fbe4e1;
+  --chip:#e2e9e3;
+  --display:"Bricolage Grotesque",ui-rounded,system-ui,sans-serif;
+  --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121815; --card:#1a221e; --fg:#e7eee9; --muted:#97a69d; --line:#2c3832;
+  --accent:#5fd0b2; --accent-ink:#0b1713; --warn:#f0b061; --warn-bg:#3a2a14; --late:#ff8a80; --late-bg:#3d1c1a;
+  --chip:#24302a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121815; --card:#1a221e; --fg:#e7eee9; --muted:#97a69d; --line:#2c3832;
+  --accent:#5fd0b2; --accent-ink:#0b1713; --warn:#f0b061; --warn-bg:#3a2a14; --late:#ff8a80; --late-bg:#3d1c1a;
+  --chip:#24302a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:16px/1.5 var(--body)}
+.wrap{max-width:680px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:16px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font:800 28px/1 var(--display);letter-spacing:-.02em;margin:0;text-wrap:balance}
+h1 small{font:500 12px var(--mono);color:var(--muted);letter-spacing:.04em;margin-left:8px}
+.store-note{font-size:13px;color:var(--muted)}
+form.cap{display:flex;gap:8px}
+#q{flex:1;min-width:0;padding:14px 16px;font:16px var(--body);color:var(--fg);background:var(--card);border:1.5px solid var(--line);border-radius:14px}
+#q:focus{outline:none;border-color:var(--accent)}
+button{font:700 15px var(--body);cursor:pointer;border-radius:12px;border:0}
+button:focus-visible,#q:focus-visible,.tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.go{background:var(--accent);color:var(--accent-ink);padding:0 20px}
+.hint{font-size:13px;color:var(--muted);margin:-8px 0 0}
+.hint code{font:500 12px var(--mono);background:var(--chip);padding:1px 5px;border-radius:5px}
+.tabs{display:flex;gap:4px;background:var(--chip);padding:4px;border-radius:14px;overflow-x:auto}
+.tab{flex:1;padding:9px 10px;background:transparent;color:var(--muted);white-space:nowrap}
+.tab[aria-selected="true"]{background:var(--card);color:var(--fg);box-shadow:0 1px 2px rgb(0 0 0 / .08)}
+section{display:grid;gap:10px}
+h2{font:600 13px var(--body);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:8px 0 0}
+.list{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.row{display:grid;grid-template-columns:76px 1fr auto;gap:12px;align-items:center;padding:12px 14px;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.when{font:500 12px/1.3 var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.when b{display:block;font-weight:500;color:var(--fg)}
+.when.soon b{color:var(--warn)} .when.late b{color:var(--late)}
+.what{min-width:0;overflow-wrap:anywhere}
+.what .meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.chip{font:500 11px var(--mono);letter-spacing:.03em;padding:2px 7px;border-radius:999px;background:var(--chip);color:var(--muted)}
+.chip.d-dog{background:#f3e3cf;color:#7a4a12}.chip.d-document{background:#e1e6f6;color:#33438a}
+.chip.d-package{background:#efe5d8;color:#6d4f25}.chip.d-house{background:#dceee6;color:#22614a}
+.chip.d-health{background:#f6dfe3;color:#8a2f43}.chip.d-money{background:#e5f0d6;color:#466a16}
+.chip.d-idea{background:#f6efcc;color:#73600c}.chip.d-calendar{background:#dfeaf3;color:#245a80}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .chip[class*="d-"]{background:var(--chip);color:var(--fg)}}
+:root[data-theme="dark"] .chip[class*="d-"]{background:var(--chip);color:var(--fg)}
+.row.done .what{color:var(--muted);text-decoration:line-through}
+.act{display:flex;gap:6px}
+.tick{width:38px;height:38px;border:1.5px solid var(--line);background:transparent;color:var(--accent);font-size:18px;line-height:1}
+.tick:hover{border-color:var(--accent);background:var(--chip)}
+.del{background:transparent;color:var(--muted);font-size:13px;padding:6px 8px}
+.empty{padding:18px 16px;color:var(--muted)}
+.examples{display:flex;flex-wrap:wrap;gap:8px;padding:0 16px 16px}
+.ex{background:var(--chip);color:var(--fg);font:400 14px var(--body);padding:8px 12px;border-radius:999px}
+.answer{background:var(--card);border:1.5px solid var(--accent);border-radius:16px;padding:14px 16px;display:grid;gap:4px}
+.answer .label{font:600 12px var(--body);text-transform:uppercase;letter-spacing:.08em;color:var(--accent)}
+.answer .main{font:600 18px/1.35 var(--display);overflow-wrap:anywhere}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;min-width:0}
+.stat .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.stat .v{font:800 26px/1.2 var(--display);font-variant-numeric:tabular-nums}
+.stat .s{font:500 12px var(--mono);color:var(--muted);overflow-wrap:anywhere}
+.prompt{background:var(--card);border:1px dashed var(--accent);border-radius:16px;padding:14px 16px;font:600 18px/1.4 var(--display)}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.filters button{background:var(--chip);color:var(--muted);font:500 13px var(--body);padding:6px 10px;border-radius:999px}
+.filters button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 12px 10px 16px;border-radius:14px;display:flex;gap:12px;align-items:center;max-width:calc(100% - 32px);box-shadow:0 6px 24px rgb(0 0 0 / .2)}
+.toast span{min-width:0;overflow-wrap:anywhere}
+.toast button{background:transparent;color:var(--bg);text-decoration:underline;padding:4px}
+@media (max-width:420px){.row{grid-template-columns:64px 1fr auto;gap:10px;padding:12px}}
+@media (prefers-reduced-motion:no-preference){.row{transition:background .15s}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>LifeOS<small>JARVIS v0.4</small></h1>
+    <span class="store-note" id="storeNote">Connecting…</span>
+  </header>
+  <form class="cap" id="cap" autocomplete="off">
+    <input id="q" name="q" placeholder="kal vet 5pm · passport expires 2027-03-14" aria-label="Capture or ask">
+    <button class="go" type="submit">Add</button>
+  </form>
+  <p class="hint">Type anything. End with <code>?</code> to ask. Prefix <code>idea:</code> or <code>house:</code> to pick the category. Hindi dates work: <code>kal</code>, <code>parso</code>, <code>shukravar ko</code>.</p>
+  <div id="answer" hidden></div>
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" data-v="today" id="tab-today">Today</button>
+    <button class="tab" role="tab" data-v="dog" id="tab-dog">Dog</button>
+    <button class="tab" role="tab" data-v="review" id="tab-review">Week</button>
+    <button class="tab" role="tab" data-v="all" id="tab-all">All</button>
+  </div>
+  <main id="view"></main>
+</div>
+<div class="toast" id="toast" hidden><span id="toastMsg"></span><button id="toastUndo" type="button">Undo</button></div>
+
+<script>
+/* ---------- parser (port of lifeos/parse.py) ---------- */
+const DOMAINS=[["dog","dog|puppy|pup|vet|walkies|kibble|flea|tick|groom\\w*|leash|deworm\\w*"],
+["document","passport|visa|licen[cs]e|aadhaar|pan card|insurance|id card|expir\\w*|renew\\w*"],
+["package","package|parcel|deliver\\w*|courier|shipped|shipment|tracking|order(?:ed)?"],
+["house","house|home|rent|landlord|plumber|electrician|repair\\w*|fridge|ac|wifi|bill|mortgage|maintenance|chore\\w*"],
+["health","doctor|dentist|gym|workout|medicine|meds|sleep|run|ran|running|yoga|weight"],
+["money","pay|paid|salary|emi|invest\\w*|spent|budget|loan|tax"],
+["idea","idea|what if|app that|startup|business"],
+["calendar","meeting|appointment|call|birthday|anniversary|event|party|flight|trip"]];
+const DOMAIN_RE=DOMAINS.map(([d,p])=>[d,new RegExp(`\\b(?:${p})\\b`,"i")]);
+const ALL_DOMAINS=new Set([...DOMAINS.map(d=>d[0]),"journal"]);
+const WEEKDAYS=["monday","tuesday","wednesday","thursday","friday","saturday","sunday"];
+const HI_WEEKDAYS=["som[vw]ar","mangal[vw]ar","budh[vw]ar","guru[vw]ar|brihaspati[vw]ar","shukra[vw]ar","shani[vw]ar","ravi[vw]ar|it[vw]ar"];
+const MONTHS=["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+const MON="(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*";
+const LEAD={document:90}, DEFAULT_LEAD=7;
+
+const pad=n=>String(n).padStart(2,"0");
+const iso=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const fromIso=s=>{const [y,m,d]=s.slice(0,10).split("-").map(Number);return new Date(y,m-1,d)};
+const addDays=(d,n)=>new Date(d.getFullYear(),d.getMonth(),d.getDate()+n);
+const wd=d=>(d.getDay()+6)%7; // Monday=0
+const mkDate=(y,m,d)=>{const x=new Date(y,m-1,d);return x.getMonth()===m-1&&x.getDate()===d?x:null};
+function todayDate(){const n=new Date();return new Date(n.getFullYear(),n.getMonth(),n.getDate())}
+
+function classify(text){
+  const m=text.match(/^\s*(\w+)\s*:/);
+  if(m&&ALL_DOMAINS.has(m[1].toLowerCase()))return m[1].toLowerCase();
+  for(const [d,rx] of DOMAIN_RE) if(rx.test(text))return d;
+  return "journal";
+}
+function monthDay(mon,day,year,today){
+  const m=MONTHS.indexOf(mon.slice(0,3).toLowerCase())+1, y=year?+year:today.getFullYear();
+  let d=mkDate(y,m,+day); if(!d)return null;
+  if(!year&&d<today)d=mkDate(y+1,m,+day);
+  return d;
+}
+function parseDate(text,today){
+  const t=text.toLowerCase(); let m;
+  if(m=t.match(/\b(\d{4})-(\d{2})-(\d{2})\b/)){const d=mkDate(+m[1],+m[2],+m[3]);if(d)return d}
+  if(m=t.match(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/)){const d=mkDate(+m[3],+m[2],+m[1]);if(d)return d}
+  if(/\b(today|tonight|aaj|aj)\b/.test(t))return today;
+  if(/\b(tomorrow|tmrw|tmr|kal)\b/.test(t))return addDays(today,1);
+  if(/\b(parso|parson)\b/.test(t))return addDays(today,2);
+  if(/\b(next week|agle hafte|agle week)\b/.test(t))return addDays(today,7);
+  if(m=t.match(/\b(\d+)\s+din\s+(?:baad|bad|mein|me)\b/))return addDays(today,+m[1]);
+  if(m=t.match(/\bin\s+(\d+)\s+(day|week|month|year)s?\b/))return addDays(today,+m[1]*{day:1,week:7,month:30,year:365}[m[2]]);
+  if(m=t.match(new RegExp(`\\b(next\\s+)?(${WEEKDAYS.join("|")})\\b`)))return addDays(today,((WEEKDAYS.indexOf(m[2])-wd(today))%7+7)%7||7);
+  for(let i=0;i<7;i++) if(new RegExp(`\\b(?:${HI_WEEKDAYS[i]})(?:\\s+ko)?\\b`).test(t))return addDays(today,((i-wd(today))%7+7)%7||7);
+  if(m=t.match(new RegExp(`\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+${MON}(?:\\s+(\\d{4}))?\\b`)))return monthDay(m[2],m[1],m[3],today);
+  if(m=t.match(new RegExp(`\\b${MON}\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s+(\\d{4}))?\\b`)))return monthDay(m[1],m[2],m[3],today);
+  return null;
+}
+function parseTime(text){
+  const m=text.match(/\b(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b|\b(\d{1,2}):(\d{2})\b/i); if(!m)return null;
+  let h,mi;
+  if(m[1]){h=+m[1];mi=+(m[2]||0);if(h>12)return null;h=h%12+(m[3].toLowerCase()==="pm"?12:0)}
+  else{h=+m[4];mi=+m[5]}
+  return h<24&&mi<60?`${pad(h)}:${pad(mi)}`:null;
+}
+function parseRepeat(text){
+  let m=text.match(/\bevery\s+(?:(\d+|other)\s+)?(day|week|month|year)s?\b/i);
+  if(m)return{every:(m[1]||"").toLowerCase()==="other"?2:+(m[1]||1),unit:m[2].toLowerCase()};
+  if(m=text.match(/\b(daily|weekly|monthly|yearly|annually)\b/i))return{every:1,unit:{daily:"day",weekly:"week",monthly:"month",yearly:"year",annually:"year"}[m[1].toLowerCase()]};
+  if(new RegExp(`\\bevery\\s+(${WEEKDAYS.join("|")})\\b`,"i").test(text))return{every:1,unit:"week"};
+  return null;
+}
+function parseMetric(text){
+  const m=text.match(/\b(dog|my)?\s*weight\s*(?:is\s*|=\s*|:\s*)?(\d+(?:\.\d+)?)\s*kg\b|\bmood\s*(?:is\s*|:\s*)?(\d{1,2})(?:\s*\/\s*10)?\b/i);
+  if(!m)return null;
+  if(m[2])return{name:((m[1]||"").toLowerCase()==="dog"||/\bdog\b/i.test(text))?"dog.weight":"me.weight",value:+m[2]};
+  return{name:"mood",value:+m[3]};
+}
+function addInterval(d,every,unit){
+  if(unit==="day"||unit==="week")return addDays(d,every*(unit==="week"?7:1));
+  const months=every*(unit==="year"?12:1), y=d.getFullYear(), m=d.getMonth()+months;
+  const last=new Date(y,m+1,0).getDate();
+  return new Date(y,m,Math.min(d.getDate(),last));
+}
+function parse(text,today){
+  let due=parseDate(text,today); const repeat=parseRepeat(text);
+  if(repeat&&!due)due=today;
+  let dueStr=null; if(due){const tm=parseTime(text);dueStr=iso(due)+(tm?"T"+tm:"")}
+  const tracking=[...text.matchAll(/\b(1Z[0-9A-Z]{16}|[A-Z]{2}\d{9}[A-Z]{2}|\d{12,22})\b/g)].map(m=>m[1]);
+  let domain=classify(text);
+  if(tracking.length&&domain==="journal")domain="package";
+  const explicit=/^\s*(?:idea|journal)\s*:/i.test(text);
+  if(due&&(domain==="journal"||domain==="idea")&&!explicit&&!/\bidea\b/i.test(text))domain="calendar";
+  return{text:text.trim(),domain,due:dueStr,tags:[...text.matchAll(/(?<!\w)#(\w+)/g)].map(m=>m[1]),tracking,repeat,metric:parseMetric(text)};
+}
+
+/* ---------- ask (port of lifeos/ask.py) ---------- */
+const STOP=new Set("a an the is are was were be been of to for in on at by my our your me i we it its this that what when where which who how do does did any next last ka ki ke kab hai kya mera meri mere".split(" "));
+const SYN={vaccine:["vaccination","shot","jab","rabies"],vet:["doctor"],passport:["visa","document"],rent:["landlord"],package:["parcel","delivery","order"]};
+function tokens(text){
+  const w=new Set((text.toLowerCase().match(/[a-z0-9]+/g)||[]).filter(x=>!STOP.has(x)).map(x=>x.replace(/s+$/,"")));
+  for(const [k,s] of Object.entries(SYN)) if(w.has(k)||s.some(x=>w.has(x))){w.add(k);s.forEach(x=>w.add(x))}
+  return w;
+}
+function answer(q,items,today){
+  const qt=tokens(q);
+  const scored=items.map(it=>{const tt=tokens(it.text);let hit=0;qt.forEach(x=>{if(tt.has(x))hit++});
+    const up=!!it.due&&!it.done&&daysLeft(it,today)>=0;return{hit,up,it}}).filter(s=>s.hit);
+  scored.sort((a,b)=>b.hit-a.hit||(b.up-a.up)||String(a.it.due||"9999").localeCompare(String(b.it.due||"9999"))||b.it.id-a.it.id);
+  return scored.slice(0,3).map(s=>s.it);
+}
+
+/* ---------- storage: private db per person, device storage as fallback ---------- */
+let items=new Map(), backend=null, undoStack=[];
+const LS_KEY="lifeos.items.v1";
+const localBackend={
+  label:"Saved on this device only",
+  load(){try{const raw=localStorage.getItem(LS_KEY);(raw?JSON.parse(raw):[]).forEach(i=>items.set(i.id,i))}catch(e){}},
+  save(){try{localStorage.setItem(LS_KEY,JSON.stringify([...items.values()]))}catch(e){}},
+  async put(it){items.set(it.id,it);this.save();render()},
+  async del(id){items.delete(id);this.save();render()}
+};
+async function connect(){
+  try{
+    const [db,user]=await Promise.all([claude.use("db"),claude.use("user")]);
+    const uid=db&&user?await user.id():null;
+    if(!uid)throw new Error("no db");
+    const col=db.collection(`data/users/${uid}/items`);
+    backend={label:"Private to you · synced across devices",
+      async put(it){items.set(it.id,it);render();await col.doc("i"+it.id).set(it)},
+      async del(id){items.delete(id);render();await col.doc("i"+id).delete()}};
+    col.onSnapshot(snap=>{items=new Map(snap.docs.map(d=>{const x=d.data();return[x.id,x]}));render()},
+      e=>{note(`Sync paused: ${e.message}`)});
+  }catch(e){backend=localBackend;backend.load()}
+  note(backend.label);render();
+}
+function note(t){document.getElementById("storeNote").textContent=t}
+const nowStamp=()=>new Date().toISOString().slice(0,19);
+const clone=o=>o?JSON.parse(JSON.stringify(o)):null;
+
+async function change(id,next,msg){
+  undoStack.push({id,prev:clone(items.get(id))});
+  if(next)await backend.put(next);else await backend.del(id);
+  toast(msg);
+}
+async function undo(){
+  const u=undoStack.pop(); if(!u)return;
+  if(u.prev)await backend.put(u.prev);else await backend.del(u.id);
+  toast("Undone",false);
+}
+async function capture(text){
+  const id=Math.max(0,...items.keys())+1;
+  const it={id,created:nowStamp(),done:false,...parse(text,todayDate())};
+  await change(id,it,`Saved to ${it.domain}${it.due?` · ${rel(daysLeft(it,todayDate()))}`:""}`);
+}
+async function complete(id){
+  const it=clone(items.get(id)); const today=todayDate();
+  if(it.repeat&&it.due){
+    const [d,t]=it.due.split("T"); let nx=addInterval(fromIso(d),it.repeat.every,it.repeat.unit);
+    while(nx<today)nx=addInterval(nx,it.repeat.every,it.repeat.unit);
+    it.due=iso(nx)+(t?"T"+t:""); (it.completions=it.completions||[]).push(nowStamp());
+    await change(id,it,`Done · next ${it.due.slice(0,10)}`);
+  }else{it.done=true;it.done_at=nowStamp();await change(id,it,"Done")}
+}
+
+/* ---------- views ---------- */
+const daysLeft=(it,today)=>Math.round((fromIso(it.due)-today)/864e5);
+const rel=n=>n===0?"today":n===1?"tomorrow":n>0?`in ${n}d`:`${-n}d overdue`;
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const MON_SHORT=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function row(it,today,{del=false}={}){
+  let when="";
+  if(it.due){const n=daysLeft(it,today),d=fromIso(it.due),cls=it.done?"":n<0?"late":n<=2?"soon":"";
+    when=`<div class="when ${cls}"><b>${rel(n)}</b>${d.getDate()} ${MON_SHORT[d.getMonth()]}${d.getFullYear()!==today.getFullYear()?" "+d.getFullYear():""}${it.due.includes("T")?" · "+it.due.slice(11):""}</div>`}
+  else when=`<div class="when">${esc((it.created||"").slice(5,10).replace("-","/"))}</div>`;
+  const chips=[`<span class="chip d-${it.domain}">${it.domain}</span>`];
+  if(it.repeat)chips.push(`<span class="chip">every ${it.repeat.every>1?it.repeat.every+" "+it.repeat.unit+"s":it.repeat.unit}</span>`);
+  (it.tracking||[]).forEach(t=>chips.push(`<span class="chip">${esc(t)}</span>`));
+  if(it.metric)chips.push(`<span class="chip">${esc(it.metric.name)} ${it.metric.value}</span>`);
+  const acts=[];
+  if(!it.done)acts.push(`<button class="tick" data-done="${it.id}" aria-label="Mark done: ${esc(it.text)}">✓</button>`);
+  if(del)acts.push(`<button class="del" data-del="${it.id}">Delete</button>`);
+  return `<div class="row${it.done?" done":""}">${when}<div class="what">${esc(it.text)}<div class="meta">${chips.join("")}</div></div><div class="act">${acts.join("")}</div></div>`;
+}
+const list=(arr,today,empty,o)=>`<div class="list">${arr.length?arr.map(i=>row(i,today,o)).join(""):`<div class="empty">${empty}</div>`}</div>`;
+const EXAMPLES=["dog vet appointment shukravar ko 5pm","passport expires 2027-03-14","dog flea meds every 30 days","kal amazon parcel aayega","rent every month","dog weight 24kg","idea: chai stall rating app","mood 7"];
+
+function vToday(all,today){
+  const open=all.filter(i=>i.due&&!i.done).sort((a,b)=>a.due.localeCompare(b.due));
+  const late=open.filter(i=>daysLeft(i,today)<0);
+  const up=open.filter(i=>{const n=daysLeft(i,today);return n>=0&&n<=(LEAD[i.domain]||DEFAULT_LEAD)});
+  const notes=all.filter(i=>!i.due&&!i.done).sort((a,b)=>b.id-a.id).slice(0,5);
+  if(!all.length)return `<section><h2>Start here</h2><div class="list"><div class="empty">Nothing captured yet. Tap an example to add it, or type your own.</div><div class="examples">${EXAMPLES.map(e=>`<button class="ex" data-ex="${esc(e)}">${esc(e)}</button>`).join("")}</div></div></section>`;
+  return (late.length?`<section><h2>Overdue</h2>${list(late,today)}</section>`:"")+
+    `<section><h2>Coming up</h2>${list(up,today,"Clear for the next 7 days. Documents show 90 days ahead.")}</section>`+
+    `<section><h2>Recent notes</h2>${list(notes,today,"Undated notes and ideas land here.")}</section>`;
+}
+function series(all,name){return all.filter(i=>i.metric&&i.metric.name===name).sort((a,b)=>a.id-b.id).map(i=>[i.created.slice(0,10),i.metric.value])}
+function stat(k,s,unit=""){
+  if(!s.length)return `<div class="stat"><div class="k">${k}</div><div class="v">–</div><div class="s">no entries yet</div></div>`;
+  const last=s[s.length-1][1],delta=last-s[0][1];
+  return `<div class="stat"><div class="k">${k}</div><div class="v">${last}${unit}</div><div class="s">${s.slice(-5).map(x=>x[1]).join(" → ")}${s.length>1?` (${delta>=0?"+":""}${+delta.toFixed(2)})`:""}</div></div>`;
+}
+function vDog(all,today){
+  const dog=all.filter(i=>i.domain==="dog");
+  const sched=dog.filter(i=>!i.done&&i.due).sort((a,b)=>a.due.localeCompare(b.due));
+  const health=dog.filter(i=>/vaccin|vet|deworm|flea|tick/i.test(i.text)).sort((a,b)=>b.id-a.id).slice(0,6);
+  return `<div class="stats">${stat("Dog weight",series(all,"dog.weight")," kg")}<div class="stat"><div class="k">Scheduled</div><div class="v">${sched.length}</div><div class="s">vet, meds, grooming</div></div></div>`+
+    `<section><h2>Schedule</h2>${list(sched,today,'Nothing scheduled. Try "dog flea meds every 30 days".')}</section>`+
+    `<section><h2>Vet &amp; vaccine history</h2>${list(health,today,"No vet or vaccine records yet.")}</section>`;
+}
+const PROMPTS=["What gave you energy this week, and what drained it?","One thing you're proud of, one thing you'd redo?","What did the dog teach you this week?","What are you avoiding? What's the smallest next step?","Who do you want to spend more time with next week?","What would make next week feel like a win?"];
+function vReview(all,today){
+  const start=iso(addDays(today,-6)), end=iso(addDays(today,7));
+  const week=all.filter(i=>i.created.slice(0,10)>=start);
+  const doneN=all.filter(i=>(i.done_at||"").slice(0,10)>=start).length+all.reduce((n,i)=>n+(i.completions||[]).filter(c=>c.slice(0,10)>=start).length,0);
+  const ideas=week.filter(i=>i.domain==="idea");
+  const next=all.filter(i=>i.due&&!i.done&&i.due.slice(0,10)>=iso(today)&&i.due.slice(0,10)<=end).sort((a,b)=>a.due.localeCompare(b.due));
+  const wk=Math.floor((today-new Date(today.getFullYear(),0,1))/6048e5);
+  const inWeek=n=>series(all,n).filter(p=>p[0]>=start);
+  return `<div class="stats"><div class="stat"><div class="k">Captured</div><div class="v">${week.length}</div><div class="s">since ${start.slice(5)}</div></div><div class="stat"><div class="k">Completed</div><div class="v">${doneN}</div><div class="s">incl. repeats</div></div>${stat("Mood",inWeek("mood"),"/10")}${stat("Your weight",inWeek("me.weight")," kg")}</div>`+
+    `<section><h2>Journal prompt</h2><div class="prompt">${PROMPTS[wk%PROMPTS.length]}</div><p class="hint" style="margin:0">Answer in the box with <code>journal: …</code></p></section>`+
+    `<section><h2>Ideas this week</h2>${list(ideas,today,"No ideas yet. Prefix with idea:")}</section>`+
+    `<section><h2>Next 7 days</h2>${list(next,today,"Nothing scheduled.")}</section>`;
+}
+let filter="", showDone=false;
+function vAll(all,today){
+  const doms=[...new Set(all.map(i=>i.domain))].sort();
+  const rows=all.filter(i=>(showDone||!i.done)&&(!filter||i.domain===filter)).sort((a,b)=>b.id-a.id);
+  return `<div class="filters"><button data-f="" aria-pressed="${!filter}">All</button>${doms.map(d=>`<button data-f="${d}" aria-pressed="${filter===d}">${d}</button>`).join("")}<button data-showdone aria-pressed="${showDone}">Show done</button></div>`+
+    list(rows,today,"Nothing here.",{del:true});
+}
+
+let view="today";
+try{view=localStorage.getItem("lifeos.view")||"today"}catch(e){}
+function render(){
+  const all=[...items.values()], today=todayDate();
+  document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.v===view));
+  document.getElementById("view").innerHTML=({today:vToday,dog:vDog,review:vReview,all:vAll}[view]||vToday)(all,today);
+}
+let toastTimer;
+function toast(msg,canUndo=true){
+  const el=document.getElementById("toast");document.getElementById("toastMsg").textContent=msg;
+  document.getElementById("toastUndo").hidden=!canUndo;el.hidden=false;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.hidden=true,5000);
+}
+function showAnswer(q){
+  const today=todayDate(), best=answer(q,[...items.values()],today), box=document.getElementById("answer");
+  if(!best.length)box.innerHTML=`<div class="answer"><span class="label">Answer</span><div class="main">Nothing in your journal matches that yet.</div></div>`;
+  else{const t=best[0];box.innerHTML=`<div class="answer"><span class="label">Answer</span><div class="main">${esc(t.text)}${t.due?` · ${rel(daysLeft(t,today))}`:""}</div>${t.due?`<div class="when">${esc(t.due.replace("T"," "))}</div>`:""}</div>`+(best.length>1?`<section><h2>Related</h2>${list(best.slice(1),today)}</section>`:"")}
+  box.hidden=false;
+}
+
+document.getElementById("cap").addEventListener("submit",async e=>{
+  e.preventDefault(); const inp=document.getElementById("q"), text=inp.value.trim(); if(!text||!backend)return;
+  inp.value="";
+  if(text.endsWith("?")&&!/^\w+\s*:/.test(text))showAnswer(text);
+  else{document.getElementById("answer").hidden=true;await capture(text)}
+});
+document.addEventListener("click",async e=>{
+  const b=e.target.closest("button"); if(!b||!backend&&!b.dataset.v)return;
+  if(b.dataset.v){view=b.dataset.v;try{localStorage.setItem("lifeos.view",view)}catch(_){}render()}
+  else if(b.dataset.done)await complete(+b.dataset.done);
+  else if(b.dataset.del)await change(+b.dataset.del,null,"Deleted");
+  else if(b.dataset.ex)await capture(b.dataset.ex);
+  else if(b.dataset.f!==undefined){filter=b.dataset.f;render()}
+  else if(b.hasAttribute("data-showdone")){showDone=!showDone;render()}
+  else if(b.id==="toastUndo"){document.getElementById("toast").hidden=true;await undo()}
+});
+render();
+if(window.claude&&claude.use)connect();else{backend=localBackend;backend.load();note(backend.label);render()}
+</script>

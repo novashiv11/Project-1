@@ -1,5 +1,7 @@
 # LifeOS (codename Jarvis)
 
+**Open on your phone:** https://claude.ai/artifact/EjccpLbiwHgHC6A3J9Z9Xy (private, sign in to claude.ai)
+
 A personal life operating system for you **and your dog**: throw random thoughts at it,
 it figures out what they are and reminds you at the right time.
 

@@ -11,3 +11,4 @@
 - 2026-10-14 · Input ending in `?` is a question unless it has a `domain:` prefix. "kal" = tomorrow (plans > past).
 - 2026-10-14 · Web UI is a thin shell over the CLI (one text box = `life <text>`), so every feature lands in both for free.
 - 2026-10-14 · `serve` on a non-localhost host always requires a random token; request logs are silenced (journal text stays out of logs).
+- 2026-10-14 · Hosted UI = claude.ai artifact (works on phone, no server). Python CLI stays the reference implementation.

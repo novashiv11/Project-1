@@ -20,3 +20,8 @@
 - Shipped `lifeos/web.py` + `life serve` (stdlib only). Tested: capture, ask, done buttons, HTML escaping, token 403s. 17 tests green.
 - Verified 390px phone layout via Playwright (no horizontal scroll).
 - Blocked on owner: Telegram bot token, Anthropic API key, hosting choice.
+
+## 2026-10-14 · Session 3 — hosted app
+- `app/lifeos.html`: JS port of parser/ask/views, published as a private claude.ai artifact
+  (https://claude.ai/artifact/EjccpLbiwHgHC6A3J9Z9Xy). Data in per-person private db (`data/users/<id>/items`), localStorage fallback.
+- JS parser checked against the Python test cases (same outputs). Keep both in sync when changing parse rules.
