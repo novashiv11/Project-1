@@ -47,3 +47,9 @@
 - Pages live: https://novashiv11.github.io/lifeos/ (founder confirmed on phone). Starter examples now Ireland-first (life.json start_examples).
 - Added one-tap Install button (beforeinstallprompt) + 'already installed' hint (getInstalledRelatedApps); deployed.
 - BUG fixed: manifest id './' resolved to origin root → Chrome matched another app on novashiv11.github.io ('already installed', 'Could not open app'). id now '/lifeos/'.
+
+## 2026-10-15 · Session 7: v0.6 "Jarvis feel"
+- Founder: "feels like a notes app". Shipped (founder picked C = all): morning brief (overdue/today/renewal windows), 10 guide cards
+  (IRP, NCT, motor tax, NDLS, passport, PPSN, Revenue, RTB, health/car insurance; official links only, in life.json `guides`),
+  voice capture (Web Speech, en-IN), Jarvis tab: Claude chat via user's own API key (browser fetch, Haiku 5.5, effort low,
+  tools add_item/complete_item, append-only history). E2E tested with mocked API; deployed to novashiv11/lifeos.

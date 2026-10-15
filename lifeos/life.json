@@ -645,5 +645,159 @@
   "spent €45 at tesco",
   "idea: side project app",
   "mood 7"
+ ],
+ "guides": [
+  {
+   "pattern": "irp|gnib|residence permit",
+   "title": "Renew your IRP",
+   "steps": [
+    "Renewals open 12 weeks before expiry. Apply on that day: processing has been taking 17+ weeks.",
+    "Apply online, and only while you are in Ireland.",
+    "Upload everything in one go: passport, current IRP card, proof of address and the documents your stamp needs. Missing documents stop the application.",
+    "Keep the confirmation email. The new card comes by post after approval."
+   ],
+   "links": [
+    {
+     "label": "How to renew",
+     "url": "https://www.irishimmigration.ie/renewing-your-registration-permission-if-you-live-in-the-republic-of-ireland/"
+    },
+    {
+     "label": "Current processing times",
+     "url": "https://www.irishimmigration.ie/information-on-online-renewal-timelines/"
+    }
+   ]
+  },
+  {
+   "pattern": "nct",
+   "title": "Book your NCT",
+   "steps": [
+    "Book online as soon as you can: slots can be weeks away.",
+    "Bring your driving licence and the vehicle registration cert on the day.",
+    "Driving without a valid NCT means fines and penalty points."
+   ],
+   "links": [
+    {
+     "label": "Book NCT",
+     "url": "https://www.ncts.ie/"
+    }
+   ]
+  },
+  {
+   "pattern": "motor tax",
+   "title": "Renew motor tax",
+   "steps": [
+    "Renew online with the PIN on your renewal reminder.",
+    "You can usually choose 3, 6 or 12 months."
+   ],
+   "links": [
+    {
+     "label": "Pay motor tax",
+     "url": "https://www.motortax.ie/"
+    }
+   ]
+  },
+  {
+   "pattern": "driving licen[cs]e|learner permit|ndls",
+   "title": "Driving licence",
+   "steps": [
+    "Book an NDLS appointment early; slots fill up.",
+    "Bring your PPSN, proof of address and current licence or permit."
+   ],
+   "links": [
+    {
+     "label": "NDLS",
+     "url": "https://www.ndls.ie/"
+    }
+   ]
+  },
+  {
+   "pattern": "passport",
+   "title": "Renew your passport",
+   "steps": [
+    "Many countries need 6+ months left on your passport to let you in, so renew early.",
+    "Indian passport: apply through Passport Seva for applicants abroad, then follow the embassy's instructions.",
+    "Irish passport: renew online with Passport Online."
+   ],
+   "links": [
+    {
+     "label": "Passport Seva (India)",
+     "url": "https://www.passportindia.gov.in/"
+    },
+    {
+     "label": "Irish passports",
+     "url": "https://www.ireland.ie/en/dfa/passports/"
+    }
+   ]
+  },
+  {
+   "pattern": "ppsn?|mywelfare",
+   "title": "PPSN and welfare",
+   "steps": [
+    "Your PPSN is on payslips and Revenue letters.",
+    "Use MyWelfare to request or check your PPSN and services."
+   ],
+   "links": [
+    {
+     "label": "MyWelfare",
+     "url": "https://www.mywelfare.ie/"
+    }
+   ]
+  },
+  {
+   "pattern": "revenue|tax credit\\w*|rent credit|usc|tax return|itr",
+   "title": "Tax and credits",
+   "steps": [
+    "Check your tax credits in Revenue myAccount.",
+    "Renting? Claim the rent tax credit in myAccount.",
+    "Keep receipts for medical expenses: you can claim relief on them."
+   ],
+   "links": [
+    {
+     "label": "Revenue myAccount",
+     "url": "https://www.revenue.ie/"
+    }
+   ]
+  },
+  {
+   "pattern": "rtb|tenancy|rent agreement|lease|deposit|landlord",
+   "title": "Renting",
+   "steps": [
+    "Your landlord must register the tenancy with the RTB.",
+    "Disputes about deposits or rent go to the RTB."
+   ],
+   "links": [
+    {
+     "label": "RTB",
+     "url": "https://www.rtb.ie/"
+    },
+    {
+     "label": "Citizens Information: renting",
+     "url": "https://www.citizensinformation.ie/en/housing/renting-a-home/"
+    }
+   ]
+  },
+  {
+   "pattern": "health insurance",
+   "title": "Health insurance renewal",
+   "steps": [
+    "Compare plans before the renewal date: you can switch at renewal.",
+    "Check your waiting periods carry over when switching."
+   ],
+   "links": [
+    {
+     "label": "Compare plans (HIA)",
+     "url": "https://www.hia.ie/"
+    }
+   ]
+  },
+  {
+   "pattern": "car insurance|motor insurance",
+   "title": "Car insurance renewal",
+   "steps": [
+    "Get 2 or 3 quotes before the renewal date.",
+    "Ask your insurer for your no-claims bonus certificate when switching."
+   ],
+   "links": []
+  }
  ]
 }

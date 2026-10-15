@@ -83,16 +83,41 @@ h2{font:600 13px var(--body);text-transform:uppercase;letter-spacing:.08em;color
 .toast span{min-width:0;overflow-wrap:anywhere}
 .toast button{background:transparent;color:var(--bg);text-decoration:underline;padding:4px}
 @media (max-width:420px){.row{grid-template-columns:64px 1fr auto;gap:10px;padding:12px}}
+.mic{background:var(--chip);color:var(--fg);padding:0 14px;font-size:18px}
+.mic.on{background:var(--late-bg);color:var(--late)}
+.brief{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px;display:grid;gap:8px}
+.brief .hello{font:800 24px/1.15 var(--display);letter-spacing:-.01em;text-wrap:balance}
+.brief ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}
+.brief li{display:flex;gap:10px;align-items:baseline}
+.brief li b{font:500 12px var(--mono);color:var(--accent);min-width:84px;white-space:nowrap}
+.gbtn{background:var(--chip);color:var(--accent);font:700 12px var(--body);padding:3px 9px;border-radius:999px}
+.guide{padding:4px 14px 14px 102px;display:grid;gap:8px;border-top:1px dashed var(--line)}
+.guide h3{font:700 15px var(--body);margin:8px 0 0}
+.guide ol{margin:0;padding-left:20px;display:grid;gap:4px}
+.guide .links{display:flex;gap:8px;flex-wrap:wrap}
+.guide a{background:var(--accent);color:var(--accent-ink);text-decoration:none;font:700 14px var(--body);padding:8px 12px;border-radius:10px}
+@media (max-width:420px){.guide{padding-left:14px}}
+.chat{display:grid;gap:10px}
+.msg{max-width:88%;padding:10px 14px;border-radius:16px;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.me{justify-self:end;background:var(--accent);color:var(--accent-ink);border-bottom-right-radius:4px}
+.msg.bot{justify-self:start;background:var(--card);border:1px solid var(--line);border-bottom-left-radius:4px}
+.msg.act{justify-self:start;background:transparent;color:var(--muted);font:500 12px var(--mono);padding:0 4px}
+.chatform{display:flex;gap:8px}
+.chatform input,.setup input{flex:1;min-width:0;padding:12px 14px;font:16px var(--body);color:var(--fg);background:var(--card);border:1.5px solid var(--line);border-radius:12px}
+.setup{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;gap:10px}
+.setup label{font-size:13px;color:var(--muted);display:grid;gap:4px}
+.linkbtn{background:transparent;color:var(--accent);padding:4px 0;font-size:14px}
 @media (prefers-reduced-motion:no-preference){.row{transition:background .15s}}
 </style>
 
 <div class="wrap">
   <header>
-    <h1>LifeOS<small>JARVIS v0.5</small></h1>
+    <h1>LifeOS<small>JARVIS v0.6</small></h1>
     <span class="store-note" id="storeNote">Connecting…</span>
   </header>
   <form class="cap" id="cap" autocomplete="off">
     <input id="q" name="q" placeholder="kal vet 5pm · passport expires 2027-03-14" aria-label="Capture or ask">
+    <button class="mic" type="button" id="mic" hidden aria-label="Speak instead of typing">🎤</button>
     <button class="go" type="submit">Add</button>
   </form>
   <p class="hint">Type anything about any part of life. End with <code>?</code> to ask. Prefix <code>idea:</code>, <code>work:</code>, <code>home:</code> etc. to pick the area. Hindi dates work: <code>kal</code>, <code>parso</code>, <code>shukravar ko</code>.</p>
@@ -102,6 +127,7 @@ h2{font:600 13px var(--body);text-transform:uppercase;letter-spacing:.08em;color
     <button class="tab" role="tab" data-v="life" id="tab-life">Life</button>
     <button class="tab" role="tab" data-v="review" id="tab-review">Week</button>
     <button class="tab" role="tab" data-v="all" id="tab-all">All</button>
+    <button class="tab" role="tab" data-v="jarvis" id="tab-jarvis">Jarvis</button>
   </div>
   <main id="view"></main>
 </div>
@@ -109,7 +135,7 @@ h2{font:600 13px var(--body);text-transform:uppercase;letter-spacing:.08em;color
 
 <script>
 /* ---------- parser (port of lifeos/parse.py) ---------- */
-const LIFE=/*LIFE*/{"areas":[{"id":"idea","label":"Ideas","icon":"💡","lead":7,"covers":"Startup and side-project ideas, shower thoughts, things to try","keywords":["idea","what if","app that","startup","side project"],"examples":["idea: chai stall rating app","what if gyms rented by the hour"],"tip":"Ideas resurface in your weekly review so they don't die in notes."},{"id":"pet","label":"Pets","icon":"🐾","lead":7,"covers":"Vet visits, vaccines, deworming, flea/tick meds, food stock, grooming, walks, weight","keywords":["dog","cat","puppy","pup","kitten","pet","vet","walkies","kibble","flea","tick","groom\\w*","leash","deworm\\w*","litter"],"examples":["dog flea meds every 30 days","dog weight 24kg","cat vaccine shukravar ko"],"tip":"Log each dose once with 'every N days' and it rolls forward forever."},{"id":"vehicle","label":"Vehicle","icon":"🚗","lead":7,"covers":"Servicing, NCT, motor tax, insurance renewal, PUC, FASTag/tolls, fuel, tyres, fines","keywords":["car","bike","scooty","scooter","gaadi","vehicle","petrol","diesel","fuel","fastag","puc","challan","tyre\\w*","service center","rc","nct","motor tax","toll","eflow","parking"],"examples":["NCT due 2027-02-10","car insurance expires 2027-02-10","motor tax every 3 months"],"tip":"Add insurance and PUC expiry once; you'll be nudged ahead of time."},{"id":"kids","label":"Kids & school","icon":"🎒","lead":7,"covers":"School fees, PTMs, exams, homework, tuition, vaccinations, activities","keywords":["school","ptm","homework","tuition","kid","kids","son","daughter","beta","beti","baby","diaper\\w*","creche","daycare"],"examples":["school fees due 10 nov","ptm saturday 10am"],"tip":"Term fees can repeat: 'school fees every 3 months'."},{"id":"travel","label":"Travel","icon":"✈️","lead":14,"covers":"Flights, trains, hotels, packing, web check-in, trip plans","keywords":["flight","train","irctc","tatkal","hotel","trip","travel","airport","boarding","check-?in","packing","itinerary","goa","vacation","holiday"],"examples":["flight to goa 20 dec 6am","book tatkal ticket kal"],"tip":"Trips show two weeks ahead so you can book and pack in time."},{"id":"document","label":"Documents & IDs","icon":"🛂","lead":90,"covers":"Passport, visa, IRP/GNIB residence permit, PPSN, licence, insurance policies, certificates, warranties","keywords":["passport","visa","licen[cs]e","aadhaar","aadhar","pan card","voter id","insurance","policy","certificate","id card","expir\\w*","renew\\w*","kyc","irp","gnib","stamp ?[0-9]","ppsn?","residence permit","immigration","embassy","work permit"],"examples":["passport expires 2027-03-14","IRP card expires 2027-01-20","health insurance renew 5 jan","rent agreement expires 2027-08-01"],"tip":"Store only expiry dates, never document numbers. Rent agreements get a 60-day heads-up."},{"id":"family","label":"Family & friends","icon":"👪","lead":7,"covers":"Birthdays, anniversaries, calls home, parents' needs, gifts, catch-ups","keywords":["mom","mum","mummy","maa","dad","papa","parents","wife","husband","bhai","brother","sister","behen","didi","nani","dadi","nana","dada","grandma","grandpa","friend","dost","birthday","bday","anniversary","gift"],"examples":["mom birthday 3 jan","call papa every sunday"],"tip":"Birthdays show a week ahead so there's time for a gift."},{"id":"work","label":"Work & career","icon":"💼","lead":7,"covers":"Meetings, deadlines, interviews, clients, invoices, appraisals, job search","keywords":["meeting","deadline","interview","client","invoice","boss","office","manager","appraisal","resume","cv","job","naukri","project","presentation","standup","freelance"],"examples":["client invoice due friday","interview agle hafte 11am"],"tip":"Freelance? 'invoice X every month' keeps cash flowing."},{"id":"home","label":"Home","icon":"🏠","lead":7,"covers":"Rent, society maintenance, repairs, appliances and servicing, house help, groceries, gas, utility bills","keywords":["house","home","ghar","flat","rent","landlord","tenant","society","maintenance","plumber","electrician","carpenter","repair\\w*","fridge","ac","purifier","geyser","washing machine","wifi","broadband","dth","electricity","bijli","water bill","gas","cylinder","lpg","maid","cook","bai","kaamwali","dhobi","grocer\\w*","kirana","sabzi","doodh","milk","pest control","chore\\w*","warranty","rtb","lease","deposit","bin\\w*","esb","electric ireland","bord gais","eircode"],"examples":["rent every month","ac service every 6 months","gas cylinder book kal"],"tip":"Rent, maintenance and servicing can all repeat: 'ac service every 6 months'."},{"id":"money","label":"Money","icon":"💰","lead":7,"covers":"EMIs, SIPs, credit card dues, taxes/ITR, salary, lending, spending, subscriptions","keywords":["pay","paid","payment","salary","emi","sip","mutual fund","stock\\w*","invest\\w*","spent","kharcha","budget","loan","udhaar","credit card","upi","tax","itr","gst","refund","subscription","netflix","recharge","bank","fd","bill","fees","revenue","usc","prsi","tax credit\\w*","rent credit"],"examples":["credit card bill due 5th every month","spent 450 on dinner","ravi ko 2000 udhaar diya"],"tip":"Type 'spent 450 on X' and the weekly review totals it."},{"id":"health","label":"Health & fitness","icon":"💪","lead":7,"covers":"Doctor and dentist visits, medicines, tests, gym, runs, sleep, steps, water, weight, BP, sugar","keywords":["doctor","dr","dentist","clinic","hospital","medicine\\w*","meds","dawai","dawa","tablet\\w*","checkup","blood test","test report","gym","workout","exercise","run","ran","running","walk(?:ed)?","cycl\\w*","yoga","sleep","slept","neend","steps","water","paani","weight","bp","sugar","diet","protein","period\\w*"],"examples":["dentist in 2 weeks","slept 6h","ran 5km","bp 120/80"],"tip":"Log sleep, steps or runs in plain words; trends show in the weekly review."},{"id":"mind","label":"Mind & mood","icon":"🧠","lead":7,"covers":"Mood, stress, gratitude, therapy, meditation, how you feel","keywords":["mood","feel\\w*","stress\\w*","anxious","anxiety","sad","happy","grateful","gratitude","therapy","therapist","meditat\\w*","overthinking","burnout","lonely"],"examples":["mood 6, thoda stressed","grateful for a calm morning"],"tip":"A daily 'mood N' builds your weekly mood line."},{"id":"growth","label":"Learning & goals","icon":"🌱","lead":7,"covers":"Books, courses, skills, habits, goals, language practice","keywords":["book","read\\w*","course","learn\\w*","study","padhai","skill","goal\\w*","habit\\w*","practice","podcast","certification","exam"],"examples":["read 20 pages daily","goal: learn guitar by march"],"tip":"Habits work best as 'X daily'; mark done each day to keep the streak."},{"id":"shopping","label":"Orders & shopping","icon":"📦","lead":7,"covers":"Deliveries, return windows, refunds, wishlists, things to buy","keywords":["package","parcel","deliver\\w*","courier","shipped","shipment","tracking","order(?:ed)?","amazon","flipkart","myntra","meesho","return","buy","kharidna","wishlist"],"examples":["kal amazon parcel aayega","myntra return by 20 oct"],"tip":"Add the return deadline so you don't miss the window."},{"id":"social","label":"Fun & plans","icon":"🎉","lead":7,"covers":"Movies, parties, weddings, matches, dinners out, hobbies","keywords":["movie","party","wedding","shaadi","concert","match","dinner","lunch","brunch","outing","game","hobby","festival","diwali","holi"],"examples":["shaadi in jaipur 12 dec","movie with ravi saturday 7pm"],"tip":"Plans with friends count toward a balanced week."},{"id":"calendar","label":"Calendar","icon":"📅","lead":7,"covers":"Appointments and events that don't fit elsewhere","keywords":["appointment","event","call","reminder","remind"],"examples":["appointment monday 4pm"],"tip":"Anything with a date lands here if no other area fits."}],"fallback":{"id":"journal","label":"Journal","icon":"📓","lead":7,"covers":"Everything else: thoughts, notes, life log","tip":"Write freely; prefix 'journal:' to force it here."},"lead_overrides":[{"pattern":"passport|visa","days":180,"why":"many countries require 6+ months passport validity to enter"},{"pattern":"irp|gnib|residence permit|work permit","days":84,"why":"Irish permission renewals open 12 weeks before expiry"},{"pattern":"nct","days":30,"why":"NCT slots book up weeks ahead"},{"pattern":"rent agreement|lease","days":60,"why":"time to renegotiate or move"},{"pattern":"insurance|policy|licen[cs]e|warranty|itr|tax","days":30,"why":"renewals and filings take paperwork"},{"pattern":"puc|fastag|exam","days":14,"why":"short validity or prep time"}],"metrics":[{"name":"weight","unit":"kg","pattern":"\\bweight\\s*(?:is\\s*|=\\s*|:\\s*)?(\\d+(?:\\.\\d+)?)\\s*kg\\b","per_subject":true},{"name":"mood","unit":"/10","pattern":"\\bmood\\s*(?:is\\s*|:\\s*)?(\\d{1,2})(?:\\s*/\\s*10)?\\b"},{"name":"sleep","unit":"h","pattern":"\\b(?:slept|sleep|neend)\\s*(?:of\\s*)?(\\d+(?:\\.\\d+)?)\\s*(?:h|hr|hrs|hours?|ghante)\\b"},{"name":"steps","unit":"steps","pattern":"\\b(\\d{3,6})\\s*steps\\b"},{"name":"distance","unit":"km","pattern":"\\b(?:ran|run|walked|walk|cycled)\\s*(\\d+(?:\\.\\d+)?)\\s*(?:km|k)\\b"},{"name":"water","unit":"L","pattern":"\\b(?:water|paani)\\s*(\\d+(?:\\.\\d+)?)\\s*(?:l|litres?|liters?)\\b"},{"name":"spent","unit":"€","pattern":"(?:\\b(?:spent|kharcha|paid)\\s*(?:rs\\.?|inr|eur|₹|€)?\\s*|[₹€]\\s*)(\\d[\\d,]*(?:\\.\\d+)?)","sum":true},{"name":"bp","unit":"mmHg","pattern":"\\bbp\\s*(\\d{2,3})\\s*/\\s*\\d{2,3}\\b"},{"name":"sugar","unit":"mg/dL","pattern":"\\b(?:sugar|glucose)\\s*(\\d{2,3})\\b"}],"start_examples":["IRP card expires 2027-01-20","NCT due 2027-02-10","rent every month","motor tax every 3 months","passport expires 2027-03-14","dentist kal 4pm","mom birthday 3 jan","spent €45 at tesco","idea: side project app","mood 7"]}/*END_LIFE*/;
+const LIFE=/*LIFE*/{"areas":[{"id":"idea","label":"Ideas","icon":"💡","lead":7,"covers":"Startup and side-project ideas, shower thoughts, things to try","keywords":["idea","what if","app that","startup","side project"],"examples":["idea: chai stall rating app","what if gyms rented by the hour"],"tip":"Ideas resurface in your weekly review so they don't die in notes."},{"id":"pet","label":"Pets","icon":"🐾","lead":7,"covers":"Vet visits, vaccines, deworming, flea/tick meds, food stock, grooming, walks, weight","keywords":["dog","cat","puppy","pup","kitten","pet","vet","walkies","kibble","flea","tick","groom\\w*","leash","deworm\\w*","litter"],"examples":["dog flea meds every 30 days","dog weight 24kg","cat vaccine shukravar ko"],"tip":"Log each dose once with 'every N days' and it rolls forward forever."},{"id":"vehicle","label":"Vehicle","icon":"🚗","lead":7,"covers":"Servicing, NCT, motor tax, insurance renewal, PUC, FASTag/tolls, fuel, tyres, fines","keywords":["car","bike","scooty","scooter","gaadi","vehicle","petrol","diesel","fuel","fastag","puc","challan","tyre\\w*","service center","rc","nct","motor tax","toll","eflow","parking"],"examples":["NCT due 2027-02-10","car insurance expires 2027-02-10","motor tax every 3 months"],"tip":"Add insurance and PUC expiry once; you'll be nudged ahead of time."},{"id":"kids","label":"Kids & school","icon":"🎒","lead":7,"covers":"School fees, PTMs, exams, homework, tuition, vaccinations, activities","keywords":["school","ptm","homework","tuition","kid","kids","son","daughter","beta","beti","baby","diaper\\w*","creche","daycare"],"examples":["school fees due 10 nov","ptm saturday 10am"],"tip":"Term fees can repeat: 'school fees every 3 months'."},{"id":"travel","label":"Travel","icon":"✈️","lead":14,"covers":"Flights, trains, hotels, packing, web check-in, trip plans","keywords":["flight","train","irctc","tatkal","hotel","trip","travel","airport","boarding","check-?in","packing","itinerary","goa","vacation","holiday"],"examples":["flight to goa 20 dec 6am","book tatkal ticket kal"],"tip":"Trips show two weeks ahead so you can book and pack in time."},{"id":"document","label":"Documents & IDs","icon":"🛂","lead":90,"covers":"Passport, visa, IRP/GNIB residence permit, PPSN, licence, insurance policies, certificates, warranties","keywords":["passport","visa","licen[cs]e","aadhaar","aadhar","pan card","voter id","insurance","policy","certificate","id card","expir\\w*","renew\\w*","kyc","irp","gnib","stamp ?[0-9]","ppsn?","residence permit","immigration","embassy","work permit"],"examples":["passport expires 2027-03-14","IRP card expires 2027-01-20","health insurance renew 5 jan","rent agreement expires 2027-08-01"],"tip":"Store only expiry dates, never document numbers. Rent agreements get a 60-day heads-up."},{"id":"family","label":"Family & friends","icon":"👪","lead":7,"covers":"Birthdays, anniversaries, calls home, parents' needs, gifts, catch-ups","keywords":["mom","mum","mummy","maa","dad","papa","parents","wife","husband","bhai","brother","sister","behen","didi","nani","dadi","nana","dada","grandma","grandpa","friend","dost","birthday","bday","anniversary","gift"],"examples":["mom birthday 3 jan","call papa every sunday"],"tip":"Birthdays show a week ahead so there's time for a gift."},{"id":"work","label":"Work & career","icon":"💼","lead":7,"covers":"Meetings, deadlines, interviews, clients, invoices, appraisals, job search","keywords":["meeting","deadline","interview","client","invoice","boss","office","manager","appraisal","resume","cv","job","naukri","project","presentation","standup","freelance"],"examples":["client invoice due friday","interview agle hafte 11am"],"tip":"Freelance? 'invoice X every month' keeps cash flowing."},{"id":"home","label":"Home","icon":"🏠","lead":7,"covers":"Rent, society maintenance, repairs, appliances and servicing, house help, groceries, gas, utility bills","keywords":["house","home","ghar","flat","rent","landlord","tenant","society","maintenance","plumber","electrician","carpenter","repair\\w*","fridge","ac","purifier","geyser","washing machine","wifi","broadband","dth","electricity","bijli","water bill","gas","cylinder","lpg","maid","cook","bai","kaamwali","dhobi","grocer\\w*","kirana","sabzi","doodh","milk","pest control","chore\\w*","warranty","rtb","lease","deposit","bin\\w*","esb","electric ireland","bord gais","eircode"],"examples":["rent every month","ac service every 6 months","gas cylinder book kal"],"tip":"Rent, maintenance and servicing can all repeat: 'ac service every 6 months'."},{"id":"money","label":"Money","icon":"💰","lead":7,"covers":"EMIs, SIPs, credit card dues, taxes/ITR, salary, lending, spending, subscriptions","keywords":["pay","paid","payment","salary","emi","sip","mutual fund","stock\\w*","invest\\w*","spent","kharcha","budget","loan","udhaar","credit card","upi","tax","itr","gst","refund","subscription","netflix","recharge","bank","fd","bill","fees","revenue","usc","prsi","tax credit\\w*","rent credit"],"examples":["credit card bill due 5th every month","spent 450 on dinner","ravi ko 2000 udhaar diya"],"tip":"Type 'spent 450 on X' and the weekly review totals it."},{"id":"health","label":"Health & fitness","icon":"💪","lead":7,"covers":"Doctor and dentist visits, medicines, tests, gym, runs, sleep, steps, water, weight, BP, sugar","keywords":["doctor","dr","dentist","clinic","hospital","medicine\\w*","meds","dawai","dawa","tablet\\w*","checkup","blood test","test report","gym","workout","exercise","run","ran","running","walk(?:ed)?","cycl\\w*","yoga","sleep","slept","neend","steps","water","paani","weight","bp","sugar","diet","protein","period\\w*"],"examples":["dentist in 2 weeks","slept 6h","ran 5km","bp 120/80"],"tip":"Log sleep, steps or runs in plain words; trends show in the weekly review."},{"id":"mind","label":"Mind & mood","icon":"🧠","lead":7,"covers":"Mood, stress, gratitude, therapy, meditation, how you feel","keywords":["mood","feel\\w*","stress\\w*","anxious","anxiety","sad","happy","grateful","gratitude","therapy","therapist","meditat\\w*","overthinking","burnout","lonely"],"examples":["mood 6, thoda stressed","grateful for a calm morning"],"tip":"A daily 'mood N' builds your weekly mood line."},{"id":"growth","label":"Learning & goals","icon":"🌱","lead":7,"covers":"Books, courses, skills, habits, goals, language practice","keywords":["book","read\\w*","course","learn\\w*","study","padhai","skill","goal\\w*","habit\\w*","practice","podcast","certification","exam"],"examples":["read 20 pages daily","goal: learn guitar by march"],"tip":"Habits work best as 'X daily'; mark done each day to keep the streak."},{"id":"shopping","label":"Orders & shopping","icon":"📦","lead":7,"covers":"Deliveries, return windows, refunds, wishlists, things to buy","keywords":["package","parcel","deliver\\w*","courier","shipped","shipment","tracking","order(?:ed)?","amazon","flipkart","myntra","meesho","return","buy","kharidna","wishlist"],"examples":["kal amazon parcel aayega","myntra return by 20 oct"],"tip":"Add the return deadline so you don't miss the window."},{"id":"social","label":"Fun & plans","icon":"🎉","lead":7,"covers":"Movies, parties, weddings, matches, dinners out, hobbies","keywords":["movie","party","wedding","shaadi","concert","match","dinner","lunch","brunch","outing","game","hobby","festival","diwali","holi"],"examples":["shaadi in jaipur 12 dec","movie with ravi saturday 7pm"],"tip":"Plans with friends count toward a balanced week."},{"id":"calendar","label":"Calendar","icon":"📅","lead":7,"covers":"Appointments and events that don't fit elsewhere","keywords":["appointment","event","call","reminder","remind"],"examples":["appointment monday 4pm"],"tip":"Anything with a date lands here if no other area fits."}],"fallback":{"id":"journal","label":"Journal","icon":"📓","lead":7,"covers":"Everything else: thoughts, notes, life log","tip":"Write freely; prefix 'journal:' to force it here."},"lead_overrides":[{"pattern":"passport|visa","days":180,"why":"many countries require 6+ months passport validity to enter"},{"pattern":"irp|gnib|residence permit|work permit","days":84,"why":"Irish permission renewals open 12 weeks before expiry"},{"pattern":"nct","days":30,"why":"NCT slots book up weeks ahead"},{"pattern":"rent agreement|lease","days":60,"why":"time to renegotiate or move"},{"pattern":"insurance|policy|licen[cs]e|warranty|itr|tax","days":30,"why":"renewals and filings take paperwork"},{"pattern":"puc|fastag|exam","days":14,"why":"short validity or prep time"}],"metrics":[{"name":"weight","unit":"kg","pattern":"\\bweight\\s*(?:is\\s*|=\\s*|:\\s*)?(\\d+(?:\\.\\d+)?)\\s*kg\\b","per_subject":true},{"name":"mood","unit":"/10","pattern":"\\bmood\\s*(?:is\\s*|:\\s*)?(\\d{1,2})(?:\\s*/\\s*10)?\\b"},{"name":"sleep","unit":"h","pattern":"\\b(?:slept|sleep|neend)\\s*(?:of\\s*)?(\\d+(?:\\.\\d+)?)\\s*(?:h|hr|hrs|hours?|ghante)\\b"},{"name":"steps","unit":"steps","pattern":"\\b(\\d{3,6})\\s*steps\\b"},{"name":"distance","unit":"km","pattern":"\\b(?:ran|run|walked|walk|cycled)\\s*(\\d+(?:\\.\\d+)?)\\s*(?:km|k)\\b"},{"name":"water","unit":"L","pattern":"\\b(?:water|paani)\\s*(\\d+(?:\\.\\d+)?)\\s*(?:l|litres?|liters?)\\b"},{"name":"spent","unit":"€","pattern":"(?:\\b(?:spent|kharcha|paid)\\s*(?:rs\\.?|inr|eur|₹|€)?\\s*|[₹€]\\s*)(\\d[\\d,]*(?:\\.\\d+)?)","sum":true},{"name":"bp","unit":"mmHg","pattern":"\\bbp\\s*(\\d{2,3})\\s*/\\s*\\d{2,3}\\b"},{"name":"sugar","unit":"mg/dL","pattern":"\\b(?:sugar|glucose)\\s*(\\d{2,3})\\b"}],"start_examples":["IRP card expires 2027-01-20","NCT due 2027-02-10","rent every month","motor tax every 3 months","passport expires 2027-03-14","dentist kal 4pm","mom birthday 3 jan","spent €45 at tesco","idea: side project app","mood 7"],"guides":[{"pattern":"irp|gnib|residence permit","title":"Renew your IRP","steps":["Renewals open 12 weeks before expiry. Apply on that day: processing has been taking 17+ weeks.","Apply online, and only while you are in Ireland.","Upload everything in one go: passport, current IRP card, proof of address and the documents your stamp needs. Missing documents stop the application.","Keep the confirmation email. The new card comes by post after approval."],"links":[{"label":"How to renew","url":"https://www.irishimmigration.ie/renewing-your-registration-permission-if-you-live-in-the-republic-of-ireland/"},{"label":"Current processing times","url":"https://www.irishimmigration.ie/information-on-online-renewal-timelines/"}]},{"pattern":"nct","title":"Book your NCT","steps":["Book online as soon as you can: slots can be weeks away.","Bring your driving licence and the vehicle registration cert on the day.","Driving without a valid NCT means fines and penalty points."],"links":[{"label":"Book NCT","url":"https://www.ncts.ie/"}]},{"pattern":"motor tax","title":"Renew motor tax","steps":["Renew online with the PIN on your renewal reminder.","You can usually choose 3, 6 or 12 months."],"links":[{"label":"Pay motor tax","url":"https://www.motortax.ie/"}]},{"pattern":"driving licen[cs]e|learner permit|ndls","title":"Driving licence","steps":["Book an NDLS appointment early; slots fill up.","Bring your PPSN, proof of address and current licence or permit."],"links":[{"label":"NDLS","url":"https://www.ndls.ie/"}]},{"pattern":"passport","title":"Renew your passport","steps":["Many countries need 6+ months left on your passport to let you in, so renew early.","Indian passport: apply through Passport Seva for applicants abroad, then follow the embassy's instructions.","Irish passport: renew online with Passport Online."],"links":[{"label":"Passport Seva (India)","url":"https://www.passportindia.gov.in/"},{"label":"Irish passports","url":"https://www.ireland.ie/en/dfa/passports/"}]},{"pattern":"ppsn?|mywelfare","title":"PPSN and welfare","steps":["Your PPSN is on payslips and Revenue letters.","Use MyWelfare to request or check your PPSN and services."],"links":[{"label":"MyWelfare","url":"https://www.mywelfare.ie/"}]},{"pattern":"revenue|tax credit\\w*|rent credit|usc|tax return|itr","title":"Tax and credits","steps":["Check your tax credits in Revenue myAccount.","Renting? Claim the rent tax credit in myAccount.","Keep receipts for medical expenses: you can claim relief on them."],"links":[{"label":"Revenue myAccount","url":"https://www.revenue.ie/"}]},{"pattern":"rtb|tenancy|rent agreement|lease|deposit|landlord","title":"Renting","steps":["Your landlord must register the tenancy with the RTB.","Disputes about deposits or rent go to the RTB."],"links":[{"label":"RTB","url":"https://www.rtb.ie/"},{"label":"Citizens Information: renting","url":"https://www.citizensinformation.ie/en/housing/renting-a-home/"}]},{"pattern":"health insurance","title":"Health insurance renewal","steps":["Compare plans before the renewal date: you can switch at renewal.","Check your waiting periods carry over when switching."],"links":[{"label":"Compare plans (HIA)","url":"https://www.hia.ie/"}]},{"pattern":"car insurance|motor insurance","title":"Car insurance renewal","steps":["Get 2 or 3 quotes before the renewal date.","Ask your insurer for your no-claims bonus certificate when switching."],"links":[]}]}/*END_LIFE*/;
 const AREAS=LIFE.areas, FALLBACK=LIFE.fallback, BY_ID=Object.fromEntries([...AREAS,FALLBACK].map(a=>[a.id,a]));
 const LEGACY={dog:"pet",house:"home",package:"shopping"};
 const AREA_RE=AREAS.map(a=>[a.id,new RegExp(`\\b(?:${a.keywords.join("|")})\\b`,"i")]);
@@ -275,6 +301,33 @@ const daysLeft=(it,today)=>Math.round((fromIso(it.due)-today)/864e5);
 const rel=n=>n===0?"today":n===1?"tomorrow":n>0?`in ${n}d`:`${-n}d overdue`;
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const MON_SHORT=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+/* ---------- settings, guides, brief ---------- */
+let settings={};
+try{settings=JSON.parse(localStorage.getItem("lifeos.settings")||"{}")}catch(e){}
+function saveSettings(){try{localStorage.setItem("lifeos.settings",JSON.stringify(settings))}catch(e){}}
+const GUIDES=(LIFE.guides||[]).map(g=>({...g,rx:new RegExp(`\\b(?:${g.pattern})\\b`,"i")}));
+const guideFor=it=>GUIDES.find(g=>g.rx.test(it.text));
+const openGuides=new Set();
+function briefLines(all,today){
+  const open=openDated(all), out=[];
+  const late=open.filter(i=>daysLeft(i,today)<0), now=open.filter(i=>daysLeft(i,today)===0);
+  if(late.length)out.push(["overdue",`${late.length} overdue: ${late.slice(0,2).map(i=>i.text).join(", ")}`]);
+  if(now.length)out.push(["today",now.slice(0,3).map(i=>i.text).join(", ")]);
+  // long-notice items (renewals): say when the action window opens
+  open.filter(i=>leadDays(i)>14).forEach(i=>{const n=daysLeft(i,today),opens=n-leadDays(i);
+    if(opens>0&&opens<=14)out.push([`in ${opens}d`,`Window opens for: ${i.text}. Get documents ready.`]);
+    else if(opens<=0&&opens>-30&&n>0)out.push(["start now",`${i.text} (${n} days left)`]);});
+  const soon=open.filter(i=>{const n=daysLeft(i,today);return n>0&&n<=3&&leadDays(i)<=14});
+  if(soon.length)out.push(["next 3 days",soon.slice(0,3).map(i=>i.text).join(", ")]);
+  return out.slice(0,4);
+}
+function briefCard(all,today){
+  const h=new Date().getHours(), hi=h<12?"Good morning":h<17?"Good afternoon":"Good evening";
+  const lines=briefLines(all,today), name=settings.name?` ${esc(settings.name)}`:"";
+  const body=lines.length?`<ul>${lines.map(([k,t])=>`<li><b>${esc(k)}</b><span>${esc(t)}</span></li>`).join("")}</ul>`:`<span class="covers">Nothing needs you right now. Add anything on your mind above.</span>`;
+  return `<div class="brief"><div class="hello">${hi}${name} ${h<17?"☀️":"🌙"}</div>${body}</div>`;
+}
+
 function row(it,today,{del=false}={}){
   let when="";
   if(it.due){const n=daysLeft(it,today),d=fromIso(it.due),cls=it.done?"":n<0?"late":n<=2?"soon":"";
@@ -285,9 +338,12 @@ function row(it,today,{del=false}={}){
   (it.tracking||[]).forEach(t=>chips.push(`<span class="chip">${esc(t)}</span>`));
   (it.metrics||[]).forEach(m=>chips.push(`<span class="chip">${esc(m.name)} ${m.value}${esc(m.unit||"")}</span>`));
   const acts=[];
+  const g=guideFor(it);
+  if(g&&!it.done)chips.push(`<button class="gbtn" data-guide="${it.id}" aria-expanded="${openGuides.has(it.id)}">${openGuides.has(it.id)?"Hide guide":"Guide ›"}</button>`);
   if(!it.done)acts.push(`<button class="tick" data-done="${it.id}" aria-label="Mark done: ${esc(it.text)}">✓</button>`);
   if(del)acts.push(`<button class="del" data-del="${it.id}">Delete</button>`);
-  return `<div class="row${it.done?" done":""}">${when}<div class="what">${esc(it.text)}<div class="meta">${chips.join("")}</div></div><div class="act">${acts.join("")}</div></div>`;
+  const panel=g&&!it.done&&openGuides.has(it.id)?`<div class="guide"><h3>${esc(g.title)}</h3><ol>${g.steps.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>${g.links.length?`<div class="links">${g.links.map(l=>`<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>`).join("")}</div>`:""}</div>`:"";
+  return `<div class="row${it.done?" done":""}">${when}<div class="what">${esc(it.text)}<div class="meta">${chips.join("")}</div></div><div class="act">${acts.join("")}</div></div>${panel}`;
 }
 const list=(arr,today,empty,o)=>`<div class="list">${arr.length?arr.map(i=>row(i,today,o)).join(""):`<div class="empty">${empty}</div>`}</div>`;
 const EXAMPLES=LIFE.start_examples||AREAS.map(a=>a.examples[0]);
@@ -299,7 +355,7 @@ function vToday(all,today){
   const up=open.filter(i=>{const n=daysLeft(i,today);return n>=0&&n<=leadDays(i)});
   const notes=all.filter(i=>!i.due&&!i.done).sort((a,b)=>b.id-a.id).slice(0,5);
   if(!all.length)return `<section><h2>Start here</h2><div class="list"><div class="empty">Nothing captured yet. Tap an example to add it, or type your own. Every part of life works: home, money, health, work, family, travel, pets, documents and more.</div><div class="examples">${EXAMPLES.map(e=>`<button class="ex" data-ex="${esc(e)}">${esc(e)}</button>`).join("")}</div></div></section>`;
-  return (late.length?`<section><h2>Overdue</h2>${list(late,today)}</section>`:"")+
+  return briefCard(all,today)+(late.length?`<section><h2>Overdue</h2>${list(late,today)}</section>`:"")+
     `<section><h2>Coming up</h2>${list(up,today,"Nothing due soon. Renewals show up early: passport 6 months, insurance 1 month.")}</section>`+
     `<section><h2>Recent notes</h2>${list(notes,today,"Undated notes and ideas land here.")}</section>`;
 }
@@ -368,12 +424,90 @@ function vAll(all,today){
     list(rows,today,"Nothing here.",{del:true});
 }
 
+/* ---------- Jarvis: chat with Claude using the user's own key (phone app only) ---------- */
+const MODEL="claude-haiku-5-5";
+const SYSTEM=`You are Jarvis, the assistant inside LifeOS, a private life-admin app. The user lives in Ireland and may write in English or Hinglish; reply in the same style, briefly (at most 4 short sentences unless asked for detail).
+Each user message starts with today's date and a snapshot of their LifeOS items (id | area | due | text). Answer questions from that snapshot.
+When the user tells you something to remember, a task, a date or a plan, call add_item with one short line in their words, including the date in plain words (e.g. "IRP card expires 2027-01-20", "dentist kal 4pm", "rent every month"). Call add_item once per separate thing.
+When the user says they finished something on the list, call complete_item with its id.
+For Irish admin (IRP/immigration, NCT, motor tax, Revenue, RTB, PPSN) give general guidance and point to the official site (irishimmigration.ie, ncts.ie, motortax.ie, revenue.ie, rtb.ie, citizensinformation.ie). If you are not sure of a fee, deadline or rule, say so and point to the official site instead of guessing.
+Never ask for passport, IRP, PPSN or bank numbers.`;
+const TOOLS=[
+ {name:"add_item",description:"Save a new note, task, reminder or dated item to the user's LifeOS.",strict:true,
+  input_schema:{type:"object",properties:{text:{type:"string",description:"One short line, with any date in plain words"}},required:["text"],additionalProperties:false}},
+ {name:"complete_item",description:"Mark an existing item done by its id. Recurring items move to their next date.",strict:true,
+  input_schema:{type:"object",properties:{id:{type:"integer"}},required:["id"],additionalProperties:false}}];
+let chatMsgs=[], chatLog=[], chatBusy=false;
+const CHAT_OK=!window.claude; // inside claude.ai the page can't reach the API; the phone app can
+function snapshot(today){
+  const rows=[...items.values()].filter(i=>!i.done).sort((a,b)=>(a.due||"9999").localeCompare(b.due||"9999")).slice(0,150)
+    .map(i=>`${i.id} | ${area(i.domain).label} | ${i.due||"-"} | ${i.text}`);
+  return `Today: ${iso(today)}\nMy LifeOS items:\n${rows.join("\n")||"(none yet)"}`;
+}
+async function callClaude(){
+  const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":settings.key,
+    "anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+    body:JSON.stringify({model:MODEL,max_tokens:2048,system:SYSTEM,tools:TOOLS,messages:chatMsgs,output_config:{effort:"low"},cache_control:{type:"ephemeral"}})});
+  const data=await r.json().catch(()=>({}));
+  if(!r.ok){const m=data.error&&data.error.message||r.statusText;throw new Error(r.status===401?"That API key didn't work. Check it in Jarvis settings.":r.status===429?"Too many requests right now. Try again in a minute.":m)}
+  return data;
+}
+async function runTool(b){
+  if(b.name==="add_item"&&typeof b.input.text==="string"&&b.input.text.trim()){
+    const id=Math.max(0,...items.keys())+1, it={id,created:nowStamp(),done:false,...parse(b.input.text.trim(),todayDate())};
+    await backend.put(it); chatLog.push({who:"act",text:`✓ saved to ${area(it.domain).label}${it.due?` · ${it.due}`:""}: ${it.text}`});
+    return `Saved as #${id} in ${area(it.domain).label}${it.due?`, due ${it.due}`:""}.`;
+  }
+  if(b.name==="complete_item"&&items.has(b.input.id)){
+    const before=items.get(b.input.id).text; await complete(b.input.id); chatLog.push({who:"act",text:`✓ done: ${before}`});
+    const after=items.get(b.input.id); return after&&!after.done?`Done; next due ${after.due}.`:"Marked done.";
+  }
+  return {error:"Invalid input or unknown item."};
+}
+async function askJarvis(text){
+  if(chatBusy)return;
+  if(chatMsgs.length>40){chatMsgs=[];chatLog.push({who:"act",text:"(started a fresh chat)"})}
+  chatBusy=true; chatLog.push({who:"me",text}); render();
+  chatMsgs.push({role:"user",content:[{type:"text",text:snapshot(todayDate())},{type:"text",text}]});
+  try{
+    for(let step=0;step<5;step++){
+      const res=await callClaude();
+      chatMsgs.push({role:"assistant",content:res.content}); // append unchanged (thinking blocks included)
+      if(res.stop_reason==="refusal"){chatLog.push({who:"bot",text:"I can't help with that one."});break}
+      const said=res.content.filter(c=>c.type==="text").map(c=>c.text).join("\n").trim();
+      if(said)chatLog.push({who:"bot",text:said});
+      const calls=res.content.filter(c=>c.type==="tool_use");
+      if(res.stop_reason!=="tool_use"||!calls.length)break;
+      const results=[];
+      for(const c of calls){const out=await runTool(c);
+        results.push(typeof out==="string"?{type:"tool_result",tool_use_id:c.id,content:out}:{type:"tool_result",tool_use_id:c.id,content:out.error,is_error:true})}
+      chatMsgs.push({role:"user",content:results});
+    }
+  }catch(e){chatMsgs.pop();chatLog.push({who:"act",text:navigator.onLine===false?"You're offline. Jarvis needs internet; everything else works offline.":`⚠ ${e.message}`})}
+  chatBusy=false; render();
+}
+function vJarvis(){
+  if(!CHAT_OK)return `<div class="setup"><b>Jarvis chat works in the phone app.</b><span class="covers">Open LifeOS on your phone to chat.</span></div>`;
+  if(!settings.key||settings.editing)return `<form class="setup" id="setup"><b>Set up Jarvis</b>
+    <label>Your name<input id="sname" value="${esc(settings.name||"")}" autocomplete="given-name"></label>
+    <label>Claude API key<input id="skey" type="password" value="${esc(settings.key||"")}" placeholder="sk-ant-…" autocomplete="off"></label>
+    <span class="covers">The key is saved only on this phone and sent only to Anthropic. A few cents a month for normal use. Get one at console.anthropic.com.</span>
+    <button class="go" type="submit" style="padding:12px">Save</button></form>`;
+  const bubbles=chatLog.length?chatLog.map(m=>`<div class="msg ${m.who}">${esc(m.text)}</div>`).join(""):
+    `<div class="msg bot">Hi${settings.name?" "+esc(settings.name):""}! Tell me anything to remember, or ask: "IRP renewal kab start karun?"</div>`;
+  return `<div class="chat">${bubbles}${chatBusy?`<div class="msg act">Jarvis is thinking…</div>`:""}
+    <form class="chatform" id="chatform" autocomplete="off"><input id="cq" placeholder="Message Jarvis" aria-label="Message Jarvis"><button class="go" type="submit">Send</button></form>
+    <div style="display:flex;gap:16px"><button class="linkbtn" data-chat="new">New chat</button><button class="linkbtn" data-chat="settings">Settings</button></div></div>`;
+}
+
 let view="today";
 try{view=localStorage.getItem("lifeos.view")||"today";if(view==="dog")view="life"}catch(e){}
 function render(){
   const all=[...items.values()], today=todayDate();
   document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.v===view));
-  document.getElementById("view").innerHTML=({today:vToday,life:vLife,review:vReview,all:vAll}[view]||vToday)(all,today);
+  const cq=document.getElementById("cq"), draft=cq?cq.value:"", focused=document.activeElement===cq;
+  document.getElementById("view").innerHTML=({today:vToday,life:vLife,review:vReview,all:vAll,jarvis:vJarvis}[view]||vToday)(all,today);
+  const cq2=document.getElementById("cq"); if(cq2){cq2.value=draft;if(focused)cq2.focus()}
 }
 let toastTimer;
 function toast(msg,canUndo=true){
@@ -391,7 +525,8 @@ function showAnswer(q){
 document.getElementById("cap").addEventListener("submit",async e=>{
   e.preventDefault(); const inp=document.getElementById("q"), text=inp.value.trim(); if(!text||!backend)return;
   inp.value="";
-  if(text.endsWith("?")&&!/^\w+\s*:/.test(text))showAnswer(text);
+  if(text.endsWith("?")&&!/^\w+\s*:/.test(text)){
+    if(CHAT_OK&&settings.key){view="jarvis";document.getElementById("answer").hidden=true;askJarvis(text)}else showAnswer(text)}
   else{document.getElementById("answer").hidden=true;await capture(text)}
 });
 document.addEventListener("click",async e=>{
@@ -399,6 +534,9 @@ document.addEventListener("click",async e=>{
   if(b.dataset.v){view=b.dataset.v;lifeArea=null;try{localStorage.setItem("lifeos.view",view)}catch(_){}render();return}
   if(b.dataset.area!==undefined){lifeArea=b.dataset.area||null;render();window.scrollTo(0,0);return}
   if(b.dataset.fill){const q=document.getElementById("q");q.value=b.dataset.fill;q.focus();return}
+  if(b.dataset.guide){const id=+b.dataset.guide;openGuides.has(id)?openGuides.delete(id):openGuides.add(id);render();return}
+  if(b.dataset.chat==="new"){chatMsgs=[];chatLog=[];render();return}
+  if(b.dataset.chat==="settings"){settings.editing=true;render();return}
   if(!backend)return;
   if(false){}
   else if(b.dataset.done)await complete(+b.dataset.done);
@@ -408,6 +546,25 @@ document.addEventListener("click",async e=>{
   else if(b.hasAttribute("data-showdone")){showDone=!showDone;render()}
   else if(b.id==="toastUndo"){document.getElementById("toast").hidden=true;await undo()}
 });
+document.addEventListener("submit",e=>{
+  if(e.target.id==="setup"){e.preventDefault();settings.name=document.getElementById("sname").value.trim();
+    settings.key=document.getElementById("skey").value.trim();delete settings.editing;saveSettings();render()}
+  if(e.target.id==="chatform"){e.preventDefault();const i=document.getElementById("cq"),t=i.value.trim();if(t&&backend){i.value="";askJarvis(t)}}
+});
+(()=>{ // voice capture (Chrome on Android/desktop)
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition, mic=document.getElementById("mic");
+  if(!SR)return; mic.hidden=false; let rec=null;
+  mic.addEventListener("click",()=>{
+    if(rec){rec.stop();return}
+    rec=new SR(); rec.lang=settings.voiceLang||"en-IN"; rec.interimResults=true;
+    const q=document.getElementById("q"); mic.classList.add("on");
+    rec.onresult=ev=>{const r=ev.results[ev.results.length-1];q.value=[...ev.results].map(x=>x[0].transcript).join(" ");
+      if(r.isFinal)document.getElementById("cap").requestSubmit()};
+    rec.onerror=ev=>{if(ev.error==="not-allowed"||ev.error==="service-not-allowed")toast("Microphone is blocked. Allow it for LifeOS in phone settings.",false)};
+    rec.onend=()=>{rec=null;mic.classList.remove("on")};
+    rec.start();
+  });
+})();
 render();
 if(window.claude&&claude.use)connect();else{backend=localBackend;backend.load();note(backend.label);render()}
 </script>
