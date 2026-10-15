@@ -33,3 +33,13 @@ table{width:100%;border-collapse:collapse;font-size:14px}
 th,td{padding:6px 8px;border-bottom:1px solid var(--border);text-align:right}
 th:first-child,td:first-child{text-align:left}
 #rows .row{margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.drop{display:block;border:2px dashed var(--border);border-radius:12px;padding:32px 16px;text-align:center;cursor:pointer;font-weight:600;margin:0}
+.drop:hover,.drop.over{border-color:var(--accent);background:var(--bg)}
+.drop input{display:none}
+.drop span{display:block;font-weight:400;color:var(--muted);font-size:14px;margin-top:4px}
+.files{list-style:none;padding:0;margin:12px 0 0}
+.files li{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:15px;flex-wrap:wrap}
+.files li .nm{flex:1;min-width:140px;word-break:break-all}
+.files li button,.files li a{margin:0;padding:4px 10px;font-size:14px}
+.files li a{background:var(--accent);color:#fff;border-radius:6px;text-decoration:none;font-weight:600}
+.small{background:var(--border);color:var(--text)}

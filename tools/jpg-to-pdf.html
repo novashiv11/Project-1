@@ -1,0 +1,58 @@
+<!--meta
+{"slug": "jpg-to-pdf", "title": "JPG to PDF Converter",
+ "description": "Convert JPG, PNG and other images into a single PDF in your browser. Reorder pages, choose A4 or image size. Free, no upload.",
+ "faq": [
+  ["Is it safe to convert my documents here?", "Yes. The PDF is created on your device. Your images are never uploaded, so it is safe for ID cards, certificates and other personal documents."],
+  ["Can I combine several images into one PDF?", "Yes. Add as many images as you like, put them in the right order with the arrow buttons, and they become one PDF with one image per page."],
+  ["Can I convert phone photos of documents?", "Yes. Photos from your phone camera work fine. Choose A4 to get a standard printable page."]
+ ]}
+-->
+<script src="../filetools.js"></script>
+<script src="../vendor/pdf-lib.min.js"></script>
+<label class="drop" id="drop">Click or drop images here<span>JPG, PNG, WebP, in the order you want the pages</span><input type="file" accept="image/*" multiple></label>
+<div class="row">
+ <div><label for="size">Page size</label><select id="size"><option value="a4">A4 (fit image)</option><option value="letter">US Letter (fit image)</option><option value="img">Same as image</option></select></div>
+ <div><label for="margin">Margin</label><select id="margin"><option value="0">None</option><option value="20" selected>Small</option><option value="50">Large</option></select></div>
+</div>
+<ul class="files" id="list"></ul>
+<button onclick="make()">Create PDF</button>
+<div class="result" id="out">Add images to start.</div>
+<script>
+let files=[];
+setupDrop(drop,f=>{files=files.concat(f.filter(x=>x.type.startsWith('image/')));show();});
+function show(){
+ list.innerHTML='';
+ files.forEach((f,i)=>{const li=document.createElement('li');
+  li.innerHTML=`<span class="nm">${i+1}. ${f.name} <span class="muted">${kb(f.size)}</span></span><button class="small">↑</button><button class="small">↓</button><button class="small">✕</button>`;
+  const [up,dn,rm]=li.querySelectorAll('button');
+  up.onclick=()=>{if(i){[files[i-1],files[i]]=[files[i],files[i-1]];show();}};
+  dn.onclick=()=>{if(i<files.length-1){[files[i+1],files[i]]=[files[i],files[i+1]];show();}};
+  rm.onclick=()=>{files.splice(i,1);show();};
+  list.appendChild(li);});
+ out.textContent=files.length?`${files.length} image(s) ready.`:'Add images to start.';
+}
+async function make(){
+ if(!files.length){out.textContent='Add at least one image.';return;}
+ out.textContent='Creating PDF...';
+ try{
+  const pdf=await PDFLib.PDFDocument.create(),m=+margin.value;
+  const sizes={a4:[595.28,841.89],letter:[612,792]};
+  for(const f of files){
+   const r=await encodeImage(f,{maxW:2400,quality:0.9});
+   const img=await pdf.embedJpg(await r.blob.arrayBuffer());
+   let pw,ph;
+   if(size.value==='img'){pw=img.width*0.75+2*m;ph=img.height*0.75+2*m;}
+   else{[pw,ph]=sizes[size.value];if(img.width>img.height)[pw,ph]=[ph,pw];}
+   const s=Math.min((pw-2*m)/img.width,(ph-2*m)/img.height),w=img.width*s,h=img.height*s;
+   pdf.addPage([pw,ph]).drawImage(img,{x:(pw-w)/2,y:(ph-h)/2,width:w,height:h});
+  }
+  const blob=new Blob([await pdf.save()],{type:'application/pdf'});
+  download(blob,'images.pdf');
+  out.innerHTML=`<b>Done!</b> ${files.length} page(s), ${kb(blob.size)}. Your download should start automatically.`;
+ }catch(err){out.textContent='Something went wrong: '+err.message;}
+}
+</script>
+<!--content-->
+<h2>Turn photos into a PDF in seconds</h2>
+<p>Need to send scanned documents, receipts, certificates or notes as one PDF? Add your images, put them in order and click Create PDF. Each image becomes a page. Pick A4 or US Letter for a printable document, or keep each page the same size as the image.</p>
+<p>Everything happens in your browser, so your documents stay private. There is no sign-up, no watermark and no file limit.</p>

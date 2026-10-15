@@ -1,0 +1,45 @@
+<!--meta
+{"slug": "image-compressor", "title": "Image Compressor & Resizer",
+ "description": "Compress and resize JPG, PNG and WebP images in your browser. Make photos smaller for email, forms and websites. No upload.",
+ "faq": [
+  ["Are my images uploaded to a server?", "No. Images are compressed on your own device inside your browser. They never leave your computer or phone."],
+  ["How do I reduce an image to under 100 KB or 200 KB?", "Lower the quality slider and set a maximum width such as 1200 or 800 pixels. Check the new size shown next to each file and adjust until it is under the limit you need."],
+  ["Which format should I choose?", "JPG works everywhere and is best for photos. WebP gives smaller files and is supported by all modern browsers and websites."]
+ ]}
+-->
+<script src="../filetools.js"></script>
+<label class="drop" id="drop">Click or drop images here<span>JPG, PNG, WebP, many at once</span><input type="file" accept="image/*" multiple></label>
+<div class="row">
+ <div><label for="q">Quality: <span id="qv">75</span>%</label><input id="q" type="range" min="10" max="95" value="75"></div>
+ <div><label for="mw">Max width (px, 0 = keep)</label><input id="mw" type="number" value="1600" min="0"></div>
+ <div><label for="fmt">Format</label><select id="fmt"><option value="image/jpeg">JPG</option><option value="image/webp">WebP</option></select></div>
+</div>
+<ul class="files" id="list"></ul>
+<div class="result" id="out">Add images to start.</div>
+<script>
+let files=[];
+setupDrop(drop,f=>{files=files.concat(f.filter(x=>x.type.startsWith('image/')));run();});
+[q,mw,fmt].forEach(e=>e.addEventListener('change',run));
+q.addEventListener('input',()=>qv.textContent=q.value);
+async function run(){
+ if(!files.length)return;
+ out.textContent='Compressing...';list.innerHTML='';let before=0,after=0;
+ const ext=fmt.value==='image/webp'?'webp':'jpg';
+ for(const f of files){
+  const li=document.createElement('li');list.appendChild(li);
+  try{
+   const r=await encodeImage(f,{maxW:+mw.value,quality:q.value/100,type:fmt.value});
+   before+=f.size;after+=r.blob.size;
+   const name=f.name.replace(/\.[^.]+$/,'')+'-compressed.'+ext;
+   li.innerHTML=`<span class="nm">${f.name}<br><span class="muted">${kb(f.size)} → <b>${kb(r.blob.size)}</b> · ${r.width}×${r.height}</span></span><a href="#">Download</a>`;
+   li.querySelector('a').onclick=e=>{e.preventDefault();download(r.blob,name);};
+  }catch(err){li.innerHTML=`<span class="nm">${err.message}</span>`;}
+ }
+ out.innerHTML=`Total: ${kb(before)} → <b>${kb(after)}</b> (${Math.round((1-after/before)*100)}% smaller)`;
+}
+</script>
+<!--content-->
+<h2>Make images smaller without uploading them</h2>
+<p>Many websites, job portals and government forms only accept photos under a certain size, and email attachments have limits too. This tool shrinks your images right in your browser: choose a quality level and a maximum width, then download the smaller files. Because nothing is uploaded, it is fast and completely private, even for personal documents.</p>
+<h2>Tips for the best result</h2>
+<p>For photos, a quality of 70–80% usually looks identical to the original at a fraction of the size. Reducing the width has the biggest effect: a phone photo is often 4000 pixels wide, but 1200–1600 pixels is plenty for screens and websites.</p>
