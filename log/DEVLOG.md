@@ -60,3 +60,9 @@
   (typed "lunch 650 kcal" works too). Today: "Food today" card with optional goal bar; food rows have no done-tick and stay out
   of Recent notes. All tab: Settings (name, kcal goal, voice language) + Backup (share/download JSON, key never exported) +
   Restore (validated, in-page confirm). Brief nags if no backup in 14 days. Bug caught in E2E: grams read after card cleared.
+
+## 2026-10-15 · Session 8: finishing own backlog (founder steps deferred)
+- Notifications now cover renewal-window openings + overdue (pwa.js plans nudges with leadDays → IndexedDB; sw.js compares dates).
+- Store prep: privacy.html (linked in Settings), manifest categories + 2 screenshots. lifeos README refreshed.
+- tests/test_e2e.py: 6 phone E2E tests (width, brief/guides/nudges, food portions, QR, backup/restore, Jarvis) — all green.
+- ROADMAP/CLAUDE.md updated: PWA is the product; claude.ai artifact is legacy.

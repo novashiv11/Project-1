@@ -16,15 +16,19 @@
   insurance 30d), 9 metrics (sleep, steps, spent, water, distance, weight, mood, bp, sugar), `life wheel` / `area` / `areas`,
   web app Life tab. JS/Python parity test.
 
-## Now (P0: chat channel, NOT Telegram per founder) needs: channel decision (WhatsApp Cloud API vs own app)
-- [ ] Channel adapter: every message → existing pipeline; allowlisted user
-- [ ] Nudge loop (15 min) + 08:45 IST brief only if something due; [Done][Snooze][Kal] buttons
-- [ ] Read back parsed dates for confirmation; 7-day validation log (captures/day, nudges acted on)
+- v0.6–0.8 (2026-10-15) — phone app (PWA, novashiv11.github.io/lifeos): one-tap install, offline, notifications for due dates +
+  renewal windows, morning brief, Irish admin guide cards, voice capture, camera (food barcodes via Open Food Facts, QR, photos
+  to Jarvis), food portions + daily calories, Jarvis chat (own Claude key), settings, backup/restore, privacy page, E2E tests.
 
-## Next (P1: real chat) needs: Anthropic API key
-- [ ] `lifeos/brain.py`: Claude tool use (add/query/update/complete/set_reminder/log_metric/get_view), Haiku, cached prompt
-- [ ] Fast path: parser handles confident captures + commands at 0 tokens; LLM gets parser hint
-- [ ] SQLite store + JSONL importer; usage table with $3/mo cap → parser-only fallback
+## Now — waiting on founder (see docs/PLAY_STORE.md)
+- [ ] Founder uses the app daily for a week; collect bugs/wishes (7-day validation in STRATEGY.md)
+- [ ] Play Console account → PWABuilder package → `novashiv11.github.io` repo for assetlinks → closed test (12 testers × 14 days)
+
+## Next (Claude can do without founder)
+- [ ] Sync across devices (encrypted backup to the user's Google Drive) — today data lives on one phone
+- [ ] Jarvis without a personal key: small server + subscription (needed for €1.99 plan and Play Billing)
+- [ ] Recurring food favourites ("same breakfast as yesterday"), weekly calorie chart
+- [ ] Import from photos of IRP/insurance letters in bulk; ICS export from the phone app
 
 ## Later (P2)
 - [ ] Voice capture; phone share-sheet

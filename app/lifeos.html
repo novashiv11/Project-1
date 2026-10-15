@@ -472,7 +472,8 @@ function prefsPanel(){
     <label>Your name<input id="pname" value="${esc(settings.name||"")}" autocomplete="given-name"></label>
     <label>Daily calorie goal (optional)<input id="pgoal" type="number" inputmode="numeric" value="${esc(settings.kcalGoal||"")}" placeholder="e.g. 2200"></label>
     <label>Voice language<select id="plang">${[["en-IN","English (India), good for Hinglish"],["en-IE","English (Ireland)"],["hi-IN","Hindi"]].map(([v,l])=>`<option value="${v}"${(settings.voiceLang||"en-IN")===v?" selected":""}>${l}</option>`).join("")}</select></label>
-    <button class="go" type="submit" style="padding:12px">Save settings</button></form></section>`;
+    <button class="go" type="submit" style="padding:12px">Save settings</button></form>
+    <p class="hint" style="margin:8px 0 0"><a href="privacy.html" target="_blank" rel="noopener" style="color:var(--accent)">Privacy: what stays on your phone</a></p></section>`;
 }
 function backupNow(){
   const data={app:"LifeOS",format:1,exported:new Date().toISOString(),items:[...items.values()],

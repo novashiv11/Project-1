@@ -21,9 +21,10 @@
 - `lifeos/life.json` **life map: 16 areas, keywords, lead times, metrics** (single source; run `scripts/build_app.py` after editing) · `domains.py` loads it
 - `lifeos/parse.py` dates/repeats (fast path + LLM hint) · `store.py` append-only store · `views.py` today/dog/review text
 - `lifeos/ask.py` keyword Q&A · `ics.py` calendar export · `web.py` local web UI · `cli.py` `life` command
-- `app/lifeos.html` live web app (https://claude.ai/artifact/EjccpLbiwHgHC6A3J9Z9Xy); JS mirror of parse.py, guarded by tests/test_parity.py
-- `pwa/` + `scripts/build_pwa.py` → `dist/`: installable phone app (offline, notifications); deploy dist to public repo `lifeos` (GitHub Pages)
-- Next: Play Store (TWA wrap of the PWA), then AI chat
+- `app/lifeos.html` the app page (JS mirror of parse.py, guarded by tests/test_parity.py). The claude.ai artifact EjccpLbiwHgHC6A3J9Z9Xy is legacy (v0.5); the product is the PWA
+- `pwa/` (pwa.js reminders/install, sw.js offline+periodic nudges, privacy.html, screens/) + `scripts/build_pwa.py` → `dist/` → copy to ../lifeos, push main (GitHub Pages)
+- Tests: `python3 -m unittest -q` (unit + JS parity + `tests/test_e2e.py` phone E2E in headless Chromium, APIs faked)
+- Play Store: `docs/PLAY_STORE.md` (PWABuilder TWA; founder steps pending). Next items: ROADMAP "Next"
 
 ## Kickoff line the founder can paste
 > "Jarvis: continue. Next 'Now' item, ask me if blocked, ship, 5-line update."

@@ -33,12 +33,17 @@ if DIST.exists():
 DIST.mkdir()
 (DIST / "index.html").write_text(html, encoding="utf-8")
 shutil.copy(ROOT / "pwa/pwa.js", DIST / "pwa.js")
+shutil.copy(ROOT / "pwa/privacy.html", DIST / "privacy.html")
+shutil.copytree(ROOT / "pwa/screens", DIST / "screens")
 (DIST / "manifest.json").write_text(json.dumps({
     # `id` resolves against the ORIGIN, not the manifest URL: "./" would mean the whole novashiv11.github.io site and
     # collide with other apps hosted there (it made Chrome think LifeOS was "already installed"). Use the full path.
     "name": "LifeOS", "short_name": "LifeOS", "id": urlparse(PUBLIC_URL).path, "start_url": "./", "scope": "./",
     "description": "Type anything about your life. LifeOS sorts it, dates it and reminds you.",
     "related_applications": [{"platform": "webapp", "url": f"{PUBLIC_URL}manifest.json"}],
+    "categories": ["productivity", "lifestyle", "health"],
+    "screenshots": [{"src": "screens/today.png", "sizes": "780x1800", "type": "image/png", "form_factor": "narrow", "label": "Today: brief, renewals and guides"},
+                    {"src": "screens/food.png", "sizes": "780x1688", "type": "image/png", "form_factor": "narrow", "label": "Scan food, track calories"}],
     "display": "standalone", "orientation": "portrait", "background_color": "#eef2ee", "theme_color": "#0d6b58",
     "icons": [{"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
               {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}],

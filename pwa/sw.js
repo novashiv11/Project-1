@@ -36,13 +36,18 @@ function kv(key, value) {
 }
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 
+// Same rule as pwa.js nudgeLines(): keep both in sync.
+const nudgeLines = (nudges, t) => [
+  ...nudges.filter(n => n.kind === "window" && n.date === t).map(n => "Start now: " + n.text),
+  ...nudges.filter(n => n.kind === "due" && n.date === t).map(n => "Today: " + n.text),
+  ...nudges.filter(n => n.kind === "due" && n.date < t).map(n => "Overdue: " + n.text)];
+
 async function checkDue() {
-  const items = JSON.parse((await kv("items")) || "[]");
-  const due = items.filter(i => i.due && !i.done && i.due.slice(0, 10) <= today());
-  if (!due.length || (await kv("notified")) === today()) return;
+  const lines = nudgeLines(JSON.parse((await kv("nudges")) || "[]"), today());
+  if (!lines.length || (await kv("notified")) === today()) return;
   await kv("notified", today());
-  await self.registration.showNotification(`${due.length} thing${due.length > 1 ? "s" : ""} due today`, {
-    body: due.slice(0, 3).map(i => "• " + i.text).join("\n"), icon: "icon-192.png", badge: "icon-192.png", tag: "lifeos-due"
+  await self.registration.showNotification(lines.length === 1 ? lines[0] : `${lines.length} things need you today`, {
+    body: lines.slice(0, 4).join("\n"), icon: "icon-192.png", badge: "icon-192.png", tag: "lifeos-due"
   });
 }
 self.addEventListener("periodicsync", e => { if (e.tag === "lifeos-due") e.waitUntil(checkDue()); });

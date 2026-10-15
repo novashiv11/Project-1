@@ -1,0 +1,26 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LifeOS privacy</title>
+<style>
+:root{--bg:#eef2ee;--fg:#18211c;--muted:#5c6a62;--accent:#0d6b58}
+@media (prefers-color-scheme:dark){:root{--bg:#121815;--fg:#e7eee9;--muted:#97a69d;--accent:#5fd0b2;color-scheme:dark}}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,sans-serif}
+main{max-width:680px;margin:0 auto;padding:24px max(16px,env(safe-area-inset-left,0px)) 48px}
+h1{font-size:26px;margin:0 0 4px}h2{font-size:17px;margin:24px 0 4px}p,li{color:var(--fg)}small{color:var(--muted)}a{color:var(--accent)}
+</style></head><body><main>
+<h1>LifeOS privacy</h1><small>Last updated 15 October 2026</small>
+<h2>The short version</h2>
+<p>Everything you type, scan or log stays on your phone. LifeOS has no accounts, no servers of its own, no ads and no analytics.</p>
+<h2>What is stored, and where</h2>
+<ul><li>Your items, food log and settings are saved in your browser's storage on this device only.</li>
+<li>Clearing the app's data or uninstalling it deletes them. Use <b>All → Back up now</b> to keep a copy; the backup file is yours and goes wherever you choose to save or share it. Your Claude API key is never included in backups.</li></ul>
+<h2>When data leaves your phone</h2>
+<ul><li><b>Barcode scans:</b> the barcode number is sent to <a href="https://world.openfoodfacts.org/">Open Food Facts</a> to look up the product. Nothing else is sent.</li>
+<li><b>Jarvis chat (optional):</b> only if you add your own Claude API key. Then your message, a list of your open items and any photo you choose to send go to Anthropic's API to produce a reply, under <a href="https://www.anthropic.com/legal/privacy">Anthropic's privacy policy</a>. Your key is stored only on this phone.</li>
+<li><b>Voice input:</b> uses your phone's built-in speech recognition (Google on Android), which may process audio on their servers.</li>
+<li><b>Links you open</b> (for example ncts.ie or irishimmigration.ie) are ordinary websites with their own policies.</li></ul>
+<h2>What LifeOS never does</h2>
+<ul><li>It never asks for or stores passport, IRP, PPSN or bank numbers. Jarvis is instructed to save dates only.</li>
+<li>It never sells or shares data. There is no one to share it with: we don't have it.</li></ul>
+<h2>Contact</h2>
+<p>Questions: open an issue at <a href="https://github.com/novashiv11/lifeos/issues">github.com/novashiv11/lifeos</a>.</p>
+</main></body></html>
