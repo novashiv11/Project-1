@@ -727,11 +727,11 @@ function vAskClaude(){
       <div class="acts"><button class="go" style="padding:10px 14px" data-paste="apply">Save all</button><button class="linkbtn" data-paste="cancel">Cancel</button></div></div>`
     :`<div class="setup"><b>Nothing to save found.</b><span class="covers">Paste the part of Claude's reply that starts with LIFEOS.</span><button class="linkbtn" data-paste="cancel">OK</button></div>`):"";
   return `<div class="jhead"><div class="orb"></div><div style="flex:1"><b>Jarvis</b><small>● via your Claude app · no extra cost</small></div><button class="linkbtn" data-chat="settings" aria-label="Jarvis settings">⚙︎</button></div>
-    <div class="chat"><div class="msg bot">Hi${settings.name?" "+esc(settings.name):""}! Neeche sawal likho. Main tumhari list ke saath <b>Claude app</b> kholunga (tumhara subscription, koi extra paisa nahi).
-Claude ke reply ke end mein <b>LIFEOS</b> lines hongi: unhe copy karke yahan paste karo, main save kar dunga.</div>
+    <div class="chat"><div class="msg bot">Hi${settings.name?" "+esc(settings.name):""}! 👇 Neeche sawal likho aur ↑ dabao.
+Main tumhari list ke saath <b>Claude app</b> khol dunga (tumhara subscription, koi extra paisa nahi).</div>
     ${askedQ?`<div class="msg me">${esc(askedQ)}</div><div class="msg act">↗ sent to Claude · waiting for your paste</div>`:""}</div>
-    <form class="setup" id="pasteform"><b>Paste from Claude</b><textarea id="paste" rows="4" placeholder="LIFEOS&#10;+ IRP card expires 2027-01-20&#10;done #3"></textarea>
-      <div class="acts"><button class="linkbtn" type="button" data-readclip>📋 Paste clipboard</button><button class="go" type="submit" style="padding:10px 14px">Check</button></div></form>
+    ${askedQ||pasteResult?`<form class="setup" id="pasteform"><b>Step 2: Claude ka reply paste karo</b><span class="covers">Claude ke reply ke end mein LIFEOS wali lines copy karke yahan paste karo.</span><textarea id="paste" rows="4" placeholder="Yahan paste karo…"></textarea>
+      <div class="acts"><button class="linkbtn" type="button" data-readclip>📋 Paste clipboard</button><button class="go" type="submit" style="padding:10px 14px">Check</button></div></form>`:""}
     ${pv}
     <form class="dock" id="askform" autocomplete="off"><input id="aq" placeholder="Claude se pucho…" aria-label="Ask Claude"><button class="db go" type="submit" aria-label="Ask Claude">↑</button></form>`;
 }
