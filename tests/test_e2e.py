@@ -184,12 +184,26 @@ class PhoneAppTest(unittest.TestCase):
         self.assertTrue(self.pg.evaluate("items.get(1).done"))
         self.assertEqual(self.claude_calls, [])  # no API used
 
+    def test_import_from_claude_memory_and_project_setup(self):
+        self.pg.evaluate("window.__opened = []; window.open = (u) => { window.__opened.push(u); return null; }; "
+                         "window.__copied = []; navigator.clipboard.writeText = async (t) => { window.__copied.push(t); }; 0")
+        self.add("passport expires 2027-03-14")
+        self.pg.click("#tab-jarvis")
+        self.pg.click("button[data-memimport]")
+        prompt = self.pg.evaluate("decodeURIComponent(window.__opened[0].split('?q=')[1])")
+        self.assertIn("memory of me", prompt)
+        self.assertIn("passport expires 2027-03-14", prompt)  # already-known items are listed so Claude skips them
+        self.pg.wait_for_selector("#pasteform")
+        self.pg.click("button[data-project]")
+        self.pg.click("button[data-copyinstr]")
+        self.assertTrue(any("LIFEOS" in t and "lifeos-backup" in t for t in self.pg.evaluate("window.__copied")))
+
 
 @unittest.skipUnless(sync_playwright and Path(CHROME).exists(), "playwright/chromium not available")
 class GestureTest(PhoneAppTest):
     test_fits_phone_width_on_every_tab = test_brief_guides_and_renewal_nudges = None
     test_food_scan_portion_and_daily_total = test_qr_code = test_backup_and_restore = test_jarvis_chat_saves_item = None
-    test_ask_claude_free_flow = None
+    test_ask_claude_free_flow = test_import_from_claude_memory_and_project_setup = None
     """Swipe right completes, swipe left snoozes a day (inherits the phone setup; runs only these tests)."""
     def _swipe(self, sel, dx):
         box = self.pg.locator(sel).first.bounding_box()

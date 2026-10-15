@@ -80,3 +80,6 @@
   instructions), copies it and opens claude.ai/new?q=… (Claude app/subscription). "Paste from Claude" parses `+ item` /
   `done #id` → preview → Save all. API key moved to ⚙︎ as optional. Keyword answers offer "Ask Claude about this ↗".
   E2E test added (30 green). Test-file bug fixed: tests had been appended after `if __name__` block.
+- Leverage the founder's Claude account (apps can't read claude.ai chats/memory/files directly): "🧠 Import what Claude knows
+  about me" opens Claude with a memory/past-chats prompt that returns a LIFEOS block (skips items already listed); "📁 Claude
+  Project setup" card: copy project instructions + backup upload steps (docs/CLAUDE_PROJECT.md). 31 tests green.

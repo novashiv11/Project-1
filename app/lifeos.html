@@ -700,14 +700,36 @@ LIFEOS
 done #<id> for each finished item
 Never include passport, IRP, PPSN or bank numbers.`;
 }
-function askClaude(q){ // must run inside a tap/submit handler: clipboard + opening the app need a user gesture
-  const text=claudePrompt(q), url="https://claude.ai/new?q="+encodeURIComponent(text);
+function askClaude(q,prompt){ // must run inside a tap/submit handler: clipboard + opening the app need a user gesture
+  const text=prompt||claudePrompt(q), url="https://claude.ai/new?q="+encodeURIComponent(text);
   try{navigator.clipboard&&navigator.clipboard.writeText(text).catch(()=>{})}catch(e){}
   window.open(url.length<8000?url:"https://claude.ai/new","_blank","noopener");
   askedQ=q; view="jarvis"; render();
   toast("Claude khul raha hai (question copied too). Reply ke baad LIFEOS lines yahan paste karo.",false);
 }
-let askedQ="";
+let askedQ="", showProject=false;
+function memoryPrompt(){
+  let snap=snapshot(todayDate());
+  if(snap.length>4000)snap=snap.slice(0,4000)+"\n…(more items not shown)";
+  return `Using your memory of me and our past conversations (search them if you can), list everything my life-admin app LifeOS should track for me: document and residence-permit expiry dates, insurance and car renewals (NCT, motor tax), recurring bills and rent, appointments, birthdays and anniversaries, health routines, goals and ideas I mentioned.
+Only include things you actually know from our chats. Don't invent dates; if you only know the month, write the month.
+Skip anything already in my list:
+
+${snap}
+
+Reply with ONLY this block:
+LIFEOS
++ one short line per item, with the date in plain words (e.g. "IRP card expires 2027-01-20", "rent every month", "mom birthday 3 jan")
+Never include passport, IRP, PPSN or bank numbers.`;
+}
+const PROJECT_INSTRUCTIONS=`You are Jarvis, my life-admin assistant for my LifeOS app. I live in Ireland and write in English or Hinglish; reply the same way, short and practical.
+The newest lifeos-backup-*.json file in this project is my list (items have id, text, domain, due date, repeat, done). Use it to answer questions about my dates, renewals, bills and plans. Treat the other files (letters, cards, bills) as reference: read dates from them, never copy ID, passport, PPSN or account numbers.
+For Irish admin (IRP/immigration, NCT, motor tax, Revenue, RTB) give general steps and point to the official site when unsure.
+Whenever I should save something new or mark something done, end your reply with:
+LIFEOS
++ one short line per new item, with the date in plain words
+done #<id> for finished items
+I paste that block back into the app.`;
 function parseClaude(text){
   const at=text.search(/^\s*LIFEOS\s*$/m), body=at>=0?text.slice(at):text, adds=[], dones=[];
   for(const raw of body.split(/\r?\n/)){const l=raw.trim();let m;
@@ -729,6 +751,15 @@ function vAskClaude(){
   return `<div class="jhead"><div class="orb"></div><div style="flex:1"><b>Jarvis</b><small>● via your Claude app · no extra cost</small></div><button class="linkbtn" data-chat="settings" aria-label="Jarvis settings">⚙︎</button></div>
     <div class="chat"><div class="msg bot">Hi${settings.name?" "+esc(settings.name):""}! 👇 Neeche sawal likho aur ↑ dabao.
 Main tumhari list ke saath <b>Claude app</b> khol dunga (tumhara subscription, koi extra paisa nahi).</div>
+    <div class="acts"><button class="ex" data-memimport>🧠 Import what Claude knows about me</button><button class="ex" data-project aria-expanded="${showProject}">📁 Claude Project setup</button></div>
+    ${showProject?`<div class="setup"><b>LifeOS inside a Claude Project</b>
+      <span class="covers">Every chat in the project will know your list and your files. One-time setup, about 2 minutes:</span>
+      <ol style="margin:0;padding-left:20px;display:grid;gap:6px"><li>Open claude.ai → <b>Projects</b> → <b>New project</b> → name it “LifeOS”.</li>
+      <li>Tap <b>Copy instructions</b> below and paste them into the project's <b>Instructions</b>.</li>
+      <li>Tap <b>Back up now</b> and upload the file to the project's <b>Files</b>. Add any letters or bills you want Claude to read. Upload a fresh backup now and then.</li>
+      <li>Ask Claude anything inside that project, then paste its LIFEOS lines here.</li></ol>
+      <div class="acts"><button class="go" style="padding:10px 14px" data-copyinstr>Copy instructions</button><button class="linkbtn" data-data="backup">Back up now</button>
+      <a class="linkbtn" href="https://claude.ai/projects" target="_blank" rel="noopener" style="text-decoration:none;font-weight:700">Open Claude Projects ↗</a></div></div>`:""}
     ${askedQ?`<div class="msg me">${esc(askedQ)}</div><div class="msg act">↗ sent to Claude · waiting for your paste</div>`:""}</div>
     ${askedQ||pasteResult?`<form class="setup" id="pasteform"><b>Step 2: Claude ka reply paste karo</b><span class="covers">Claude ke reply ke end mein LIFEOS wali lines copy karke yahan paste karo.</span><textarea id="paste" rows="4" placeholder="Yahan paste karo…"></textarea>
       <div class="acts"><button class="linkbtn" type="button" data-readclip>📋 Paste clipboard</button><button class="go" type="submit" style="padding:10px 14px">Check</button></div></form>`:""}
@@ -866,6 +897,9 @@ document.addEventListener("click",async e=>{
   if(b.dataset.fill){const q=document.getElementById("q");q.value=b.dataset.fill;q.focus();return}
   if(b.dataset.guide){const id=+b.dataset.guide;openGuides.has(id)?openGuides.delete(id):openGuides.add(id);render();return}
   if(b.dataset.chat==="new"){chatMsgs=[];chatLog=[];render();return}
+  if(b.hasAttribute("data-memimport")){askClaude("🧠 Import what Claude knows about me",memoryPrompt());return}
+  if(b.hasAttribute("data-project")){showProject=!showProject;render();return}
+  if(b.hasAttribute("data-copyinstr")){try{await navigator.clipboard.writeText(PROJECT_INSTRUCTIONS);toast("Instructions copied ✓ Paste them in the project.",false)}catch(_){toast("Couldn't copy. Long-press to copy from docs instead.",false)}return}
   if(b.dataset.chat==="nokey"){settings.key="";delete settings.editing;saveSettings();render();return}
   if(b.dataset.askclaude!==undefined){document.getElementById("answer").hidden=true;askClaude(b.dataset.askclaude);return}
   if(b.hasAttribute("data-readclip")){try{const t=await navigator.clipboard.readText();document.getElementById("paste").value=t}catch(_){toast("Long-press the box and tap Paste.",false)}return}
