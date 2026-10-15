@@ -150,6 +150,7 @@ class PhoneAppTest(unittest.TestCase):
 
     def test_jarvis_chat_saves_item(self):
         self.pg.click("#tab-jarvis")
+        self.pg.click("button[data-chat=settings]")
         self.pg.fill("#sname", "Shivam")
         self.pg.fill("#skey", "sk-ant-test")
         self.pg.click("#setup button[type=submit]")
@@ -163,14 +164,32 @@ class PhoneAppTest(unittest.TestCase):
         self.assertEqual(second["body"]["messages"][1]["role"], "assistant")  # history appended, not edited
 
 
-if __name__ == "__main__":
-    unittest.main()
+    def test_ask_claude_free_flow(self):
+        """No API key: question opens the Claude app with the list; pasted LIFEOS lines get saved."""
+        self.pg.evaluate("window.__opened = []; window.open = (u) => { window.__opened.push(u); return null; }; 0")
+        self.add("NCT due in 20 days")
+        self.pg.click("#tab-jarvis")
+        self.pg.fill("#aq", "IRP kab renew karun?")
+        self.pg.press("#aq", "Enter")
+        url = self.pg.evaluate("window.__opened[0]")
+        self.assertTrue(url.startswith("https://claude.ai/new?q="))
+        prompt = self.pg.evaluate("decodeURIComponent(window.__opened[0].split('?q=')[1])")
+        self.assertIn("IRP kab renew karun?", prompt)
+        self.assertIn("NCT due in 20 days", prompt)
+        self.assertIn("LIFEOS", prompt)
+        self.pg.fill("#paste", "Sure! Start now.\n\nLIFEOS\n+ IRP card expires 2027-01-20\ndone #1\n")
+        self.pg.click("#pasteform button[type=submit]")
+        self.pg.click("button[data-paste=apply]")
+        self.assertIn("IRP card expires 2027-01-20", self.items())
+        self.assertTrue(self.pg.evaluate("items.get(1).done"))
+        self.assertEqual(self.claude_calls, [])  # no API used
 
 
 @unittest.skipUnless(sync_playwright and Path(CHROME).exists(), "playwright/chromium not available")
 class GestureTest(PhoneAppTest):
     test_fits_phone_width_on_every_tab = test_brief_guides_and_renewal_nudges = None
     test_food_scan_portion_and_daily_total = test_qr_code = test_backup_and_restore = test_jarvis_chat_saves_item = None
+    test_ask_claude_free_flow = None
     """Swipe right completes, swipe left snoozes a day (inherits the phone setup; runs only these tests)."""
     def _swipe(self, sel, dx):
         box = self.pg.locator(sel).first.bounding_box()
@@ -190,3 +209,7 @@ class GestureTest(PhoneAppTest):
         self._swipe('.card:has-text("NCT")', -160)
         after = self.pg.evaluate("[...items.values()].find(i => i.text.startsWith('NCT')).due")
         self.assertGreater(after, before)
+
+
+if __name__ == "__main__":
+    unittest.main()

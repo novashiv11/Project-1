@@ -134,6 +134,8 @@ h2{font:500 12px var(--mono);text-transform:uppercase;letter-spacing:.1em;color:
 .setup label{font-size:13px;color:var(--muted);display:grid;gap:4px}
 .setup input,.setup select{min-width:0;padding:12px 14px;font:16px var(--body);color:var(--fg);background:var(--bg);border:1.5px solid var(--line);border-radius:14px}
 .linkbtn{background:transparent;color:var(--accent);padding:6px 0;font-size:14px}
+.setup textarea{min-width:0;padding:12px 14px;font:14px/1.4 var(--mono);color:var(--fg);background:var(--bg);border:1.5px solid var(--line);border-radius:14px;resize:vertical}
+.pv{display:grid;gap:6px}.pv div{background:var(--chip);border-radius:12px;padding:8px 12px;font-size:14px;overflow-wrap:anywhere}
 /* jarvis */
 .jhead{display:flex;gap:12px;align-items:center}
 .orb{width:42px;height:42px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#a8f0dc,#2c9b7f 55%,#0f3d32);box-shadow:0 0 22px rgb(95 208 178 / .45);flex:none}
@@ -666,11 +668,12 @@ async function askJarvis(text,image){
 }
 function vJarvis(){
   if(!CHAT_OK)return `<div class="jhead"><div class="orb"></div><div><b>Jarvis</b><small>phone app only</small></div></div><div class="setup"><b>Jarvis chat works in the phone app.</b><span class="covers">Open LifeOS on your phone to chat.</span></div>`;
-  if(!settings.key||settings.editing)return `<div class="jhead"><div class="orb"></div><div><b>Jarvis</b><small>needs a key to chat</small></div></div><form class="setup" id="setup"><b>Set up Jarvis</b>
+  if(!settings.key&&!settings.editing)return vAskClaude();
+  if(settings.editing)return `<div class="jhead"><div class="orb"></div><div><b>Jarvis</b><small>optional: automatic chat</small></div></div><form class="setup" id="setup"><b>Claude API key (optional)</b>
     <label>Your name<input id="sname" value="${esc(settings.name||"")}" autocomplete="given-name"></label>
     <label>Claude API key<input id="skey" type="password" value="${esc(settings.key||"")}" placeholder="sk-ant-…" autocomplete="off"></label>
-    <span class="covers">The key is saved only on this phone and sent only to Anthropic. A few cents a month for normal use. Get one at console.anthropic.com.</span>
-    <button class="go" type="submit" style="padding:12px">Save</button></form>`;
+    <span class="covers">Without a key, Jarvis uses your Claude app (your subscription, no extra cost). With a key, chat happens right here and saves items itself: a few cents a month, billed by Anthropic. The key stays on this phone.</span>
+    <button class="go" type="submit" style="padding:12px">Save</button><button class="linkbtn" type="button" data-chat="nokey">Use my Claude app instead (free)</button></form>`;
   const bubbles=chatLog.length?chatLog.map(m=>m.who==="img"?`<div class="msg img"><img src="${m.src}" alt="Photo you sent"></div>`:`<div class="msg ${m.who}">${esc(m.text)}</div>`).join(""):
     `<div class="msg bot">Hi${settings.name?" "+esc(settings.name):""}! Tell me anything to remember, or ask: "IRP renewal kab start karun?"</div>`;
   return `<div class="jhead"><div class="orb${chatBusy?" busy":""}"></div><div style="flex:1"><b>Jarvis</b><small>● ${chatBusy?"soch raha hai…":`online · knows your ${items.size} items`}</small></div>
@@ -678,6 +681,59 @@ function vJarvis(){
     <div class="chat">${bubbles}${chatBusy?`<div class="msg act">Jarvis is thinking…</div>`:""}</div>
     <form class="dock" id="chatform" autocomplete="off"><input id="cq" placeholder="Jarvis se pucho…" aria-label="Message Jarvis">
     <button class="db" type="button" data-chatcam aria-label="Send a photo">📷</button><button class="db go" type="submit" aria-label="Send">↑</button></form>`;
+}
+
+/* ---------- Ask Claude: use the person's own Claude app / subscription, no API key ---------- */
+let pasteResult=null;
+function claudePrompt(q){
+  let snap=snapshot(todayDate());
+  if(snap.length>5000)snap=snap.slice(0,5000)+"\n…(more items not shown)";
+  return `You are Jarvis, my life-admin assistant inside my LifeOS app. I live in Ireland. Reply in my style (English or Hinglish), short and practical. For Irish admin (IRP, NCT, motor tax, Revenue, RTB) point me to the official site if you're not sure.
+
+${snap}
+
+My question: ${q}
+
+If I should save anything (tasks, dates, renewals) or mark something done, end your reply with this block, exactly:
+LIFEOS
++ one short line per new item, with the date in plain words (e.g. IRP card expires 2027-01-20)
+done #<id> for each finished item
+Never include passport, IRP, PPSN or bank numbers.`;
+}
+function askClaude(q){ // must run inside a tap/submit handler: clipboard + opening the app need a user gesture
+  const text=claudePrompt(q), url="https://claude.ai/new?q="+encodeURIComponent(text);
+  try{navigator.clipboard&&navigator.clipboard.writeText(text).catch(()=>{})}catch(e){}
+  window.open(url.length<8000?url:"https://claude.ai/new","_blank","noopener");
+  askedQ=q; view="jarvis"; render();
+  toast("Claude khul raha hai (question copied too). Reply ke baad LIFEOS lines yahan paste karo.",false);
+}
+let askedQ="";
+function parseClaude(text){
+  const at=text.search(/^\s*LIFEOS\s*$/m), body=at>=0?text.slice(at):text, adds=[], dones=[];
+  for(const raw of body.split(/\r?\n/)){const l=raw.trim();let m;
+    if((m=l.match(/^\+\s*(.{3,200})$/))||(at>=0&&(m=l.match(/^[•*-]\s+(.{3,200})$/))))adds.push(m[1].trim());
+    else if(m=l.match(/^done\s*#?(\d+)\b/i))dones.push(+m[1]);}
+  return {adds:[...new Set(adds)],dones:[...new Set(dones)].filter(id=>items.has(id)&&!items.get(id).done)};
+}
+async function applyPaste(){
+  const r=pasteResult; pasteResult=null; if(!r)return;
+  for(const t of r.adds)await capture(t);
+  for(const id of r.dones)await complete(id);
+  buzz(15); render(); toast(`Ho gaya ✓ ${r.adds.length} saved${r.dones.length?`, ${r.dones.length} done`:""}`,false);
+}
+function vAskClaude(){
+  const pv=pasteResult?(pasteResult.adds.length||pasteResult.dones.length?`<div class="setup"><b>From Claude</b><div class="pv">
+      ${pasteResult.adds.map(t=>`<div>＋ ${esc(t)}</div>`).join("")}${pasteResult.dones.map(id=>`<div>✓ done: ${esc(items.get(id).text)}</div>`).join("")}</div>
+      <div class="acts"><button class="go" style="padding:10px 14px" data-paste="apply">Save all</button><button class="linkbtn" data-paste="cancel">Cancel</button></div></div>`
+    :`<div class="setup"><b>Nothing to save found.</b><span class="covers">Paste the part of Claude's reply that starts with LIFEOS.</span><button class="linkbtn" data-paste="cancel">OK</button></div>`):"";
+  return `<div class="jhead"><div class="orb"></div><div style="flex:1"><b>Jarvis</b><small>● via your Claude app · no extra cost</small></div><button class="linkbtn" data-chat="settings" aria-label="Jarvis settings">⚙︎</button></div>
+    <div class="chat"><div class="msg bot">Hi${settings.name?" "+esc(settings.name):""}! Neeche sawal likho. Main tumhari list ke saath <b>Claude app</b> kholunga (tumhara subscription, koi extra paisa nahi).
+Claude ke reply ke end mein <b>LIFEOS</b> lines hongi: unhe copy karke yahan paste karo, main save kar dunga.</div>
+    ${askedQ?`<div class="msg me">${esc(askedQ)}</div><div class="msg act">↗ sent to Claude · waiting for your paste</div>`:""}</div>
+    <form class="setup" id="pasteform"><b>Paste from Claude</b><textarea id="paste" rows="4" placeholder="LIFEOS&#10;+ IRP card expires 2027-01-20&#10;done #3"></textarea>
+      <div class="acts"><button class="linkbtn" type="button" data-readclip>📋 Paste clipboard</button><button class="go" type="submit" style="padding:10px 14px">Check</button></div></form>
+    ${pv}
+    <form class="dock" id="askform" autocomplete="off"><input id="aq" placeholder="Claude se pucho…" aria-label="Ask Claude"><button class="db go" type="submit" aria-label="Ask Claude">↑</button></form>`;
 }
 
 /* ---------- camera: barcode → Open Food Facts, QR → text/link, other photos → Jarvis ---------- */
@@ -775,9 +831,10 @@ function render(){
   document.body.dataset.view=view;
   const dn=new Date(); document.getElementById("today").textContent=`${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][dn.getDay()]} · ${dn.getDate()} ${MON_SHORT[dn.getMonth()]}`;
   document.getElementById("avatar").textContent=settings.name?settings.name[0].toUpperCase():"☺";
-  const cq=document.getElementById("cq"), draft=cq?cq.value:"", focused=document.activeElement===cq;
+  const cq=document.getElementById("cq")||document.getElementById("aq"), draft=cq?cq.value:"", focused=document.activeElement===cq, pasteDraft=(document.getElementById("paste")||{}).value||"";
   document.getElementById("view").innerHTML=({today:vToday,life:vLife,review:vReview,all:vAll,jarvis:vJarvis}[view]||vToday)(all,today);
-  const cq2=document.getElementById("cq"); if(cq2){cq2.value=draft;if(focused)cq2.focus()}
+  const cq2=document.getElementById("cq")||document.getElementById("aq"); if(cq2){cq2.value=draft;if(focused)cq2.focus()}
+  const pz=document.getElementById("paste"); if(pz&&pasteDraft&&!pasteResult)pz.value=pasteDraft;
 }
 let toastTimer;
 function toast(msg,canUndo=true){
@@ -787,8 +844,9 @@ function toast(msg,canUndo=true){
 }
 function showAnswer(q){
   const today=todayDate(), best=answer(q,[...items.values()],today), box=document.getElementById("answer");
-  if(!best.length)box.innerHTML=`<div class="answer"><span class="label">Answer</span><div class="main">Nothing in your journal matches that yet.</div></div>`;
-  else{const t=best[0];box.innerHTML=`<div class="answer"><span class="label">Answer</span><div class="main">${esc(t.text)}${t.due?` · ${rel(daysLeft(t,today))}`:""}</div>${t.due?`<div class="when">${esc(t.due.replace("T"," "))}</div>`:""}</div>`+(best.length>1?`<section><h2>Related</h2>${list(best.slice(1),today)}</section>`:"")}
+  const ask=`<button class="linkbtn" data-askclaude="${esc(q)}" style="justify-self:start">Ask Claude about this ↗</button>`;
+  if(!best.length)box.innerHTML=`<div class="answer"><span class="label">Answer</span><div class="main">Nothing in your journal matches that yet.</div>${ask}</div>`;
+  else{const t=best[0];box.innerHTML=`<div class="answer"><span class="label">Answer</span><div class="main">${esc(t.text)}${t.due?` · ${rel(daysLeft(t,today))}`:""}</div>${t.due?`<div class="when">${esc(t.due.replace("T"," "))}</div>`:""}${ask}</div>`+(best.length>1?`<section><h2>Related</h2>${list(best.slice(1),today)}</section>`:"")}
   box.hidden=false;
 }
 
@@ -808,6 +866,11 @@ document.addEventListener("click",async e=>{
   if(b.dataset.fill){const q=document.getElementById("q");q.value=b.dataset.fill;q.focus();return}
   if(b.dataset.guide){const id=+b.dataset.guide;openGuides.has(id)?openGuides.delete(id):openGuides.add(id);render();return}
   if(b.dataset.chat==="new"){chatMsgs=[];chatLog=[];render();return}
+  if(b.dataset.chat==="nokey"){settings.key="";delete settings.editing;saveSettings();render();return}
+  if(b.dataset.askclaude!==undefined){document.getElementById("answer").hidden=true;askClaude(b.dataset.askclaude);return}
+  if(b.hasAttribute("data-readclip")){try{const t=await navigator.clipboard.readText();document.getElementById("paste").value=t}catch(_){toast("Long-press the box and tap Paste.",false)}return}
+  if(b.dataset.paste==="cancel"){pasteResult=null;render();return}
+  if(b.dataset.paste==="apply"&&backend){await applyPaste();return}
   if(b.dataset.data==="backup"){backupNow();return}
   if(b.dataset.data==="restore"){document.getElementById("restoreFile").click();return}
   if(b.dataset.data==="restore-no"){pendingRestore=null;render();return}
@@ -833,6 +896,8 @@ document.addEventListener("submit",e=>{
     settings.key=document.getElementById("skey").value.trim();delete settings.editing;saveSettings();render()}
   if(e.target.id==="prefs"){e.preventDefault();settings.name=document.getElementById("pname").value.trim();
     settings.kcalGoal=document.getElementById("pgoal").value.trim();settings.voiceLang=document.getElementById("plang").value;saveSettings();render();toast("Settings saved",false)}
+  if(e.target.id==="askform"){e.preventDefault();const i=document.getElementById("aq"),t=i.value.trim();if(t){i.value="";askClaude(t)}}
+  if(e.target.id==="pasteform"){e.preventDefault();pasteResult=parseClaude(document.getElementById("paste").value);render()}
   if(e.target.id==="chatform"){e.preventDefault();const i=document.getElementById("cq"),t=i.value.trim();if(t&&backend){i.value="";askJarvis(t)}}
 });
 (()=>{ // voice capture (Chrome on Android/desktop)

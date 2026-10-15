@@ -76,3 +76,7 @@
   Now cards (area colour, pill, tick, Guide), food + streak tiles, life wheel SVG + area strip, Jarvis orb header + dock chat,
   swipe right=done / left=snooze, vibrate, rise animations (reduced-motion safe). Bugs caught by E2E: nowrap pill widened
   layout viewport (fixed with minmax grids); fixed bars covered targets (scroll-padding). 29 tests green incl. swipe.
+- Free Jarvis (founder: no extra subscription). No key → "Ask Claude" mode: builds prompt (snapshot + question + LIFEOS block
+  instructions), copies it and opens claude.ai/new?q=… (Claude app/subscription). "Paste from Claude" parses `+ item` /
+  `done #id` → preview → Save all. API key moved to ⚙︎ as optional. Keyword answers offer "Ask Claude about this ↗".
+  E2E test added (30 green). Test-file bug fixed: tests had been appended after `if __name__` block.

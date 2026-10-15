@@ -25,3 +25,4 @@
 - 2026-10-15 · Food/product data from Open Food Facts (free, no key, CORS). Barcode decoding via Chrome's BarcodeDetector (no library); other browsers fall back to Jarvis photo reading.
 - 2026-10-15 · Play Store via PWABuilder TWA (can't build Android here: dl.google.com blocked). Needs founder: Play Console ($25), user-site repo for assetlinks, 12 testers × 14 days closed test.
 - 2026-10-15 · UI v1.0: dark-first 'Jarvis home' (mockup A) + life wheel (B). Mockups kept in docs/mockups.
+- 2026-10-15 · Jarvis default = free handoff to the user's Claude app (claude.ai/new?q=) + paste-back of LIFEOS lines; API key optional. Embedding claude.ai or reusing a consumer subscription via API isn't possible/allowed.
