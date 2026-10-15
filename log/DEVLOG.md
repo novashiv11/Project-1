@@ -83,3 +83,7 @@
 - Leverage the founder's Claude account (apps can't read claude.ai chats/memory/files directly): "🧠 Import what Claude knows
   about me" opens Claude with a memory/past-chats prompt that returns a LIFEOS block (skips items already listed); "📁 Claude
   Project setup" card: copy project instructions + backup upload steps (docs/CLAUDE_PROJECT.md). 31 tests green.
+- Founder's real Claude-memory import (39 lines) exposed parser bugs; fixed in py+js with tests: dates after "paid/delivered/was…"
+  ignored; "Nov 2026" → 1st; explicit day-month beats weekday words ("Black Friday on 27 Nov"); birthdays repeat yearly;
+  "every month on the 5th" → next 5th; home/money keywords (kitchen, attic, SEAI, Eir, BOI, disputes…). Memory prompt asks for
+  bill days. 📋 paste chip always visible. Cleaned import block given to founder in chat (not stored in repo). 36 tests green.

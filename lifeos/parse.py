@@ -49,8 +49,14 @@ def _month_day(mon, day, year, today):
     return d
 
 
+# A date right after "paid / delivered / was …" is history, not a due date ("last paid 27 Oct 2025").
+_DATE_ANY = (rf"(?:\d{{1,2}}(?:st|nd|rd|th)?\s+{_MON}(?:\s+\d{{4}})?|{_MON}\s+\d{{1,2}}(?:st|nd|rd|th)?(?:,?\s+\d{{4}})?"
+             rf"|\d{{4}}-\d{{2}}-\d{{2}}|\d{{1,2}}/\d{{1,2}}/\d{{4}})")
+PAST_RE = re.compile(rf"\b(?:last\s+paid|paid|delivered|was|since|bought|ordered|received|submitted|applied)\s+(?:on\s+)?{_DATE_ANY}")
+
+
 def parse_date(text, today):
-    t = text.lower()
+    t = PAST_RE.sub(" ", text.lower())
     if m := re.search(r"\b(\d{4})-(\d{2})-(\d{2})\b", t):
         try:
             return date(*map(int, m.groups()))
@@ -75,16 +81,21 @@ def parse_date(text, today):
         n, unit = int(m[1]), m[2]
         days = {"day": 1, "week": 7, "month": 30, "year": 365}[unit] * n
         return today + timedelta(days=days)
+    # Explicit calendar dates beat weekday words ("Black Friday on 27 Nov" is 27 Nov, not this Friday).
+    if m := re.search(rf"\b(\d{{1,2}})(?:st|nd|rd|th)?\s+{_MON}(?:\s+(\d{{4}}))?\b", t):
+        if d := _month_day(m[2], m[1], m[3], today):
+            return d
+    if m := re.search(rf"\b{_MON}\s+(\d{{1,2}})(?:st|nd|rd|th)?(?:,?\s+(\d{{4}}))?\b", t):
+        if d := _month_day(m[1], m[2], m[3], today):
+            return d
+    if m := re.search(rf"\b{_MON}\s+(\d{{4}})\b", t):  # "Nov 2026" → 1 Nov 2026
+        return date(int(m[2]), MONTHS.index(m[1][:3]) + 1, 1)
     if m := re.search(rf"\b(next\s+)?({'|'.join(WEEKDAYS)})\b", t):
         delta = (WEEKDAYS.index(m[2]) - today.weekday()) % 7 or 7
         return today + timedelta(days=delta)
     for idx, pat in enumerate(HI_WEEKDAYS):
         if re.search(rf"\b(?:{pat})(?:\s+ko)?\b", t):
             return today + timedelta(days=(idx - today.weekday()) % 7 or 7)
-    if m := re.search(rf"\b(\d{{1,2}})(?:st|nd|rd|th)?\s+{_MON}(?:\s+(\d{{4}}))?\b", t):
-        return _month_day(m[2], m[1], m[3], today)
-    if m := re.search(rf"\b{_MON}\s+(\d{{1,2}})(?:st|nd|rd|th)?(?:,?\s+(\d{{4}}))?\b", t):
-        return _month_day(m[1], m[2], m[3], today)
     return None
 
 
@@ -121,6 +132,13 @@ def parse(text, now=None):
     now = now or datetime.now()
     due = parse_date(text, now.date())
     repeat = parse_repeat(text)
+    if due and not repeat and re.search(r"\b(birthday|bday|anniversary)\b", text, re.I):
+        repeat = {"every": 1, "unit": "year"}
+    if repeat and not due and repeat["unit"] == "month":  # "every month on the 5th" → next 5th
+        if m := re.search(r"\b(\d{1,2})(?:st|nd|rd|th)\b", text, re.I):
+            day, t0 = int(m[1]), now.date()
+            if 1 <= day <= 28:
+                due = t0.replace(day=day) if day >= t0.day else add_interval(t0.replace(day=day), 1, "month")
     if repeat and not due:
         due = now.date()
     due_str = None
