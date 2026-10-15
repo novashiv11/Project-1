@@ -109,6 +109,10 @@ class V02Test(StoreCase):
         self.assertEqual(m("slept 6.5 hours, 8000 steps, mood 5"), {"sleep": 6.5, "steps": 8000, "mood": 5})
         self.assertEqual(m("spent ₹1,250 on groceries"), {"spent": 1250})
         self.assertEqual(m("€45 at tesco"), {"spent": 45})
+        self.assertEqual(m("food: Greek Yoghurt (150 g) · 146 kcal · 13.5 g protein · 5.7 g sugar"),
+                         {"kcal": 146, "protein": 13.5, "sugar_g": 5.7})
+        self.assertEqual(m("lunch 650 kcal"), {"kcal": 650})
+        self.assertEqual(m("97 kcal/100g"), {})
         self.assertEqual(m("ran 5km then paani 2 litres"), {"distance": 5, "water": 2})
         self.assertEqual(m("bp 128/84 sugar 110"), {"bp": 128, "sugar": 110})
 

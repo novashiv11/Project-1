@@ -56,3 +56,7 @@
 - v0.7 camera: 📷 → photo → BarcodeDetector; EAN/UPC → Open Food Facts card (Nutri-Score, per-100g) → "food:" item (health);
   QR → link/text card; no code + Jarvis key → photo sent to Claude (dates only, never ID numbers). SW now skips cross-origin
   APIs. Fixed 436px overflow (.wrap grid minmax(0,1fr)). E2E tested with faked scanner/APIs; deployed.
+- v0.8: food card asks grams (default = serving) → item text carries totals; metrics kcal/protein/sugar_g (sum) in life.json
+  (typed "lunch 650 kcal" works too). Today: "Food today" card with optional goal bar; food rows have no done-tick and stay out
+  of Recent notes. All tab: Settings (name, kcal goal, voice language) + Backup (share/download JSON, key never exported) +
+  Restore (validated, in-page confirm). Brief nags if no backup in 14 days. Bug caught in E2E: grams read after card cleared.

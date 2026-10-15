@@ -636,6 +636,24 @@
    "name": "sugar",
    "unit": "mg/dL",
    "pattern": "\\b(?:sugar|glucose)\\s*(\\d{2,3})\\b"
+  },
+  {
+   "name": "kcal",
+   "unit": "kcal",
+   "pattern": "\\b(\\d+(?:\\.\\d+)?)\\s*kcal\\b(?!\\s*/)",
+   "sum": true
+  },
+  {
+   "name": "protein",
+   "unit": "g",
+   "pattern": "\\b(\\d+(?:\\.\\d+)?)\\s*g\\s+protein\\b",
+   "sum": true
+  },
+  {
+   "name": "sugar_g",
+   "unit": "g",
+   "pattern": "\\b(\\d+(?:\\.\\d+)?)\\s*g\\s+sugar\\b",
+   "sum": true
   }
  ],
  "start_examples": [
