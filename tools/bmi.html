@@ -1,0 +1,29 @@
+<!--meta
+{"slug": "bmi-calculator", "title": "BMI Calculator",
+ "description": "Calculate your Body Mass Index in metric or imperial units and see which range you fall in.",
+ "faq": [
+  ["What is BMI?", "Body Mass Index is your weight in kilograms divided by your height in meters squared. It is a quick screening number, not a diagnosis."],
+  ["What is a healthy BMI?", "For most adults, 18.5 to 24.9 is considered the healthy range. Below 18.5 is underweight, 25–29.9 overweight and 30 or more obese."],
+  ["Is BMI accurate for everyone?", "No. BMI does not tell muscle from fat, so athletes may score high. Talk to a doctor for a proper health assessment."]
+ ]}
+-->
+<div class="row">
+ <div><label for="u">Units</label><select id="u" onchange="lbl()"><option value="m">Metric (kg, cm)</option><option value="i">Imperial (lb, in)</option></select></div>
+ <div><label for="w" id="wl">Weight (kg)</label><input id="w" type="number" value="70"></div>
+ <div><label for="h" id="hl">Height (cm)</label><input id="h" type="number" value="175"></div>
+</div>
+<button onclick="calc()">Calculate</button>
+<div class="result" id="out"></div>
+<script>
+function lbl(){const i=u.value==='i';wl.textContent=i?'Weight (lb)':'Weight (kg)';hl.textContent=i?'Height (in)':'Height (cm)';}
+function calc(){
+ const i=u.value==='i',bmi=i?703*w.value/(h.value*h.value):w.value/Math.pow(h.value/100,2);
+ const c=bmi<18.5?'Underweight':bmi<25?'Healthy weight':bmi<30?'Overweight':'Obese';
+ out.innerHTML=isFinite(bmi)?`Your BMI: <b>${bmi.toFixed(1)}</b> &middot; ${c}`:'Enter weight and height.';
+}
+calc();
+</script>
+<!--content-->
+<h2>BMI ranges for adults</h2>
+<table><tr><th>BMI</th><th>Category</th></tr><tr><td>Below 18.5</td><td>Underweight</td></tr><tr><td>18.5 – 24.9</td><td>Healthy weight</td></tr><tr><td>25 – 29.9</td><td>Overweight</td></tr><tr><td>30 and above</td><td>Obese</td></tr></table>
+<p>BMI is a general screening tool and does not account for muscle mass, age or body shape. It is not medical advice.</p>

@@ -1,0 +1,30 @@
+<!--meta
+{"slug": "percentage-calculator", "title": "Percentage Calculator",
+ "description": "Find X% of a number, what percent one number is of another, and percentage increase or decrease.",
+ "faq": [
+  ["How do I calculate a percentage of a number?", "Multiply the number by the percentage and divide by 100. For example, 15% of 80 is 80 × 15 / 100 = 12."],
+  ["How do I calculate percentage change?", "Subtract the old value from the new value, divide by the old value and multiply by 100. Going from 50 to 65 is (65 − 50) / 50 × 100 = 30% increase."]
+ ]}
+-->
+<label>What is X% of Y?</label>
+<div class="row"><input id="a1" type="number" placeholder="X %" value="15"><input id="b1" type="number" placeholder="Y" value="80"></div>
+<div class="result" id="o1"></div>
+<label>X is what percent of Y?</label>
+<div class="row"><input id="a2" type="number" placeholder="X" value="30"><input id="b2" type="number" placeholder="Y" value="120"></div>
+<div class="result" id="o2"></div>
+<label>Percentage change from X to Y</label>
+<div class="row"><input id="a3" type="number" placeholder="From" value="50"><input id="b3" type="number" placeholder="To" value="65"></div>
+<div class="result" id="o3"></div>
+<script>
+const f=x=>isFinite(x)?(+x.toFixed(4)).toLocaleString():'—';
+function calc(){
+ o1.innerHTML=`<b>${f(a1.value*b1.value/100)}</b>`;
+ o2.innerHTML=`<b>${f(a2.value/b2.value*100)}%</b>`;
+ const c=(b3.value-a3.value)/a3.value*100;
+ o3.innerHTML=`<b>${f(Math.abs(c))}%</b> ${c>=0?'increase':'decrease'}`;
+}
+document.querySelectorAll('input').forEach(i=>i.addEventListener('input',calc));calc();
+</script>
+<!--content-->
+<h2>Three percentage calculators in one</h2>
+<p>Results update as you type. Use the first box for discounts and tips (what is 20% of $45?), the second for scores and shares (18 out of 25 is what percent?), and the third for price changes, growth and salary raises.</p>

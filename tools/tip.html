@@ -1,0 +1,22 @@
+<!--meta
+{"slug": "tip-calculator", "title": "Tip Calculator & Bill Splitter",
+ "description": "Work out the tip and split the bill between any number of people in seconds.",
+ "faq": [
+  ["How much should I tip?", "In the US, 15–20% is standard for restaurant service, and 20% or more for excellent service. Customs differ by country."],
+  ["Should I tip on the pre-tax or post-tax amount?", "Etiquette guides usually suggest tipping on the pre-tax amount, but many people tip on the total for simplicity."]
+ ]}
+-->
+<div class="row">
+ <div><label for="b">Bill amount</label><input id="b" type="number" value="60" min="0"></div>
+ <div><label for="t">Tip (%)</label><input id="t" type="number" value="18" min="0"></div>
+ <div><label for="p">Number of people</label><input id="p" type="number" value="2" min="1"></div>
+</div>
+<div class="result" id="out"></div>
+<script>
+function calc(){const B=+b.value,T=B*t.value/100,P=Math.max(1,+p.value);
+ out.innerHTML=`Tip: <b>${T.toFixed(2)}</b> &middot; Total: <b>${(B+T).toFixed(2)}</b><br>Each person pays: <b>${((B+T)/P).toFixed(2)}</b>`;}
+document.querySelectorAll('input').forEach(i=>i.addEventListener('input',calc));calc();
+</script>
+<!--content-->
+<h2>Split the bill fairly</h2>
+<p>Enter the bill total, choose a tip percentage and the number of people. The calculator shows the tip, the grand total and what each person owes, updated as you type.</p>

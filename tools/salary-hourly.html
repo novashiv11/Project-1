@@ -1,0 +1,26 @@
+<!--meta
+{"slug": "salary-to-hourly-calculator", "title": "Salary to Hourly Calculator",
+ "description": "Convert an annual salary to hourly, daily, weekly and monthly pay, or an hourly wage to a yearly salary.",
+ "faq": [
+  ["How do I convert salary to hourly?", "Divide your annual salary by the number of hours you work in a year. Full-time is usually 40 hours × 52 weeks = 2,080 hours."],
+  ["What is $50,000 a year hourly?", "At 40 hours a week for 52 weeks, $50,000 a year is about $24.04 an hour."]
+ ]}
+-->
+<div class="row">
+ <div><label for="amt">Amount</label><input id="amt" type="number" value="60000"></div>
+ <div><label for="per">Per</label><select id="per"><option value="y">Year</option><option value="h">Hour</option><option value="m">Month</option><option value="w">Week</option></select></div>
+ <div><label for="hpw">Hours per week</label><input id="hpw" type="number" value="40"></div>
+ <div><label for="wpy">Weeks worked per year</label><input id="wpy" type="number" value="52"></div>
+</div>
+<div class="result" id="out"></div>
+<script>
+const m2=x=>x.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+function calc(){const H=+hpw.value,W=+wpy.value,a=+amt.value;
+ const y={y:a,h:a*H*W,m:a*12,w:a*W}[per.value];
+ out.innerHTML=`Hourly: <b>${m2(y/(H*W))}</b><br>Daily (${H/5}h): ${m2(y/(W*5))} &middot; Weekly: ${m2(y/W)} &middot; Monthly: ${m2(y/12)} &middot; Yearly: ${m2(y)}`;}
+document.querySelectorAll('input,select').forEach(e=>e.addEventListener('input',calc));calc();
+</script>
+<!--content-->
+<h2>Compare job offers fairly</h2>
+<p>Turning everything into an hourly rate makes it easy to compare a salaried job with an hourly one, or a job with longer hours against one with more paid time off. Change weeks worked per year to account for unpaid leave.</p>
+<p>These figures are before tax.</p>

@@ -1,0 +1,19 @@
+<!--meta
+{"slug": "word-counter", "title": "Word Counter",
+ "description": "Count words, characters, sentences and paragraphs, and estimate reading time as you type.",
+ "faq": [
+  ["Is my text saved or uploaded?", "No. Counting happens entirely in your browser. Your text is never sent anywhere."],
+  ["How is reading time estimated?", "Reading time assumes an average adult reading speed of about 238 words per minute."]
+ ]}
+-->
+<textarea id="t" placeholder="Paste or type your text here..."></textarea>
+<div class="result" id="out"></div>
+<script>
+function calc(){const s=t.value,w=(s.match(/\S+/g)||[]).length;
+ const sen=(s.match(/[^.!?]+[.!?]+/g)||[]).length,par=s.split(/\n\s*\n/).filter(x=>x.trim()).length;
+ out.innerHTML=`<b>${w}</b> words &middot; ${s.length} characters (${s.replace(/\s/g,'').length} without spaces) &middot; ${sen} sentences &middot; ${par} paragraphs &middot; ~${Math.max(1,Math.ceil(w/238))} min read`;}
+t.addEventListener('input',calc);calc();
+</script>
+<!--content-->
+<h2>A fast, private word counter</h2>
+<p>Ideal for essays, blog posts, social media captions, cover letters and assignments with word limits. Everything updates instantly as you type, and nothing leaves your device.</p>

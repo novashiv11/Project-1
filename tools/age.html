@@ -1,0 +1,32 @@
+<!--meta
+{"slug": "age-calculator", "title": "Age Calculator",
+ "description": "Calculate your exact age in years, months and days, and count down to your next birthday.",
+ "faq": [
+  ["How is age calculated?", "Age is the number of full years since your date of birth, followed by the remaining full months and days."],
+  ["How does it handle leap years?", "The calculator uses real calendar dates, so leap years and different month lengths are counted correctly."]
+ ]}
+-->
+<div class="row">
+ <div><label for="d">Date of birth</label><input id="d" type="date" value="2000-01-01"></div>
+ <div><label for="o">Age on date</label><input id="o" type="date"></div>
+</div>
+<button onclick="calc()">Calculate</button>
+<div class="result" id="out"></div>
+<script>
+o.valueAsDate=new Date();
+function calc(){
+ const b=new Date(d.value+'T00:00'),n=new Date(o.value+'T00:00');
+ if(isNaN(b)||isNaN(n)||n<b){out.textContent='Please enter valid dates.';return;}
+ let y=n.getFullYear()-b.getFullYear(),m=n.getMonth()-b.getMonth(),dd=n.getDate()-b.getDate();
+ if(dd<0){m--;dd+=new Date(n.getFullYear(),n.getMonth(),0).getDate();}
+ if(m<0){y--;m+=12;}
+ const days=Math.round((n-b)/864e5);
+ let next=new Date(n.getFullYear(),b.getMonth(),b.getDate());if(next<n)next.setFullYear(n.getFullYear()+1);
+ const until=Math.round((next-n)/864e5);
+ out.innerHTML=`Age: <b>${y} years, ${m} months, ${dd} days</b><br>That's ${days.toLocaleString()} days in total. Next birthday in ${until} days.`;
+}
+calc();
+</script>
+<!--content-->
+<h2>Find your exact age</h2>
+<p>Pick your date of birth and, if you like, a different "age on" date to see how old you were or will be on that day. Useful for forms, eligibility checks and birthday countdowns.</p>

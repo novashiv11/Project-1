@@ -1,0 +1,38 @@
+<!--meta
+{"slug": "compound-interest-calculator", "title": "Compound Interest Calculator",
+ "description": "See how your savings grow with compound interest and monthly contributions, year by year.",
+ "faq": [
+  ["What is compound interest?", "Compound interest is interest earned on both your original deposit and on the interest already added. Over time, your money grows faster and faster."],
+  ["How often should interest compound?", "The more often interest compounds (monthly versus yearly), the more you earn, but the difference is small compared to the rate and how long you invest."],
+  ["What is the rule of 72?", "Divide 72 by your annual interest rate to estimate how many years it takes to double your money. At 8%, money doubles in about 9 years."]
+ ]}
+-->
+<div class="row">
+ <div><label for="p">Starting amount</label><input id="p" type="number" value="1000" min="0"></div>
+ <div><label for="m">Monthly contribution</label><input id="m" type="number" value="100" min="0"></div>
+ <div><label for="r">Annual interest rate (%)</label><input id="r" type="number" value="7" step="0.1"></div>
+ <div><label for="y">Years</label><input id="y" type="number" value="10" min="1" max="100"></div>
+ <div><label for="n">Compounding</label><select id="n"><option value="12">Monthly</option><option value="4">Quarterly</option><option value="1">Yearly</option><option value="365">Daily</option></select></div>
+</div>
+<button onclick="calc()">Calculate</button>
+<div class="result" id="out"></div>
+<div id="tbl"></div>
+<script>
+function fmt(x){return x.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
+function calc(){
+ const P=+p.value,M=+m.value,r=+document.getElementById('r').value/100,Y=+y.value,N=+n.value;
+ let bal=P,dep=P,rows='';
+ for(let yr=1;yr<=Y;yr++){
+  for(let mo=0;mo<12;mo++){bal*=Math.pow(1+r/N,N/12);bal+=M;dep+=M;}
+  rows+=`<tr><td>${yr}</td><td>${fmt(dep)}</td><td>${fmt(bal-dep)}</td><td>${fmt(bal)}</td></tr>`;
+ }
+ out.innerHTML=`Future balance: <b>${fmt(bal)}</b><br>Total deposited: ${fmt(dep)} &middot; Interest earned: ${fmt(bal-dep)}`;
+ tbl.innerHTML=`<table><tr><th>Year</th><th>Deposited</th><th>Interest</th><th>Balance</th></tr>${rows}</table>`;
+}
+calc();
+</script>
+<!--content-->
+<h2>How this compound interest calculator works</h2>
+<p>Enter what you start with, how much you add each month, the expected yearly return and how long you will invest. The calculator compounds the interest at the frequency you choose and adds your contribution at the end of every month. The table shows how much of your balance came from your own deposits and how much came from interest.</p>
+<h2>Why starting early matters</h2>
+<p>Because interest also earns interest, time is the biggest factor. Someone who invests $200 a month from age 25 to 35 and then stops can end up with more at 65 than someone who invests $200 a month from 35 to 65, at the same return. Try changing the years above to see the effect.</p>
