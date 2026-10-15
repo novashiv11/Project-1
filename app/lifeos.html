@@ -11,7 +11,7 @@
   --display:"Bricolage Grotesque",ui-rounded,system-ui,sans-serif;
   --body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
-  --navh:68px; --dockh:60px;
+  --navh:0px; --dockh:60px;
 }
 @media (prefers-color-scheme:light){:root:not([data-theme="dark"]){
   --bg:#f3f6f3; --card:#ffffff; --card2:#ffffff; --fg:#16201a; --muted:#5f6e65; --line:#e1e7e0;
@@ -175,33 +175,66 @@ nav.tabs{position:fixed;z-index:6;left:0;right:0;bottom:0;height:calc(var(--navh
 @media (prefers-reduced-motion:no-preference){#view>*{animation:rise .28s ease-out both}#view>*:nth-child(2){animation-delay:.04s}#view>*:nth-child(3){animation-delay:.08s}#view>*:nth-child(4){animation-delay:.12s}}
 @media (prefers-reduced-motion:reduce){.card.leaving,.card.snoozing{transition:none}.orb.busy,.db.on{animation:none}}
 #view{display:grid;gap:18px;grid-template-columns:minmax(0,1fr)}
+/* simple home */
+h1#title{font:800 34px/1.05 var(--display);letter-spacing:-.02em;margin:2px 0 4px}
+header .date{display:flex;gap:4px;flex-wrap:wrap}
+.more{width:44px;height:44px;border-radius:50%;background:var(--chip);color:var(--fg);font:800 22px/1 var(--body);flex:none}
+.capbox{display:flex;gap:8px;align-items:center;background:var(--card2);border:1px solid var(--line);border-radius:20px;padding:8px 8px 8px 16px}
+.capbox input{flex:1;min-width:0;background:transparent;border:0;color:var(--fg);font:17px var(--body);padding:8px 0}
+.capbox input::placeholder{color:var(--muted)}.capbox input:focus{outline:none}
+body:not([data-view="today"]) #cap{display:none}
+.grp{display:grid;gap:2px}
+.grp h2{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 4px}
+.grp h2 span{color:var(--accent);letter-spacing:0}
+.srow{display:flex;align-items:center;gap:14px;padding:11px 2px;touch-action:pan-y;border-radius:14px}
+.circle{width:28px;height:28px;border-radius:50%;border:2px solid var(--muted);background:none;flex:none;padding:0}
+.circle:hover{border-color:var(--accent)}
+.st{flex:1;min-width:0;overflow-wrap:anywhere;font-size:17px}
+.st small{display:block;font-size:13px;color:var(--muted)}
+.st .gbtn{font-size:13px}
+.sd{font-size:14px;color:var(--muted);white-space:nowrap;text-align:right}
+.sd.hot{color:var(--late)}.sd.warm{color:var(--warn)}
+.srow.leaving{transform:translateX(110%);opacity:0;transition:transform .28s ease-in,opacity .28s ease-in}
+.srow.snoozing{transform:translateX(-110%);opacity:0;transition:transform .28s ease-in,opacity .28s ease-in}
+.srow+.guide{margin-top:0;border-top:1px solid var(--line);border-radius:18px}
+.laterhint{background:none;color:var(--muted);font:400 15px var(--body);text-align:left;padding:4px 2px;width:100%}
+.allclear{color:var(--muted);padding:6px 2px}
+.sheet{position:fixed;inset:0;z-index:8;background:rgb(0 0 0 / .5);display:flex;align-items:flex-end}
+.sheet .panel{width:100%;max-width:640px;margin:0 auto;background:var(--card2);border-radius:24px 24px 0 0;padding:14px 14px calc(18px + env(safe-area-inset-bottom,0px));display:grid;gap:6px}
+.sheet button{display:flex;gap:14px;align-items:center;text-align:left;background:none;padding:12px;border-radius:16px}
+.sheet button:hover{background:var(--chip)}
+.sheet i{font-style:normal;font-size:22px;width:40px;height:40px;display:grid;place-items:center;background:var(--chip);border-radius:12px;flex:none}
+.sheet b{display:block;font:700 16px var(--display)}.sheet small{color:var(--muted);font-size:13px}
 section,.brief,.cards,.chat,.setup,.scan,.answer,.guide{grid-template-columns:minmax(0,1fr)}
 </style>
 
 <div class="wrap">
   <header>
-    <div><div class="date" id="today"></div><span class="store-note" id="storeNote">Connecting…</span></div>
-    <button class="av" data-v="all" id="avatar" aria-label="Me: settings and your data">☺</button>
+    <div style="min-width:0"><button class="back" id="tab-today" data-v="today" hidden>← Aaj</button>
+      <h1 id="title">Aaj</h1><div class="date"><span id="today"></span><span id="storeNote" hidden>Connecting…</span></div></div>
+    <button class="more" id="more" aria-label="More: Jarvis, food, life, week, settings" aria-expanded="false">⋯</button>
   </header>
   <div id="banners"></div>
+  <form class="capbox" id="cap" autocomplete="off">
+    <input id="q" name="q" placeholder="Kya yaad rakhna hai?" aria-label="What should I remember? End with ? to ask">
+    <button class="db" type="button" id="mic" hidden aria-label="Speak instead of typing">🎤</button>
+    <button class="db" type="button" id="cambtn" aria-label="Scan a barcode or take a photo">📷</button>
+    <button class="db go" type="submit" aria-label="Save">↑</button>
+    <input type="file" id="cam" accept="image/*" capture="environment" hidden>
+    <input type="file" id="restoreFile" accept="application/json,.json" hidden>
+  </form>
   <div id="answer" hidden></div>
   <main id="view"></main>
 </div>
-<form class="dock" id="cap" autocomplete="off">
-  <input id="q" name="q" placeholder="Jarvis ko bolo…" aria-label="Tell Jarvis anything, or ask with ?">
-  <button class="db" type="button" id="cambtn" aria-label="Scan a barcode or take a photo">📷</button>
-  <button class="db" type="button" id="mic" hidden aria-label="Speak instead of typing">🎤</button>
-  <button class="db go" type="submit" aria-label="Save">↑</button>
-  <input type="file" id="cam" accept="image/*" capture="environment" hidden>
-  <input type="file" id="restoreFile" accept="application/json,.json" hidden>
-</form>
-<nav class="tabs" role="tablist">
-  <button class="tab" role="tab" data-v="today" id="tab-today"><i>◉</i>Home</button>
-  <button class="tab" role="tab" data-v="life" id="tab-life"><i>◐</i>Life</button>
-  <button class="tab jv" role="tab" data-v="jarvis" id="tab-jarvis"><i></i>Jarvis</button>
-  <button class="tab" role="tab" data-v="review" id="tab-review"><i>▤</i>Week</button>
-  <button class="tab" role="tab" data-v="all" id="tab-all"><i>☺</i>Me</button>
-</nav>
+<div class="sheet" id="sheet" hidden>
+  <div class="panel" role="menu">
+    <button data-v="jarvis" id="tab-jarvis" role="menuitem"><i>🧠</i><span><b>Jarvis</b><small>Ask Claude about your life</small></span></button>
+    <button data-v="food" id="tab-food" role="menuitem"><i>🍽</i><span><b>Food</b><small>Calories today, scan barcodes</small></span></button>
+    <button data-v="life" id="tab-life" role="menuitem"><i>◐</i><span><b>Life areas</b><small>Home, money, documents, pets…</small></span></button>
+    <button data-v="review" id="tab-review" role="menuitem"><i>▤</i><span><b>Week</b><small>What you did, what's next</small></span></button>
+    <button data-v="all" id="tab-all" role="menuitem"><i>☺</i><span><b>Me</b><small>Everything, settings, backup</small></span></button>
+  </div>
+</div>
 <div class="toast" id="toast" hidden><span id="toastMsg"></span><button id="toastUndo" type="button">Undo</button></div>
 
 <script>
@@ -480,20 +513,45 @@ function foodLog(all,today){
   const t=iso(today), eaten=all.filter(i=>isFood(i)&&i.created.slice(0,10)===t).sort((a,b)=>b.id-a.id);
   return `<section><h2>Food log · today</h2>${list(eaten,today,"Nothing logged yet. Scan a barcode with 📷 or type “lunch 650 kcal”.",{del:true})}</section>`;
 }
+let showLater=false;
+const windowOpen=(it,today)=>{const n=daysLeft(it,today),L=leadDays(it);return L>14&&n>14&&n-L<=0};
+function sLabel(it,today){
+  const n=daysLeft(it,today), L=leadDays(it), d=fromIso(it.due);
+  if(n<0)return [`${-n}d late`,"hot"];
+  if(windowOpen(it,today))return [n<=30?`${n}d left`:"start now",n<=30?"hot":"warm"];
+  if(n===0)return [it.due.includes("T")?it.due.slice(11):"today","warm"];
+  if(n===1)return ["kal","warm"];
+  if(n<=6)return [["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d.getDay()],""];
+  return [`${d.getDate()} ${MON_SHORT[d.getMonth()]}${d.getFullYear()!==today.getFullYear()?" "+d.getFullYear():""}`,""];
+}
+function srow(it,today){
+  const g=guideFor(it), sub=[];
+  if(it.due&&windowOpen(it,today))sub.push("window open: start now");
+  if(it.repeat)sub.push(it.repeat.every>1?`every ${it.repeat.every} ${it.repeat.unit}s`:`every ${it.repeat.unit}`);
+  const [lab,cls]=it.due?sLabel(it,today):["",""];
+  return `<div class="srow" data-id="${it.id}"><button class="circle" data-done="${it.id}" aria-label="Done: ${esc(it.text)}"></button>
+    <div class="st">${esc(it.text)}${sub.length||g?`<small>${esc(sub.join(" · "))}${g?`${sub.length?" · ":""}<button class="gbtn" data-guide="${it.id}" aria-expanded="${openGuides.has(it.id)}">${openGuides.has(it.id)?"hide guide":"guide ›"}</button>`:""}</small>`:""}</div>
+    ${lab?`<span class="sd ${cls}">${esc(lab)}</span>`:""}</div>${guidePanel(it)}`;
+}
+const grp=(title,arr,today)=>arr.length?`<section class="grp"><h2>${title}<span>${arr.length}</span></h2>${arr.map(i=>srow(i,today)).join("")}</section>`:"";
 function vToday(all,today){
-  const open=openDated(all);
-  const now=open.filter(i=>{const n=daysLeft(i,today);return n<=leadDays(i)}).slice(0,8);
-  const notes=all.filter(i=>!i.due&&!i.done&&!isFood(i)).sort((a,b)=>b.id-a.id).slice(0,5);
-  if(!all.length){const [hi,emo]=greeting();
-    return `<div class="brief"><div class="hello">${hi}${settings.name?`,<br>${esc(settings.name)}`:""} ${emo}</div>
-      <div class="sub">Main Jarvis hoon. Neeche bar mein kuch bhi likho, bolo 🎤 ya scan karo 📷. Main date samajh ke sahi time pe yaad dila dunga.</div></div>
-      <section><h2>Try one</h2><div class="examples">${EXAMPLES.map(e=>`<button class="ex" data-ex="${esc(e)}">${esc(e)}</button>`).join("")}</div></section>`}
-  const st=streak(all,today);
-  return briefCard(all,today)+
-    (now.length?`<section><h2>Now</h2>${cards(now,today)}<div class="swipehint">swipe → done · ← snooze to tomorrow</div></section>`:"")+
-    `<div class="tiles">${foodTile(all,today)}<div class="tile"><span class="k">Streak</span><span class="big">${st} day${st===1?"":"s"}${st>=3?" 🔥":""}</span><span class="s">${st?"logging daily":"add something today"}</span></div></div>`+
-    foodLog(all,today)+
-    (notes.length?`<section><h2>Recent notes</h2>${list(notes,today,"")}</section>`:"");
+  if(!all.length)return `<section class="grp"><h2>Shuru karo</h2><p class="allclear">Upar box mein kuch bhi likho ya bolo 🎤. Main date samajh ke sahi time pe yaad dila dunga.</p>
+    <div class="examples">${EXAMPLES.slice(0,6).map(e=>`<button class="ex" data-ex="${esc(e)}">${esc(e)}</button>`).join("")}</div></section>`;
+  const open=all.filter(i=>!i.done&&!isFood(i)), dated=openDated(open), used=new Set();
+  const take=f=>dated.filter(i=>!used.has(i.id)&&f(i)).map(i=>(used.add(i.id),i));
+  const aaj=take(i=>daysLeft(i,today)<=0||windowOpen(i,today));
+  const week=take(i=>daysLeft(i,today)<=7);
+  const soon=take(i=>daysLeft(i,today)<=Math.max(30,leadDays(i)));
+  const later=[...open.filter(i=>!i.due).sort((a,b)=>b.id-a.id),...dated.filter(i=>!used.has(i.id))];
+  const laterHtml=later.length?`<section class="grp"><h2>Baad mein<span>${later.length}</span></h2>${showLater?later.map(i=>srow(i,today)).join("")+`<button class="laterhint" data-later>Hide ›</button>`
+    :`<button class="laterhint" data-later>${esc(later.slice(0,2).map(i=>i.text).join(" · "))}${later.length>2?` · +${later.length-2}`:""} ›</button>`}</section>`:"";
+  return (aaj.length?grp("Aaj",aaj,today):`<section class="grp"><h2>Aaj</h2><p class="allclear">Aaj kuch nahi ✨</p></section>`)+
+    grp("Is hafte",week,today)+grp("Jaldi aane wala",soon,today)+laterHtml+
+    (aaj.length+week.length?`<div class="swipehint">tap ◯ = done · swipe ← = kal tak</div>`:"");
+}
+function vFood(all,today){
+  return `<div class="tiles">${foodTile(all,today)}<div class="tile"><span class="k">Scan</span><span class="big">📷</span><span class="s">barcode → calories</span></div></div>`+
+    `<section><h2>Food log · today</h2>${list(all.filter(i=>isFood(i)&&i.created.slice(0,10)===iso(today)).sort((a,b)=>b.id-a.id),today,"Nothing logged yet. Scan a barcode with 📷 on the Aaj screen, or type “lunch 650 kcal”.",{del:true})}</section>`;
 }
 
 /* metrics */
@@ -853,7 +911,7 @@ async function snooze(id,el){
 }
 (()=>{ // swipe a card: right = done, left = snooze one day
   let el=null,x0=0,y0=0,dx=0,locked=null;
-  document.addEventListener("pointerdown",e=>{const c=e.target.closest(".card");if(!c||e.target.closest("button,a"))return;el=c;x0=e.clientX;y0=e.clientY;dx=0;locked=null});
+  document.addEventListener("pointerdown",e=>{const c=e.target.closest(".card,.srow");if(!c||e.target.closest("button,a"))return;el=c;x0=e.clientX;y0=e.clientY;dx=0;locked=null});
   document.addEventListener("pointermove",e=>{if(!el)return;const mx=e.clientX-x0,my=e.clientY-y0;
     if(locked===null&&(Math.abs(mx)>8||Math.abs(my)>8))locked=Math.abs(mx)>Math.abs(my);
     if(!locked)return;dx=mx;el.style.transform=`translateX(${dx}px)`;el.style.opacity=String(1-Math.min(.6,Math.abs(dx)/400))});
@@ -871,9 +929,11 @@ function render(){
   document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.v===view));
   document.body.dataset.view=view;
   const dn=new Date(); document.getElementById("today").textContent=`${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][dn.getDay()]} · ${dn.getDate()} ${MON_SHORT[dn.getMonth()]}`;
-  document.getElementById("avatar").textContent=settings.name?settings.name[0].toUpperCase():"☺";
+
   const cq=document.getElementById("cq")||document.getElementById("aq"), draft=cq?cq.value:"", focused=document.activeElement===cq, pasteDraft=(document.getElementById("paste")||{}).value||"";
-  document.getElementById("view").innerHTML=({today:vToday,life:vLife,review:vReview,all:vAll,jarvis:vJarvis}[view]||vToday)(all,today);
+  document.getElementById("view").innerHTML=({today:vToday,life:vLife,review:vReview,all:vAll,jarvis:vJarvis,food:vFood}[view]||vToday)(all,today);
+  document.getElementById("title").textContent={today:"Aaj",life:"Life",review:"Week",all:"Me",jarvis:"Jarvis",food:"Food"}[view]||"Aaj";
+  document.getElementById("tab-today").hidden=view==="today";
   const cq2=document.getElementById("cq")||document.getElementById("aq"); if(cq2){cq2.value=draft;if(focused)cq2.focus()}
   const pz=document.getElementById("paste"); if(pz&&pasteDraft&&!pasteResult)pz.value=pasteDraft;
 }
@@ -898,9 +958,12 @@ document.getElementById("cap").addEventListener("submit",async e=>{
     if(CHAT_OK&&settings.key){view="jarvis";document.getElementById("answer").hidden=true;askJarvis(text)}else showAnswer(text)}
   else{document.getElementById("answer").hidden=true;await capture(text)}
 });
+document.getElementById("sheet").addEventListener("click",e=>{if(e.target.id==="sheet")e.target.hidden=true});
 document.addEventListener("click",async e=>{
   const b=e.target.closest("button"); if(!b)return;
-  if(b.dataset.v){if(view!==b.dataset.v)window.scrollTo(0,0);view=b.dataset.v;lifeArea=null;try{localStorage.setItem("lifeos.view",view)}catch(_){}render();return}
+  if(b.id==="more"){const sh=document.getElementById("sheet");sh.hidden=!sh.hidden;b.setAttribute("aria-expanded",String(!sh.hidden));return}
+  if(b.hasAttribute("data-later")){showLater=!showLater;render();return}
+  if(b.dataset.v){document.getElementById("sheet").hidden=true;if(view!==b.dataset.v)window.scrollTo(0,0);view=b.dataset.v;lifeArea=null;try{localStorage.setItem("lifeos.view",view)}catch(_){}render();return}
   if(b.hasAttribute("data-foodlog")){showFoodLog=!showFoodLog;render();return}
   if(b.hasAttribute("data-chatcam")){document.getElementById("cam").click();return}
   if(b.dataset.area!==undefined){lifeArea=b.dataset.area||null;render();window.scrollTo(0,0);return}
@@ -929,7 +992,7 @@ document.addEventListener("click",async e=>{
   if(b.dataset.chat==="settings"){settings.editing=true;render();return}
   if(!backend)return;
   if(false){}
-  else if(b.dataset.done)await finish(+b.dataset.done,b.closest(".card"));
+  else if(b.dataset.done)await finish(+b.dataset.done,b.closest(".card,.srow"));
   else if(b.dataset.del)await change(+b.dataset.del,null,"Deleted");
   else if(b.dataset.ex)await capture(b.dataset.ex);
   else if(b.dataset.f!==undefined){filter=b.dataset.f;render()}

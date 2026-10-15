@@ -81,6 +81,15 @@ class PhoneAppTest(unittest.TestCase):
                                  "input": {"text": "IRP card expires 2027-01-20"}}], "stop_reason": "tool_use"}
         route.fulfill(status=200, content_type="application/json", headers=CORS, body=json.dumps(resp))
 
+    def tab(self, name):
+        """Open a screen the way a person would: ⋯ menu, or the back button for Aaj."""
+        if name == "today":
+            if self.pg.is_visible("#tab-today"):
+                self.pg.click("#tab-today")
+            return
+        self.pg.click("#more")
+        self.pg.click(f"#tab-{name}")
+
     def add(self, *texts):
         for t in texts:
             self.pg.fill("#q", t)
@@ -91,15 +100,14 @@ class PhoneAppTest(unittest.TestCase):
 
     def test_fits_phone_width_on_every_tab(self):
         self.add("passport expires 2027-03-14", "NCT due in 20 days", "lunch 650 kcal")
-        for tab in ("today", "life", "review", "all", "jarvis"):
-            self.pg.click(f"#tab-{tab}")
+        for tab in ("today", "life", "review", "all", "jarvis", "food"):
+            self.tab(tab)
             self.assertEqual(self.pg.evaluate("document.documentElement.scrollWidth"), 390, tab)
 
     def test_brief_guides_and_renewal_nudges(self):
         self.add("NCT due in 20 days", "IRP card expires in 60 days")
-        self.pg.click("#tab-today")
-        self.assertIn("ab start karo", self.pg.inner_text(".brief"))
-        self.assertIn("start now", self.pg.inner_text(".cards"))
+        self.tab('today')
+        self.assertIn("window open: start now", self.pg.inner_text("#view"))
         self.pg.click("button[data-guide]")
         self.assertTrue(self.pg.eval_on_selector_all(".guide a", "els => els.every(e => e.href.startsWith('https://'))"))
         nudges = self.pg.evaluate("""new Promise(ok => { const r = indexedDB.open('lifeos', 1);
@@ -118,7 +126,7 @@ class PhoneAppTest(unittest.TestCase):
         self.assertEqual(self.pg.input_value("#fgrams"), "125")
         self.pg.fill("#fgrams", "150")
         self.pg.click("button[data-scan=food]")
-        self.pg.click("#tab-today")
+        self.tab('food')
         self.pg.wait_for_selector(".food")
         self.assertEqual(self.pg.inner_text(".food .big"), "796")  # 650 + 97*1.5
         self.assertIn("of 2000 kcal", self.pg.inner_text(".food"))
@@ -132,7 +140,7 @@ class PhoneAppTest(unittest.TestCase):
 
     def test_backup_and_restore(self):
         self.add("passport expires 2027-03-14", "rent every month")
-        self.pg.click("#tab-all")
+        self.tab('all')
         with self.pg.expect_download() as dl:
             self.pg.click("button[data-data=backup]")
         path = str(Path(self.tmp) / "backup.json")
@@ -143,13 +151,13 @@ class PhoneAppTest(unittest.TestCase):
         self.pg.reload()
         self.pg.wait_for_function("typeof items !== 'undefined' && backend")
         self.assertEqual(self.items(), [])
-        self.pg.click("#tab-all")
+        self.tab('all')
         self.pg.set_input_files("#restoreFile", path)
         self.pg.click("button[data-data=restore-yes]")
         self.assertEqual(sorted(self.items()), ["passport expires 2027-03-14", "rent every month"])
 
     def test_jarvis_chat_saves_item(self):
-        self.pg.click("#tab-jarvis")
+        self.tab('jarvis')
         self.pg.click("button[data-chat=settings]")
         self.pg.fill("#sname", "Shivam")
         self.pg.fill("#skey", "sk-ant-test")
@@ -168,7 +176,7 @@ class PhoneAppTest(unittest.TestCase):
         """No API key: question opens the Claude app with the list; pasted LIFEOS lines get saved."""
         self.pg.evaluate("window.__opened = []; window.open = (u) => { window.__opened.push(u); return null; }; 0")
         self.add("NCT due in 20 days")
-        self.pg.click("#tab-jarvis")
+        self.tab('jarvis')
         self.pg.fill("#aq", "IRP kab renew karun?")
         self.pg.press("#aq", "Enter")
         url = self.pg.evaluate("window.__opened[0]")
@@ -188,7 +196,7 @@ class PhoneAppTest(unittest.TestCase):
         self.pg.evaluate("window.__opened = []; window.open = (u) => { window.__opened.push(u); return null; }; "
                          "window.__copied = []; navigator.clipboard.writeText = async (t) => { window.__copied.push(t); }; 0")
         self.add("passport expires 2027-03-14")
-        self.pg.click("#tab-jarvis")
+        self.tab('jarvis')
         self.pg.click("button[data-memimport]")
         prompt = self.pg.evaluate("decodeURIComponent(window.__opened[0].split('?q=')[1])")
         self.assertIn("memory of me", prompt)
@@ -207,7 +215,7 @@ class GestureTest(PhoneAppTest):
     """Swipe right completes, swipe left snoozes a day (inherits the phone setup; runs only these tests)."""
     def _swipe(self, sel, dx):
         box = self.pg.locator(sel).first.bounding_box()
-        x, y = box["x"] + 20, box["y"] + box["height"] / 2
+        x, y = box["x"] + box["width"] / 2, box["y"] + box["height"] / 2
         self.pg.mouse.move(x, y); self.pg.mouse.down()
         for i in range(1, 11):
             self.pg.mouse.move(x + dx * i / 10, y)
@@ -216,11 +224,11 @@ class GestureTest(PhoneAppTest):
 
     def test_swipe_done_and_snooze(self):
         self.add("dentist kal 4pm", "NCT due tomorrow")
-        self.pg.click("#tab-today")
-        self._swipe('.card:has-text("dentist")', 160)
+        self.tab('today')
+        self._swipe('.srow:has-text("dentist")', 160)
         self.assertTrue(self.pg.evaluate("[...items.values()].find(i => i.text.startsWith('dentist')).done"))
         before = self.pg.evaluate("[...items.values()].find(i => i.text.startsWith('NCT')).due")
-        self._swipe('.card:has-text("NCT")', -160)
+        self._swipe('.srow:has-text("NCT")', -160)
         after = self.pg.evaluate("[...items.values()].find(i => i.text.startsWith('NCT')).due")
         self.assertGreater(after, before)
 
