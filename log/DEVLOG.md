@@ -66,3 +66,8 @@
 - Store prep: privacy.html (linked in Settings), manifest categories + 2 screenshots. lifeos README refreshed.
 - tests/test_e2e.py: 6 phone E2E tests (width, brief/guides/nudges, food portions, QR, backup/restore, Jarvis) — all green.
 - ROADMAP/CLAUDE.md updated: PWA is the product; claude.ai artifact is legacy.
+
+## 2026-10-15 · Session 9: redesign mockups
+- Founder: "app mei feel nai". Proposed Jarvis home + native feel + personality; founder chose mockups first.
+- 3 mockups in docs/mockups/: A Jarvis Dark (greeting + now cards + dock + bottom nav), B Life Wheel (light, area ring/score),
+  C Chat-first (Jarvis feed with inline task cards and action chips). Awaiting pick; nothing built.
