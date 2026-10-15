@@ -1,0 +1,10 @@
+{
+  "site_name": "QuickCalc Tools",
+  "site_url": "https://novashiv11.github.io/Project-1",
+  "tagline": "Free, fast, private online calculators and tools",
+  "adsense_client": "",
+  "contact_email": "you@example.com",
+  "affiliate_links": [
+    {"text": "Compare high-yield savings accounts", "url": "https://example.com/your-affiliate-link"}
+  ]
+}
