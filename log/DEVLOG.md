@@ -87,3 +87,4 @@
   ignored; "Nov 2026" → 1st; explicit day-month beats weekday words ("Black Friday on 27 Nov"); birthdays repeat yearly;
   "every month on the 5th" → next 5th; home/money keywords (kitchen, attic, SEAI, Eir, BOI, disputes…). Memory prompt asks for
   bill days. 📋 paste chip always visible. Cleaned import block given to founder in chat (not stored in repo). 36 tests green.
+- Founder: 'overwhelming, try something else'. Fixed 'every 1st' + mortgage. Proposing a radically simpler single-list design (mockup).

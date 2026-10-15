@@ -391,7 +391,11 @@
     "complaint\\w*",
     "savings?",
     "playstation",
-    "spotify"
+    "spotify",
+    "mortgage",
+    "supplier",
+    "energy",
+    "electricity bill"
    ],
    "examples": [
     "credit card bill due 5th every month",

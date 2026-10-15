@@ -308,6 +308,10 @@ class RealWorldDatesTest(unittest.TestCase):
         self.assertEqual(parse("rent every month on the 20th", NOW)["due"], "2026-10-20")
         self.assertEqual(parse("Netflix every month", NOW)["due"], "2026-10-14")  # unknown day → starts today
 
+    def test_every_ordinal_is_monthly(self):
+        p = parse("Mortgage every 1st", NOW)
+        self.assertEqual((p["domain"], p["repeat"], p["due"]), ("money", {"every": 1, "unit": "month"}, "2026-11-01"))
+
     def test_new_keywords(self):
         for text, want in {"Kitchen cabinets: repaint": "home", "Attic insulation with an SEAI grant": "home",
                            "Eir: every month": "money", "BOI Savings direct debit": "money",

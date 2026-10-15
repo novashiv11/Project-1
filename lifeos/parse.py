@@ -15,6 +15,7 @@ TRACKING_RE = re.compile(r"\b(1Z[0-9A-Z]{16}|[A-Z]{2}\d{9}[A-Z]{2}|\d{12,22})\b"
 TAG_RE = re.compile(r"(?<!\w)#(\w+)")
 REPEAT_RE = re.compile(
     r"\bevery\s+(?:(\d+|other)\s+)?(day|week|month|year)s?\b"
+    r"|\bevery\s+(\d{1,2})(?:st|nd|rd|th)\b"  # "every 1st" = monthly on the 1st
     r"|\b(daily|weekly|monthly|yearly|annually)\b"
     rf"|\bevery\s+({'|'.join(WEEKDAYS)})\b", re.I)
 _ADVERB = {"daily": "day", "weekly": "week", "monthly": "month", "yearly": "year", "annually": "year"}
@@ -107,7 +108,9 @@ def parse_repeat(text):
         n = 2 if (m[1] or "").lower() == "other" else int(m[1] or 1)
         return {"every": n, "unit": m[2].lower()}
     if m[3]:
-        return {"every": 1, "unit": _ADVERB[m[3].lower()]}
+        return {"every": 1, "unit": "month"}
+    if m[4]:
+        return {"every": 1, "unit": _ADVERB[m[4].lower()]}
     return {"every": 1, "unit": "week"}
 
 
