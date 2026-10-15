@@ -3,6 +3,7 @@
     python3 scripts/build_pwa.py            # then serve dist/ over HTTPS (GitHub Pages)
 """
 import hashlib
+import os
 import json
 import shutil
 import subprocess
@@ -11,7 +12,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parent.parent
-DIST = ROOT / "dist"
+DIST = Path(os.environ.get("LIFEOS_DIST", ROOT / "dist"))  # override so parallel builds/tests don't collide
 PUBLIC_URL = "https://novashiv11.github.io/lifeos/"  # where dist/ is served (GitHub Pages)
 CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
 
@@ -26,6 +27,8 @@ HEAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 </head><body>
 """
+UI = sorted((ROOT / "app/ui").glob("*.js"))  # optional view modules (orb, stack, timeline…), loaded before the page script
+HEAD = HEAD.replace("</head>", "".join(f'<script src="ui/{f.name}"></script>' for f in UI) + "</head>")
 html = HEAD + page + '\n<script src="pwa.js"></script>\n</body></html>\n'
 
 if DIST.exists():
@@ -34,6 +37,9 @@ DIST.mkdir()
 (DIST / "index.html").write_text(html, encoding="utf-8")
 shutil.copy(ROOT / "pwa/pwa.js", DIST / "pwa.js")
 shutil.copy(ROOT / "pwa/privacy.html", DIST / "privacy.html")
+(DIST / "ui").mkdir()
+for f in UI:
+    shutil.copy(f, DIST / "ui" / f.name)
 shutil.copytree(ROOT / "pwa/screens", DIST / "screens")
 (DIST / "manifest.json").write_text(json.dumps({
     # `id` resolves against the ORIGIN, not the manifest URL: "./" would mean the whole novashiv11.github.io site and
@@ -59,7 +65,7 @@ with sync_playwright() as pw:
     browser.close()
 (DIST / ".nojekyll").write_text("")
 # Cache version covers every cached file, so any change (incl. manifest/icons) reaches installed apps.
-version = hashlib.sha1(b"".join((DIST / n).read_bytes() for n in sorted(("index.html", "pwa.js", "manifest.json", "icon-192.png", "icon-512.png")))
+version = hashlib.sha1(b"".join((DIST / n).read_bytes() for n in sorted(("index.html", "pwa.js", "manifest.json", "icon-192.png", "icon-512.png"))) + b"".join(f.read_bytes() for f in UI)
                        + (ROOT / "pwa/sw.js").read_bytes()).hexdigest()[:10]
 (DIST / "sw.js").write_text((ROOT / "pwa/sw.js").read_text().replace("__VERSION__", version), encoding="utf-8")
-print(f"Built {DIST.relative_to(ROOT)} (version {version}):", ", ".join(sorted(p.name for p in DIST.iterdir())))
+print(f"Built {DIST} (version {version}):", ", ".join(sorted(p.name for p in DIST.iterdir())))

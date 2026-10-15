@@ -93,3 +93,4 @@
   Bottom nav + tiles + hero removed; Jarvis/Food/Life/Week/Me moved into ⋯ sheet. "Window open" only for items >14d away.
   E2E navigates via the menu (tab() helper). 37 tests green.
 - Founder: 'simple is boring, rethink year-3000'. 3 concept mockups sent (Orb voice-core, Timeline river, Card stack w/ XP). Mockups not committed (contain founder's items). Awaiting pick.
+- Groundwork for parallel agents: app/ui/*.js view modules (EXTRA_VIEWS registry, HOME=orb when present), LIFEOS_DIST build override, PhoneBase test base with per-class temp builds, menu entries List/Focus/Timeline.

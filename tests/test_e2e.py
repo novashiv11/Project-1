@@ -35,11 +35,15 @@ class Quiet(SimpleHTTPRequestHandler):
 
 
 @unittest.skipUnless(sync_playwright and Path(CHROME).exists(), "playwright/chromium not available")
-class PhoneAppTest(unittest.TestCase):
+class PhoneBase(unittest.TestCase):
+    """Phone-sized browser on a fresh build. Subclass it for new screens; it has no tests of its own."""
     @classmethod
     def setUpClass(cls):
-        subprocess.run([sys.executable, str(ROOT / "scripts/build_pwa.py")], check=True, capture_output=True)
-        cls.srv = ThreadingHTTPServer(("127.0.0.1", 0), partial(Quiet, directory=str(ROOT / "dist")))
+        import os
+        cls.dist = tempfile.mkdtemp(prefix="lifeos-dist-")
+        subprocess.run([sys.executable, str(ROOT / "scripts/build_pwa.py")], check=True, capture_output=True,
+                       env={**os.environ, "LIFEOS_DIST": cls.dist})
+        cls.srv = ThreadingHTTPServer(("127.0.0.1", 0), partial(Quiet, directory=cls.dist))
         threading.Thread(target=cls.srv.serve_forever, daemon=True).start()
         cls.url = f"http://127.0.0.1:{cls.srv.server_port}/"
         cls.tmp = tempfile.mkdtemp()
@@ -49,6 +53,7 @@ class PhoneAppTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.browser.close(); cls.pw.stop(); cls.srv.shutdown(); cls.srv.server_close(); shutil.rmtree(cls.tmp)
+        shutil.rmtree(cls.dist, ignore_errors=True)
 
     def setUp(self):
         self.ctx = self.browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True,
@@ -83,12 +88,12 @@ class PhoneAppTest(unittest.TestCase):
 
     def tab(self, name):
         """Open a screen the way a person would: ⋯ menu, or the back button for Aaj."""
-        if name == "today":
+        if name == "home":
             if self.pg.is_visible("#tab-today"):
                 self.pg.click("#tab-today")
             return
         self.pg.click("#more")
-        self.pg.click(f"#tab-{name}")
+        self.pg.click("#tab-list" if name == "today" else f"#tab-{name}")
 
     def add(self, *texts):
         for t in texts:
@@ -98,6 +103,9 @@ class PhoneAppTest(unittest.TestCase):
     def items(self):
         return self.pg.evaluate("[...items.values()].map(i => i.text)")
 
+
+
+class PhoneAppTest(PhoneBase):
     def test_fits_phone_width_on_every_tab(self):
         self.add("passport expires 2027-03-14", "NCT due in 20 days", "lunch 650 kcal")
         for tab in ("today", "life", "review", "all", "jarvis", "food"):
@@ -207,11 +215,7 @@ class PhoneAppTest(unittest.TestCase):
         self.assertTrue(any("LIFEOS" in t and "lifeos-backup" in t for t in self.pg.evaluate("window.__copied")))
 
 
-@unittest.skipUnless(sync_playwright and Path(CHROME).exists(), "playwright/chromium not available")
-class GestureTest(PhoneAppTest):
-    test_fits_phone_width_on_every_tab = test_brief_guides_and_renewal_nudges = None
-    test_food_scan_portion_and_daily_total = test_qr_code = test_backup_and_restore = test_jarvis_chat_saves_item = None
-    test_ask_claude_free_flow = test_import_from_claude_memory_and_project_setup = None
+class GestureTest(PhoneBase):
     """Swipe right completes, swipe left snoozes a day (inherits the phone setup; runs only these tests)."""
     def _swipe(self, sel, dx):
         box = self.pg.locator(sel).first.bounding_box()

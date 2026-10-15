@@ -182,7 +182,7 @@ header .date{display:flex;gap:4px;flex-wrap:wrap}
 .capbox{display:flex;gap:8px;align-items:center;background:var(--card2);border:1px solid var(--line);border-radius:20px;padding:8px 8px 8px 16px}
 .capbox input{flex:1;min-width:0;background:transparent;border:0;color:var(--fg);font:17px var(--body);padding:8px 0}
 .capbox input::placeholder{color:var(--muted)}.capbox input:focus{outline:none}
-body:not([data-view="today"]) #cap{display:none}
+body:not([data-view="today"]):not([data-view="orb"]) #cap{display:none}
 .grp{display:grid;gap:2px}
 .grp h2{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 4px}
 .grp h2 span{color:var(--accent);letter-spacing:0}
@@ -210,7 +210,7 @@ section,.brief,.cards,.chat,.setup,.scan,.answer,.guide{grid-template-columns:mi
 
 <div class="wrap">
   <header>
-    <div style="min-width:0"><button class="back" id="tab-today" data-v="today" hidden>← Aaj</button>
+    <div style="min-width:0"><button class="back" id="tab-today" data-v="home" hidden>← Home</button>
       <h1 id="title">Aaj</h1><div class="date"><span id="today"></span><span id="storeNote" hidden>Connecting…</span></div></div>
     <button class="more" id="more" aria-label="More: Jarvis, food, life, week, settings" aria-expanded="false">⋯</button>
   </header>
@@ -228,6 +228,9 @@ section,.brief,.cards,.chat,.setup,.scan,.answer,.guide{grid-template-columns:mi
 </div>
 <div class="sheet" id="sheet" hidden>
   <div class="panel" role="menu">
+    <button data-v="today" id="tab-list" role="menuitem"><i>☰</i><span><b>List</b><small>Everything due, in one list</small></span></button>
+    <button data-v="stack" id="tab-stack" role="menuitem" hidden><i>🃏</i><span><b>Focus</b><small>One thing at a time, swipe to finish</small></span></button>
+    <button data-v="timeline" id="tab-timeline" role="menuitem" hidden><i>〰</i><span><b>Timeline</b><small>Your life on one line</small></span></button>
     <button data-v="jarvis" id="tab-jarvis" role="menuitem"><i>🧠</i><span><b>Jarvis</b><small>Ask Claude about your life</small></span></button>
     <button data-v="food" id="tab-food" role="menuitem"><i>🍽</i><span><b>Food</b><small>Calories today, scan barcodes</small></span></button>
     <button data-v="life" id="tab-life" role="menuitem"><i>◐</i><span><b>Life areas</b><small>Home, money, documents, pets…</small></span></button>
@@ -922,8 +925,10 @@ async function snooze(id,el){
   document.addEventListener("pointerup",end);document.addEventListener("pointercancel",end);
 })();
 
-let view="today";
-try{view=localStorage.getItem("lifeos.view")||"today";if(view==="dog")view="life"}catch(e){}
+/* View modules (app/ui/*.js) register here: EXTRA_VIEWS.name = {title, render(all,today) → html, mount(root,all,today)} */
+const EXTRA_VIEWS=window.EXTRA_VIEWS||(window.EXTRA_VIEWS={});
+const HOME=EXTRA_VIEWS.orb?"orb":"today";
+let view=HOME; // the app always opens on home
 function render(){
   const all=[...items.values()], today=todayDate();
   document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.v===view));
@@ -931,9 +936,11 @@ function render(){
   const dn=new Date(); document.getElementById("today").textContent=`${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][dn.getDay()]} · ${dn.getDate()} ${MON_SHORT[dn.getMonth()]}`;
 
   const cq=document.getElementById("cq")||document.getElementById("aq"), draft=cq?cq.value:"", focused=document.activeElement===cq, pasteDraft=(document.getElementById("paste")||{}).value||"";
-  document.getElementById("view").innerHTML=({today:vToday,life:vLife,review:vReview,all:vAll,jarvis:vJarvis,food:vFood}[view]||vToday)(all,today);
-  document.getElementById("title").textContent={today:"Aaj",life:"Life",review:"Week",all:"Me",jarvis:"Jarvis",food:"Food"}[view]||"Aaj";
-  document.getElementById("tab-today").hidden=view==="today";
+  const ext=EXTRA_VIEWS[view], root=document.getElementById("view");
+  root.innerHTML=ext?ext.render(all,today):({today:vToday,life:vLife,review:vReview,all:vAll,jarvis:vJarvis,food:vFood}[view]||vToday)(all,today);
+  if(ext&&ext.mount)ext.mount(root,all,today);
+  document.getElementById("title").textContent=(ext&&ext.title)||{today:"Aaj",life:"Life",review:"Week",all:"Me",jarvis:"Jarvis",food:"Food"}[view]||"Aaj";
+  document.getElementById("tab-today").hidden=view===HOME;
   const cq2=document.getElementById("cq")||document.getElementById("aq"); if(cq2){cq2.value=draft;if(focused)cq2.focus()}
   const pz=document.getElementById("paste"); if(pz&&pasteDraft&&!pasteResult)pz.value=pasteDraft;
 }
@@ -959,11 +966,12 @@ document.getElementById("cap").addEventListener("submit",async e=>{
   else{document.getElementById("answer").hidden=true;await capture(text)}
 });
 document.getElementById("sheet").addEventListener("click",e=>{if(e.target.id==="sheet")e.target.hidden=true});
+for(const v of ["stack","timeline"])document.getElementById("tab-"+v).hidden=!EXTRA_VIEWS[v];
 document.addEventListener("click",async e=>{
   const b=e.target.closest("button"); if(!b)return;
   if(b.id==="more"){const sh=document.getElementById("sheet");sh.hidden=!sh.hidden;b.setAttribute("aria-expanded",String(!sh.hidden));return}
   if(b.hasAttribute("data-later")){showLater=!showLater;render();return}
-  if(b.dataset.v){document.getElementById("sheet").hidden=true;if(view!==b.dataset.v)window.scrollTo(0,0);view=b.dataset.v;lifeArea=null;try{localStorage.setItem("lifeos.view",view)}catch(_){}render();return}
+  if(b.dataset.v){document.getElementById("sheet").hidden=true;const v=b.dataset.v==="home"?HOME:b.dataset.v;if(view!==v)window.scrollTo(0,0);view=v;lifeArea=null;try{localStorage.setItem("lifeos.view",view)}catch(_){}render();return}
   if(b.hasAttribute("data-foodlog")){showFoodLog=!showFoodLog;render();return}
   if(b.hasAttribute("data-chatcam")){document.getElementById("cam").click();return}
   if(b.dataset.area!==undefined){lifeArea=b.dataset.area||null;render();window.scrollTo(0,0);return}
