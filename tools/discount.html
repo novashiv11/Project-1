@@ -1,0 +1,23 @@
+<!--meta
+{"slug": "discount-calculator", "title": "Discount Calculator",
+ "description": "Work out the sale price and how much you save, including stacked discounts and sales tax.",
+ "faq": [
+  ["How do I calculate a discount?", "Multiply the original price by the discount percentage and divide by 100 to get the savings, then subtract that from the price. 25% off $80 saves $20, so you pay $60."],
+  ["Is 20% off plus 10% off the same as 30% off?", "No. Stacked discounts apply one after another: 20% off then 10% off is 28% off in total."]
+ ]}
+-->
+<div class="row">
+ <div><label for="price">Original price</label><input id="price" type="number" value="80"></div>
+ <div><label for="off">Discount (%)</label><input id="off" type="number" value="25"></div>
+ <div><label for="off2">Extra discount (%)</label><input id="off2" type="number" value="0"></div>
+ <div><label for="stax">Sales tax (%)</label><input id="stax" type="number" value="0"></div>
+</div>
+<div class="result" id="out"></div>
+<script>
+function calc(){const p=+price.value,s=p*(1-off.value/100)*(1-off2.value/100),f=s*(1+stax.value/100),c=x=>x.toFixed(2);
+ out.innerHTML=`You pay: <b>${c(f)}</b><br>You save: ${c(p-s)} (${c((1-s/p)*100||0)}% off)${+stax.value?` &middot; Tax: ${c(f-s)}`:''}`;}
+document.querySelectorAll('input').forEach(e=>e.addEventListener('input',calc));calc();
+</script>
+<!--content-->
+<h2>Know the real price before you buy</h2>
+<p>Enter the price tag and the discount to see what you pay. Shops often stack offers ("extra 10% off sale items"). Add the second discount to see the true combined saving, and add your local sales tax for the final amount at checkout.</p>

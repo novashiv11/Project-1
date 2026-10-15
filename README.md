@@ -27,12 +27,13 @@ then income that grows as pages start ranking. More tools mean more pages that c
    *Tip: AdSense approves custom domains more easily than `github.io` addresses. A `.com` domain costs about $10 a year.*
 6. **Optional affiliate income**: join Amazon Associates, or a bank/broker affiliate program
    (these pay well next to finance calculators), then put your links in `config.json` -> `affiliate_links`.
+   Give a link a `"tools"` list of page slugs to show it only on related tools (e.g. a fitness tracker on the calorie calculator).
 
 ## Adding a new tool (the way to grow income)
 
 Copy any file in `tools/`, change the meta block (`slug`, `title`, `description`, `faq`), the tool HTML/JS and the article text, then push.
-The home page, sitemap and SEO tags update automatically. Ideas that get lots of searches: GPA calculator,
-mortgage affordability, salary to hourly, retirement savings, date difference, unit converter, calorie calculator, SIP calculator.
+The home page, sitemap and SEO tags update automatically. Ideas that get lots of searches: income tax, inflation, car loan, fuel cost, pregnancy due date,
+sleep, time zone converter, random number generator, currency converter, credit card payoff.
 
 ## Build locally
 

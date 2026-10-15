@@ -1,0 +1,25 @@
+<!--meta
+{"slug": "days-between-dates", "title": "Days Between Dates Calculator",
+ "description": "Count the days, weeks and months between two dates, including or excluding weekends.",
+ "faq": [
+  ["Does it include the end date?", "By default the end date is not counted (like most date calculators). Tick 'Include end date' to add one day."],
+  ["How are business days counted?", "Business days are Monday to Friday. Public holidays are not removed because they differ by country."]
+ ]}
+-->
+<div class="row">
+ <div><label for="d1">Start date</label><input id="d1" type="date"></div>
+ <div><label for="d2">End date</label><input id="d2" type="date"></div>
+</div>
+<label><input type="checkbox" id="incl" style="width:auto"> Include end date</label>
+<div class="result" id="out"></div>
+<script>
+const now=new Date();d1.valueAsDate=now;d2.valueAsDate=new Date(now.getFullYear(),11,31);
+function calc(){const a=new Date(d1.value),b=new Date(d2.value);if(isNaN(a)||isNaN(b)){out.textContent='Pick two dates.';return;}
+ const [s,e]=a<b?[a,b]:[b,a];let days=Math.round((e-s)/864e5)+(incl.checked?1:0),bd=0;
+ for(let k=0;k<days;k++){const w=new Date(s.getTime()+k*864e5).getUTCDay();if(w&&w<6)bd++;}
+ out.innerHTML=`<b>${days.toLocaleString()} days</b><br>${Math.floor(days/7)} weeks and ${days%7} days &middot; about ${(days/30.4375).toFixed(1)} months &middot; ${bd.toLocaleString()} business days`;}
+document.querySelectorAll('input').forEach(e=>e.addEventListener('input',calc));calc();
+</script>
+<!--content-->
+<h2>Count days for deadlines, trips and countdowns</h2>
+<p>Use it to count down to a holiday or event, work out notice periods and project deadlines, or check how many working days are left. The business-day count skips Saturdays and Sundays.</p>

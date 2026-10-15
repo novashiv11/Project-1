@@ -1,0 +1,26 @@
+<!--meta
+{"slug": "calorie-calculator", "title": "Calorie Calculator (TDEE)",
+ "description": "Estimate how many calories you burn per day and how many to eat to lose, keep or gain weight.",
+ "faq": [
+  ["What is TDEE?", "Total Daily Energy Expenditure is the number of calories your body burns in a day, including exercise. Eating less than your TDEE leads to weight loss."],
+  ["Which formula does this use?", "It uses the Mifflin-St Jeor equation, which research has found to be among the most accurate for estimating resting calorie burn."],
+  ["How fast can I safely lose weight?", "About 0.5 kg (1 lb) per week, which is roughly a 500-calorie daily deficit, is a common safe target. Talk to a doctor before big diet changes."]
+ ]}
+-->
+<div class="row">
+ <div><label for="sex">Sex</label><select id="sex"><option value="m">Male</option><option value="f">Female</option></select></div>
+ <div><label for="cage">Age</label><input id="cage" type="number" value="30"></div>
+ <div><label for="kg">Weight (kg)</label><input id="kg" type="number" value="75"></div>
+ <div><label for="cm">Height (cm)</label><input id="cm" type="number" value="178"></div>
+ <div><label for="act">Activity</label><select id="act"><option value="1.2">Sedentary (desk job)</option><option value="1.375">Light exercise 1–3 days/week</option><option value="1.55" selected>Moderate 3–5 days/week</option><option value="1.725">Hard 6–7 days/week</option><option value="1.9">Very hard / physical job</option></select></div>
+</div>
+<div class="result" id="out"></div>
+<script>
+function calc(){const bmr=10*kg.value+6.25*cm.value-5*cage.value+(sex.value==='m'?5:-161),t=bmr*act.value,R=x=>Math.round(x).toLocaleString();
+ out.innerHTML=`Maintain weight: <b>${R(t)} kcal/day</b><br>Lose 0.5 kg/week: ${R(t-500)} &middot; Lose 1 kg/week: ${R(t-1000)} &middot; Gain 0.5 kg/week: ${R(t+500)}<br><span class="muted">Resting burn (BMR): ${R(bmr)} kcal</span>`;}
+document.querySelectorAll('input,select').forEach(e=>e.addEventListener('input',calc));calc();
+</script>
+<!--content-->
+<h2>How many calories should I eat?</h2>
+<p>Your resting burn (BMR) is worked out with the Mifflin-St Jeor equation and multiplied by your activity level to get your total daily burn (TDEE). A deficit of about 500 calories a day leads to roughly 0.5 kg (1 lb) of weight loss per week.</p>
+<p>These are estimates and not medical advice.</p>

@@ -1,0 +1,33 @@
+<!--meta
+{"slug": "unit-converter", "title": "Unit Converter",
+ "description": "Convert length, weight, temperature, volume and speed between metric and imperial units instantly.",
+ "faq": [
+  ["How many centimeters are in an inch?", "One inch is exactly 2.54 centimeters."],
+  ["How do I convert Celsius to Fahrenheit?", "Multiply by 9/5 and add 32. For example, 20 °C × 9/5 + 32 = 68 °F."],
+  ["How many pounds are in a kilogram?", "One kilogram is about 2.20462 pounds."]
+ ]}
+-->
+<div class="row">
+ <div><label for="cat">Type</label><select id="cat"></select></div>
+ <div><label for="val">Value</label><input id="val" type="number" value="1"></div>
+ <div><label for="fu">From</label><select id="fu"></select></div>
+ <div><label for="tu">To</label><select id="tu"></select></div>
+</div>
+<div class="result" id="out"></div>
+<script>
+const U={Length:{Meter:1,Kilometer:1000,Centimeter:.01,Millimeter:.001,Mile:1609.344,Yard:.9144,Foot:.3048,Inch:.0254},
+ Weight:{Kilogram:1,Gram:.001,Pound:.45359237,Ounce:.028349523125,Stone:6.35029318,'Metric ton':1000},
+ Volume:{Liter:1,Milliliter:.001,'US gallon':3.785411784,'US cup':.2365882365,'US fluid ounce':.0295735295625,'Imperial gallon':4.54609},
+ Speed:{'km/h':1,'mph':1.609344,'m/s':3.6,Knot:1.852},
+ Temperature:{Celsius:0,Fahrenheit:0,Kelvin:0}};
+const toC={Celsius:x=>x,Fahrenheit:x=>(x-32)*5/9,Kelvin:x=>x-273.15},fromC={Celsius:x=>x,Fahrenheit:x=>x*9/5+32,Kelvin:x=>x+273.15};
+cat.innerHTML=Object.keys(U).map(k=>`<option>${k}</option>`).join('');
+function fill(){const ks=Object.keys(U[cat.value]).map(k=>`<option>${k}</option>`).join('');fu.innerHTML=tu.innerHTML=ks;tu.selectedIndex=1;calc();}
+function calc(){const v=+val.value,c=cat.value;
+ const r=c==='Temperature'?fromC[tu.value](toC[fu.value](v)):v*U[c][fu.value]/U[c][tu.value];
+ out.innerHTML=`${v} ${fu.value} = <b>${(+r.toPrecision(8)).toLocaleString(undefined,{maximumFractionDigits:6})} ${tu.value}</b>`;}
+cat.addEventListener('change',fill);[val,fu,tu].forEach(e=>e.addEventListener('input',calc));fill();
+</script>
+<!--content-->
+<h2>Common conversions</h2>
+<table><tr><th>From</th><th>To</th></tr><tr><td>1 inch</td><td>2.54 cm</td></tr><tr><td>1 foot</td><td>30.48 cm</td></tr><tr><td>1 mile</td><td>1.609 km</td></tr><tr><td>1 kg</td><td>2.205 lb</td></tr><tr><td>1 US gallon</td><td>3.785 L</td></tr><tr><td>0 °C</td><td>32 °F</td></tr></table>

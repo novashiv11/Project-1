@@ -1,0 +1,24 @@
+<!--meta
+{"slug": "gpa-calculator", "title": "GPA Calculator",
+ "description": "Calculate your GPA on a 4.0 scale from letter grades and credit hours. Add as many courses as you need.",
+ "faq": [
+  ["How is GPA calculated?", "Each letter grade is turned into grade points (A = 4.0, B = 3.0 and so on), multiplied by the course credits, added up and divided by the total credits."],
+  ["Is an A+ worth more than 4.0?", "Most schools cap A+ at 4.0, which is what this calculator uses. Check your school's policy."]
+ ]}
+-->
+<div id="rows"></div>
+<button onclick="addRow()">+ Add course</button>
+<div class="result" id="out"></div>
+<script>
+const G={'A+':4,'A':4,'A-':3.7,'B+':3.3,'B':3,'B-':2.7,'C+':2.3,'C':2,'C-':1.7,'D+':1.3,'D':1,'F':0};
+function addRow(g='A',c=3){const d=document.createElement('div');d.className='row';
+ d.innerHTML=`<input placeholder="Course name"><select>${Object.keys(G).map(k=>`<option${k===g?' selected':''}>${k}</option>`).join('')}</select><input type="number" value="${c}" min="0" step="0.5" placeholder="Credits">`;
+ d.addEventListener('input',calc);rows.appendChild(d);calc();}
+function calc(){let pts=0,cr=0;rows.querySelectorAll('.row').forEach(r=>{const c=+r.children[2].value;pts+=G[r.children[1].value]*c;cr+=c;});
+ out.innerHTML=cr?`Your GPA: <b>${(pts/cr).toFixed(2)}</b> &middot; ${cr} credits`:'Add a course.';}
+addRow('A',3);addRow('B+',4);addRow('A-',3);addRow('B',2);
+</script>
+<!--content-->
+<h2>Grade point scale</h2>
+<table><tr><th>Grade</th><th>Points</th></tr><tr><td>A / A+</td><td>4.0</td></tr><tr><td>A-</td><td>3.7</td></tr><tr><td>B+</td><td>3.3</td></tr><tr><td>B</td><td>3.0</td></tr><tr><td>B-</td><td>2.7</td></tr><tr><td>C+</td><td>2.3</td></tr><tr><td>C</td><td>2.0</td></tr><tr><td>C-</td><td>1.7</td></tr><tr><td>D+</td><td>1.3</td></tr><tr><td>D</td><td>1.0</td></tr><tr><td>F</td><td>0.0</td></tr></table>
+<p>Courses with more credit hours count more toward your GPA, so a strong grade in a 4-credit class lifts it more than in a 1-credit class.</p>

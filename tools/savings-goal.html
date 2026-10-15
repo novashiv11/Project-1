@@ -1,0 +1,24 @@
+<!--meta
+{"slug": "savings-goal-calculator", "title": "Savings Goal Calculator",
+ "description": "Find out how much to save each month to reach a savings goal by a target date.",
+ "faq": [
+  ["How much should I save each month?", "It depends on your goal, timeline and the interest you earn. Enter them above to get the exact monthly amount."],
+  ["Where should I keep short-term savings?", "For goals under a few years away, many people use a high-yield savings account so the money stays safe and easy to reach."]
+ ]}
+-->
+<div class="row">
+ <div><label for="goal">Savings goal</label><input id="goal" type="number" value="10000"></div>
+ <div><label for="have">Already saved</label><input id="have" type="number" value="1000"></div>
+ <div><label for="mths">Months to reach goal</label><input id="mths" type="number" value="24"></div>
+ <div><label for="apy">Interest rate (%/yr)</label><input id="apy" type="number" value="4" step="0.1"></div>
+</div>
+<div class="result" id="out"></div>
+<script>
+function calc(){const i=apy.value/1200,n=+mths.value,fv=goal.value-have.value*Math.pow(1+i,n);
+ const pmt=fv<=0?0:i?fv*i/(Math.pow(1+i,n)-1):fv/n,c=x=>x.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+ out.innerHTML=fv<=0?'<b>You will reach your goal</b> with interest alone. 🎉':`Save <b>${c(pmt)}</b> per month<br>Total you put in: ${c(pmt*n)} &middot; Interest earned: ${c(goal.value-have.value-pmt*n)}`;}
+document.querySelectorAll('input').forEach(e=>e.addEventListener('input',calc));calc();
+</script>
+<!--content-->
+<h2>Plan for a car, holiday, wedding or emergency fund</h2>
+<p>Set your target, what you already have and your deadline. The calculator tells you the monthly amount needed, counting the interest your savings earn along the way. Setting up an automatic transfer on payday is the easiest way to stick to it.</p>

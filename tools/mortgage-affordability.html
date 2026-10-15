@@ -1,0 +1,33 @@
+<!--meta
+{"slug": "mortgage-affordability-calculator", "title": "Mortgage Affordability Calculator",
+ "description": "Find out how much house you can afford based on your income, debts, down payment and interest rate.",
+ "faq": [
+  ["How much house can I afford?", "Lenders commonly use the 28/36 rule: housing costs up to 28% of gross monthly income, and all debt payments up to 36%. This calculator uses the lower of the two limits."],
+  ["Does this include property tax and insurance?", "Yes. Enter your estimated monthly tax and insurance and they are subtracted from your affordable payment before the loan amount is worked out."]
+ ]}
+-->
+<div class="row">
+ <div><label for="inc">Annual gross income</label><input id="inc" type="number" value="90000"></div>
+ <div><label for="debt">Monthly debt payments</label><input id="debt" type="number" value="400"></div>
+ <div><label for="down">Down payment</label><input id="down" type="number" value="40000"></div>
+ <div><label for="rate">Interest rate (%)</label><input id="rate" type="number" value="6.5" step="0.05"></div>
+ <div><label for="yrs">Loan term (years)</label><input id="yrs" type="number" value="30"></div>
+ <div><label for="tax">Monthly tax + insurance</label><input id="tax" type="number" value="450"></div>
+</div>
+<button onclick="calc()">Calculate</button>
+<div class="result" id="out"></div>
+<script>
+const money=x=>x.toLocaleString(undefined,{maximumFractionDigits:0});
+function calc(){
+ const mi=inc.value/12,pay=Math.min(mi*0.28,mi*0.36-debt.value)-tax.value;
+ const i=rate.value/1200,n=yrs.value*12;
+ if(pay<=0){out.innerHTML='Your debts and costs are too high for a mortgage under the 28/36 rule.';return;}
+ const loan=i?pay*(Math.pow(1+i,n)-1)/(i*Math.pow(1+i,n)):pay*n;
+ out.innerHTML=`You can afford a home of about <b>${money(loan+ +down.value)}</b><br>Loan: ${money(loan)} &middot; Monthly principal + interest: ${money(pay)} &middot; Total monthly: ${money(pay+ +tax.value)}`;
+}
+calc();
+</script>
+<!--content-->
+<h2>How affordability is calculated</h2>
+<p>Most lenders limit your housing payment to 28% of your gross monthly income and your total debt payments to 36%. We take the lower limit, subtract property tax and insurance, and work out the largest loan that payment can cover at your rate and term. Your down payment is added to give the home price.</p>
+<p>This is an estimate. Your lender will also look at your credit score, savings and job history.</p>

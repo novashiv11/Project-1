@@ -1,0 +1,27 @@
+<!--meta
+{"slug": "sip-calculator", "title": "SIP Calculator",
+ "description": "Calculate the future value of your SIP (systematic investment plan) in mutual funds, with optional yearly step-up.",
+ "faq": [
+  ["What is a SIP?", "A systematic investment plan (SIP) means investing a fixed amount in a mutual fund every month. It builds the habit of saving and averages out market ups and downs."],
+  ["What is a step-up SIP?", "A step-up SIP increases your monthly investment by a fixed percentage each year, usually in line with salary increases. It can grow your final amount a lot."],
+  ["What return should I expect?", "Equity mutual funds have historically returned around 10–12% a year over long periods in India, but returns are not guaranteed."]
+ ]}
+-->
+<div class="row">
+ <div><label for="sipm">Monthly investment</label><input id="sipm" type="number" value="5000"></div>
+ <div><label for="sipr">Expected return (%/yr)</label><input id="sipr" type="number" value="12" step="0.1"></div>
+ <div><label for="sipy">Years</label><input id="sipy" type="number" value="15"></div>
+ <div><label for="step">Yearly step-up (%)</label><input id="step" type="number" value="0"></div>
+</div>
+<div class="result" id="out"></div>
+<script>
+const r0=x=>Math.round(x).toLocaleString('en-IN');
+function calc(){const i=sipr.value/1200;let b=0,inv=0,m=+sipm.value;
+ for(let y=0;y<sipy.value;y++){for(let k=0;k<12;k++){b=(b+m)*(1+i);inv+=m;}m*=1+step.value/100;}
+ out.innerHTML=`Maturity value: <b>${r0(b)}</b><br>Invested: ${r0(inv)} &middot; Estimated gains: ${r0(b-inv)}`;}
+document.querySelectorAll('input').forEach(e=>e.addEventListener('input',calc));calc();
+</script>
+<!--content-->
+<h2>How the SIP calculator works</h2>
+<p>Each monthly installment is invested at the start of the month and grows at the expected return, compounded monthly. This matches how most SIP calculators from fund houses work. Add a yearly step-up to see the effect of raising your SIP as your income grows.</p>
+<p>Mutual fund investments are subject to market risk. This is an estimate, not a guarantee.</p>

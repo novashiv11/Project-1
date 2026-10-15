@@ -1,0 +1,31 @@
+<!--meta
+{"slug": "retirement-calculator", "title": "Retirement Savings Calculator",
+ "description": "Estimate your retirement savings, the yearly income they can provide, and whether you are on track.",
+ "faq": [
+  ["How much do I need to retire?", "A common rule of thumb is about 25 times the yearly spending you expect in retirement, which supports withdrawing around 4% a year."],
+  ["What is the 4% rule?", "The 4% rule says you can withdraw about 4% of your savings in the first year of retirement, adjusting for inflation after that, with a good chance of the money lasting 30 years."]
+ ]}
+-->
+<div class="row">
+ <div><label for="age">Current age</label><input id="age" type="number" value="30"></div>
+ <div><label for="rage">Retirement age</label><input id="rage" type="number" value="65"></div>
+ <div><label for="sav">Current savings</label><input id="sav" type="number" value="20000"></div>
+ <div><label for="mon">Monthly contribution</label><input id="mon" type="number" value="500"></div>
+ <div><label for="ret">Expected return (%/yr)</label><input id="ret" type="number" value="7" step="0.1"></div>
+ <div><label for="infl">Inflation (%/yr)</label><input id="infl" type="number" value="2.5" step="0.1"></div>
+ <div><label for="need">Yearly spending in retirement (today's money)</label><input id="need" type="number" value="40000"></div>
+</div>
+<button onclick="calc()">Calculate</button>
+<div class="result" id="out"></div>
+<script>
+const m0=x=>Math.round(x).toLocaleString();
+function calc(){const yrs=rage.value-age.value,r=(1+ret.value/100)/(1+infl.value/100)-1,mr=Math.pow(1+r,1/12)-1;
+ let b=+sav.value;for(let k=0;k<yrs*12;k++)b=b*(1+mr)+ +mon.value;
+ const goal=need.value*25,inc=b*0.04,ok=b>=goal;
+ out.innerHTML=`Savings at ${rage.value}: <b>${m0(b)}</b> (in today's money)<br>Safe yearly income (4% rule): ${m0(inc)} &middot; Goal: ${m0(goal)}<br>${ok?'✅ You are on track.':`⚠️ Short by ${m0(goal-b)}. Try saving more or retiring later.`}`;}
+calc();
+</script>
+<!--content-->
+<h2>About this retirement calculator</h2>
+<p>Results are shown in today's money: the calculator removes inflation from your return, so the figures are easy to compare with what things cost now. Your goal is 25 times your expected yearly spending, based on the 4% rule.</p>
+<p>Returns are never guaranteed. Use this as a planning guide, not financial advice.</p>

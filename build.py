@@ -51,8 +51,9 @@ def ad_slot():
     )
 
 
-def affiliates():
-    links = CFG.get("affiliate_links") or []
+def affiliates(slug):
+    # A link with a "tools" list only shows on those tool pages; without one it shows everywhere.
+    links = [l for l in CFG.get("affiliate_links") or [] if slug in l.get("tools", [slug])]
     if not links:
         return ""
     items = "".join(
@@ -135,7 +136,7 @@ def main():
         main_html = (
             f'<h1>{t["title"]}</h1><p class="muted">{t["description"]}</p>'
             f'<div class="card">{t["tool"]}</div>{ad_slot()}'
-            f'<article>{t["content"]}</article>{affiliates()}{faq_html(t.get("faq"))}{ad_slot()}'
+            f'<article>{t["content"]}</article>{affiliates(t["slug"])}{faq_html(t.get("faq"))}{ad_slot()}'
         )
         write(t["slug"], layout(t, main_html, 1))
 
