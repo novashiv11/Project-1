@@ -24,3 +24,4 @@
 - 2026-10-15 · Jarvis chat = direct browser call to the Claude API with the user's own key stored on the phone (no server). Raw fetch instead of the JS SDK to keep the app build-free. Haiku 5.5, effort low; history append-only (preserved-thinking safe), reset after 40 messages. Paid tier later moves this to a small server.
 - 2026-10-15 · Food/product data from Open Food Facts (free, no key, CORS). Barcode decoding via Chrome's BarcodeDetector (no library); other browsers fall back to Jarvis photo reading.
 - 2026-10-15 · Play Store via PWABuilder TWA (can't build Android here: dl.google.com blocked). Needs founder: Play Console ($25), user-site repo for assetlinks, 12 testers × 14 days closed test.
+- 2026-10-15 · UI v1.0: dark-first 'Jarvis home' (mockup A) + life wheel (B). Mockups kept in docs/mockups.

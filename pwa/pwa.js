@@ -68,7 +68,7 @@
     if (!b) {
       b = document.createElement("button");
       b.id = id; b.type = "button"; b.className = "go"; b.style.padding = "10px 14px";
-      document.querySelector("header").appendChild(b);
+      (document.getElementById("banners") || document.querySelector("header")).appendChild(b);
     }
     b.textContent = text; b.onclick = onClick; b.hidden = false;
     return b;
@@ -104,7 +104,7 @@
       btn.className = "go"; btn.type = "button"; btn.id = "remind"; btn.style.padding = "10px 14px";
       btn.textContent = "🔔 Turn on reminders";
       btn.addEventListener("click", () => enableReminders(reg, btn));
-      document.querySelector("header").appendChild(btn);
+      (document.getElementById("banners") || document.querySelector("header")).appendChild(btn);
     } else notifyOnOpen(reg);
   });
 })();

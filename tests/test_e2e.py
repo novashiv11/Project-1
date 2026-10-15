@@ -98,7 +98,8 @@ class PhoneAppTest(unittest.TestCase):
     def test_brief_guides_and_renewal_nudges(self):
         self.add("NCT due in 20 days", "IRP card expires in 60 days")
         self.pg.click("#tab-today")
-        self.assertIn("start now", self.pg.inner_text(".brief"))
+        self.assertIn("ab start karo", self.pg.inner_text(".brief"))
+        self.assertIn("start now", self.pg.inner_text(".cards"))
         self.pg.click("button[data-guide]")
         self.assertTrue(self.pg.eval_on_selector_all(".guide a", "els => els.every(e => e.href.startsWith('https://'))"))
         nudges = self.pg.evaluate("""new Promise(ok => { const r = indexedDB.open('lifeos', 1);
@@ -117,8 +118,10 @@ class PhoneAppTest(unittest.TestCase):
         self.assertEqual(self.pg.input_value("#fgrams"), "125")
         self.pg.fill("#fgrams", "150")
         self.pg.click("button[data-scan=food]")
+        self.pg.click("#tab-today")
         self.pg.wait_for_selector(".food")
-        self.assertIn("796 kcal of 2000", self.pg.inner_text(".food"))  # 650 + 97*1.5
+        self.assertEqual(self.pg.inner_text(".food .big"), "796")  # 650 + 97*1.5
+        self.assertIn("of 2000 kcal", self.pg.inner_text(".food"))
 
     def test_qr_code(self):
         self.pg.evaluate("window.__code = {format: 'qr_code', rawValue: 'https://www.ncts.ie/'}")
@@ -162,3 +165,28 @@ class PhoneAppTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@unittest.skipUnless(sync_playwright and Path(CHROME).exists(), "playwright/chromium not available")
+class GestureTest(PhoneAppTest):
+    test_fits_phone_width_on_every_tab = test_brief_guides_and_renewal_nudges = None
+    test_food_scan_portion_and_daily_total = test_qr_code = test_backup_and_restore = test_jarvis_chat_saves_item = None
+    """Swipe right completes, swipe left snoozes a day (inherits the phone setup; runs only these tests)."""
+    def _swipe(self, sel, dx):
+        box = self.pg.locator(sel).first.bounding_box()
+        x, y = box["x"] + 20, box["y"] + box["height"] / 2
+        self.pg.mouse.move(x, y); self.pg.mouse.down()
+        for i in range(1, 11):
+            self.pg.mouse.move(x + dx * i / 10, y)
+        self.pg.mouse.up()
+        self.pg.wait_for_timeout(450)
+
+    def test_swipe_done_and_snooze(self):
+        self.add("dentist kal 4pm", "NCT due tomorrow")
+        self.pg.click("#tab-today")
+        self._swipe('.card:has-text("dentist")', 160)
+        self.assertTrue(self.pg.evaluate("[...items.values()].find(i => i.text.startsWith('dentist')).done"))
+        before = self.pg.evaluate("[...items.values()].find(i => i.text.startsWith('NCT')).due")
+        self._swipe('.card:has-text("NCT")', -160)
+        after = self.pg.evaluate("[...items.values()].find(i => i.text.startsWith('NCT')).due")
+        self.assertGreater(after, before)

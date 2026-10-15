@@ -71,3 +71,8 @@
 - Founder: "app mei feel nai". Proposed Jarvis home + native feel + personality; founder chose mockups first.
 - 3 mockups in docs/mockups/: A Jarvis Dark (greeting + now cards + dock + bottom nav), B Life Wheel (light, area ring/score),
   C Chat-first (Jarvis feed with inline task cards and action chips). Awaiting pick; nothing built.
+- v1.0 redesign shipped (founder: "next" = my pick A home + B wheel). Dark-first tokens (+light), header date/avatar, #banners
+  slot for pwa buttons, fixed Jarvis dock (#cap) + 5-tab bottom nav (Home/Life/Jarvis/Week/Me), hero greeting + Hinglish sub,
+  Now cards (area colour, pill, tick, Guide), food + streak tiles, life wheel SVG + area strip, Jarvis orb header + dock chat,
+  swipe right=done / left=snooze, vibrate, rise animations (reduced-motion safe). Bugs caught by E2E: nowrap pill widened
+  layout viewport (fixed with minmax grids); fixed bars covered targets (scroll-padding). 29 tests green incl. swipe.

@@ -19,10 +19,10 @@ subprocess.run([sys.executable, str(ROOT / "scripts/build_app.py")], check=True)
 page = (ROOT / "app/lifeos.html").read_text(encoding="utf-8")
 HEAD = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0d6b58"><meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b0f0d" media="(prefers-color-scheme: dark)"><meta name="theme-color" content="#f3f6f3" media="(prefers-color-scheme: light)"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="LifeOS">
 <link rel="manifest" href="manifest.json"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
-<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 </head><body>
 """
@@ -44,7 +44,7 @@ shutil.copytree(ROOT / "pwa/screens", DIST / "screens")
     "categories": ["productivity", "lifestyle", "health"],
     "screenshots": [{"src": "screens/today.png", "sizes": "780x1800", "type": "image/png", "form_factor": "narrow", "label": "Today: brief, renewals and guides"},
                     {"src": "screens/food.png", "sizes": "780x1688", "type": "image/png", "form_factor": "narrow", "label": "Scan food, track calories"}],
-    "display": "standalone", "orientation": "portrait", "background_color": "#eef2ee", "theme_color": "#0d6b58",
+    "display": "standalone", "orientation": "portrait", "background_color": "#0b0f0d", "theme_color": "#0b0f0d",
     "icons": [{"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
               {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}],
 }, indent=1), encoding="utf-8")
