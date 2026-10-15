@@ -366,7 +366,7 @@
    "label": "Health & fitness",
    "icon": "💪",
    "lead": 7,
-   "covers": "Doctor and dentist visits, medicines, tests, gym, runs, sleep, steps, water, weight, BP, sugar",
+   "covers": "Doctor and dentist visits, medicines, tests, gym, runs, sleep, steps, water, weight, BP, sugar, food log",
    "keywords": [
     "doctor",
     "dr",
@@ -401,7 +401,11 @@
     "sugar",
     "diet",
     "protein",
-    "period\\w*"
+    "period\\w*",
+    "food",
+    "nutri\\w*",
+    "calories",
+    "kcal"
    ],
    "examples": [
     "dentist in 2 weeks",

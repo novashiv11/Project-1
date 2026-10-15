@@ -53,3 +53,6 @@
   (IRP, NCT, motor tax, NDLS, passport, PPSN, Revenue, RTB, health/car insurance; official links only, in life.json `guides`),
   voice capture (Web Speech, en-IN), Jarvis tab: Claude chat via user's own API key (browser fetch, Haiku 5.5, effort low,
   tools add_item/complete_item, append-only history). E2E tested with mocked API; deployed to novashiv11/lifeos.
+- v0.7 camera: 📷 → photo → BarcodeDetector; EAN/UPC → Open Food Facts card (Nutri-Score, per-100g) → "food:" item (health);
+  QR → link/text card; no code + Jarvis key → photo sent to Claude (dates only, never ID numbers). SW now skips cross-origin
+  APIs. Fixed 436px overflow (.wrap grid minmax(0,1fr)). E2E tested with faked scanner/APIs; deployed.

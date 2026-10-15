@@ -14,10 +14,10 @@ self.addEventListener("fetch", e => {
       .catch(() => caches.match("index.html")));
     return;
   }
+  // Only the app's own files and its fonts are cached; APIs (Open Food Facts, Claude) go straight to the network.
+  if (new URL(req.url).origin !== location.origin && !req.url.startsWith("https://fonts.")) return;
   e.respondWith(caches.match(req).then(hit => hit || fetch(req).then(r => {
-    if (r.ok && (new URL(req.url).origin === location.origin || req.url.startsWith("https://fonts."))) {
-      const copy = r.clone(); caches.open(CACHE).then(c => c.put(req, copy));
-    }
+    if (r.ok) { const copy = r.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
     return r;
   })));
 });
