@@ -129,6 +129,16 @@ def related(tool, tools, n=6):
     return f'<h2>Related tools</h2><div class="grid">{links}</div>'
 
 
+# Filters the home page cards as the visitor types; hides empty categories.
+SEARCH_JS = """<script>
+q.addEventListener('input',()=>{const w=q.value.toLowerCase().trim().split(/\\s+/);let any=0;
+ document.querySelectorAll('#cats .grid').forEach(g=>{let n=0;
+  g.querySelectorAll('a').forEach(a=>{const t=a.textContent.toLowerCase(),ok=w.every(x=>t.includes(x));a.hidden=!ok;n+=ok;});
+  g.hidden=g.previousElementSibling.hidden=!n;any+=n;});
+ none.hidden=!!any;});
+</script>"""
+
+
 def write(slug, page):
     dest = OUT / slug / "index.html" if slug else OUT / "index.html"
     dest.parent.mkdir(parents=True, exist_ok=True)
@@ -172,7 +182,10 @@ def main():
     write("", layout(home,
                      f'<h1>{CFG["site_name"]}</h1><p class="muted">{CFG["tagline"]}. '
                      f'No sign-up, nothing to install, your data never leaves your device.</p>'
-                     f'{ad_slot()}{cards}', 0))
+                     f'<input id="q" type="search" placeholder="Search {len(tools)} tools, e.g. merge pdf, passport photo, EMI" '
+                     f'aria-label="Search tools" autocomplete="off">'
+                     f'<p id="none" class="muted" hidden>No tool found. Try another word.</p>'
+                     f'{ad_slot()}<div id="cats">{cards}</div>{SEARCH_JS}', 0))
 
     today = datetime.date.today().isoformat()
     slugs = [""] + [t["slug"] for t in tools] + [p["slug"] for p in pages]
