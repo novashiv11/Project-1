@@ -27,8 +27,8 @@
 ## Next (Claude can do without founder)
 - [ ] Sync across devices (encrypted backup to the user's Google Drive) — today data lives on one phone
 - [ ] Jarvis without a personal key: small server + subscription (needed for €1.99 plan and Play Billing)
-- [ ] Recurring food favourites ("same breakfast as yesterday"), weekly calorie chart
-- [ ] Import from photos of IRP/insurance letters in bulk; ICS export from the phone app
+- [x] Recurring food favourites ("same breakfast as yesterday"), weekly calorie chart (v2.2)
+- [ ] Import from photos of IRP/insurance letters in bulk (ICS export from phone: done v2.2)
 
 ## Later (P2)
 - [ ] Voice capture; phone share-sheet

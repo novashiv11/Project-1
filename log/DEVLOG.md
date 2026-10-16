@@ -106,3 +106,8 @@
 - Saving re-files existing items (remapMine); pet names also make `X weight 24kg` a pet metric.
 - Orb links: added € Money. tests/test_mywords.py (E2E). 64 tests OK. Deployed lifeos main e97b25d.
 - Python CLI unchanged (no personal words there yet).
+
+## Session 12 (2026-10-16): v2.2 food + calendar
+- Food: "Phir se khaya?" 1-tap favourites (top 6, last 60 days) + 7-day kcal bars with goal line.
+- Calendar: Me → "Export calendar (.ics)" (JS toIcs mirrors lifeos/ics.py, test compares both); Focus card "📅 Calendar mein daalo" (Google Calendar template link, RRULE for repeats).
+- backup/ics share via shared shareFile(). tests/test_food_cal.py. 66 tests OK. Deployed lifeos main.

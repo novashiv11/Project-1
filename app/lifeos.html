@@ -69,6 +69,16 @@ h2{font:500 12px var(--mono);text-transform:uppercase;letter-spacing:.1em;color:
 .swipehint{font:500 11px var(--mono);color:var(--muted);text-align:center;letter-spacing:.04em}
 /* stat tiles */
 .tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.favs{display:flex;flex-wrap:wrap;gap:8px}
+.fav{min-width:0;max-width:100%;padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--fg);font:14px var(--body);text-align:left}
+.fav b{font:600 12px var(--mono);color:var(--muted)}
+.kweek{position:relative;box-sizing:border-box;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;height:160px;padding:22px 0 0;align-items:end}
+.kday{display:grid;grid-template-rows:1fr auto;height:100%;text-align:center;gap:4px;min-width:0}
+.kday small{font:11px var(--mono);color:var(--muted)}
+.kbar{align-self:end;position:relative;min-height:2px;border-radius:8px 8px 3px 3px;background:var(--accent);opacity:.55}
+.kbar.now{opacity:1}.kbar.over{background:#e5484d}
+.kbar span{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);font:10px var(--mono);color:var(--muted);padding-bottom:2px;white-space:nowrap}
+.kgoal{position:absolute;left:0;right:0;border-top:1.5px dashed var(--muted);pointer-events:none;opacity:.6;z-index:1}
 .tile{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:14px;display:grid;gap:2px;text-align:left;min-width:0}
 .tile .k{font:500 11px var(--mono);color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
 .tile .big{font:800 28px/1.1 var(--display);font-variant-numeric:tabular-nums}
@@ -530,7 +540,28 @@ function foodTile(all,today){
 function foodLog(all,today){
   if(!showFoodLog)return "";
   const t=iso(today), eaten=all.filter(i=>isFood(i)&&i.created.slice(0,10)===t).sort((a,b)=>b.id-a.id);
-  return `<section><h2>Food log · today</h2>${list(eaten,today,"Nothing logged yet. Scan a barcode with 📷 or type “lunch 650 kcal”.",{del:true})}</section>`;
+  return `${foodFavs(all,today)}<section><h2>Food log · today</h2>${list(eaten,today,"Nothing logged yet. Scan a barcode with 📷 or type “lunch 650 kcal”.",{del:true})}</section>`;
+}
+const kcalOf=i=>((i.metrics||[]).find(m=>m.name==="kcal")||{value:0}).value;
+// "Same as yesterday": the foods you log most (last 60 days), one tap to log again.
+function foodFavs(all,today){
+  const since=iso(addDays(today,-60)), seen=new Map();
+  all.filter(i=>isFood(i)&&i.created.slice(0,10)>=since).sort((a,b)=>a.id-b.id).forEach(i=>{
+    const k=i.text.trim().toLowerCase(), f=seen.get(k)||{text:i.text.trim(),n:0,last:0};f.n++;f.last=i.id;seen.set(k,f)});
+  const favs=[...seen.values()].sort((a,b)=>b.n-a.n||b.last-a.last).slice(0,6);
+  if(!favs.length)return "";
+  return `<section><h2>Phir se khaya? · 1 tap</h2><div class="favs">${favs.map(f=>{
+    const name=f.text.replace(/^\s*food\s*:\s*/i,"").split(/\s*·\s*/)[0].replace(/\s*\d+(?:\.\d+)?\s*kcal\b.*$/i,""), kc=kcalOf({metrics:parseMetrics(f.text)});
+    return `<button class="fav" data-refood="${esc(f.text)}" aria-label="Log again: ${esc(f.text)}">↻ ${esc(name.length>26?name.slice(0,25)+"…":name)}${kc?` <b>${Math.round(kc)}</b>`:""}</button>`}).join("")}</div></section>`;
+}
+function kcalWeek(all,today){
+  const days=[...Array(7)].map((_,k)=>addDays(today,k-6)), goal=+settings.kcalGoal||0;
+  const tot=days.map(d=>Math.round(all.filter(i=>isFood(i)&&i.created.slice(0,10)===iso(d)).reduce((a,i)=>a+kcalOf(i),0)));
+  if(!tot.some(Boolean))return "";
+  const max=Math.max(goal,...tot)||1, logged=tot.filter(Boolean), avg=Math.round(logged.reduce((a,b)=>a+b,0)/logged.length);
+  return `<section><h2>Last 7 days · avg ${avg} kcal${goal?` · goal ${goal} ┄`:""}</h2><div class="kweek" role="img" aria-label="Calories per day for the last 7 days, average ${avg}">
+    ${goal?`<i class="kgoal" style="bottom:calc(19px + (100% - 41px) * ${(goal/max).toFixed(3)})"></i>`:""}
+    ${days.map((d,k)=>`<div class="kday"><div class="kbar${goal&&tot[k]>goal?" over":""}${k===6?" now":""}" style="height:${tot[k]/max*100}%"><span>${tot[k]||""}</span></div><small>${"SMTWTFS"[d.getDay()]}</small></div>`).join("")}</div></section>`;
 }
 let showLater=false;
 const windowOpen=(it,today)=>{const n=daysLeft(it,today),L=leadDays(it);return L>14&&n>14&&n-L<=0};
@@ -569,7 +600,7 @@ function vToday(all,today){
     (aaj.length+week.length?`<div class="swipehint">tap ◯ = done · swipe ← = kal tak</div>`:"");
 }
 function vFood(all,today){
-  return `<div class="tiles">${foodTile(all,today)}<div class="tile"><span class="k">Scan</span><span class="big">📷</span><span class="s">barcode → calories</span></div></div>`+
+  return `<div class="tiles">${foodTile(all,today)}<div class="tile"><span class="k">Scan</span><span class="big">📷</span><span class="s">barcode → calories</span></div></div>`+foodFavs(all,today)+kcalWeek(all,today)+
     `<section><h2>Food log · today</h2>${list(all.filter(i=>isFood(i)&&i.created.slice(0,10)===iso(today)).sort((a,b)=>b.id-a.id),today,"Nothing logged yet. Scan a barcode with 📷 on the Aaj screen, or type “lunch 650 kcal”.",{del:true})}</section>`;
 }
 
@@ -660,7 +691,9 @@ function prefsPanel(){
     <div class="acts"><button class="go" style="padding:10px 14px" data-data="restore-yes">Restore</button><button class="linkbtn" data-data="restore-no">Cancel</button></div></div>`:"";
   return `<section><h2>Your data</h2><div class="setup"><span>Everything lives only on this phone. Back up to keep it safe if the phone is lost or Chrome data is cleared.</span>
     <span class="covers">Last backup: ${esc(lb)}</span>
-    <div class="acts" style="display:flex;gap:8px;flex-wrap:wrap"><button class="go" style="padding:10px 14px" data-data="backup">Back up now</button><button class="linkbtn" data-data="restore">Restore from file</button></div></div>${restore}</section>
+    <div class="acts" style="display:flex;gap:8px;flex-wrap:wrap"><button class="go" style="padding:10px 14px" data-data="backup">Back up now</button><button class="linkbtn" data-data="restore">Restore from file</button></div></div>${restore}
+    <div class="setup"><span>📅 Saari dates apne calendar mein (Google/Samsung/Outlook). Renewals ke saath early alarm bhi.</span>
+    <div class="acts"><button class="go" style="padding:10px 14px" data-data="ics">Export calendar (.ics)</button></div></div></section>
     <section><h2>Settings</h2><form class="setup" id="prefs">
     <label>Your name<input id="pname" value="${esc(settings.name||"")}" autocomplete="given-name"></label>
     <label>My words (pet, people, shops → area)<textarea id="pwords" rows="3" placeholder="Bruno = pet&#10;Ravi = family&#10;Tesco = money">${esc(settings.myWords||"")}</textarea></label>
@@ -670,16 +703,49 @@ function prefsPanel(){
     <button class="go" type="submit" style="padding:12px">Save settings</button></form>
     <p class="hint" style="margin:8px 0 0"><a href="privacy.html" target="_blank" rel="noopener" style="color:var(--accent)">Privacy: what stays on your phone</a></p></section>`;
 }
+/* calendar: .ics for all dated items (mirrors lifeos/ics.py) + one-tap Google Calendar link per item */
+const FREQ={day:"DAILY",week:"WEEKLY",month:"MONTHLY",year:"YEARLY"};
+const icsEsc=t=>String(t).replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\n/g,"\\n");
+function icsTimes(due){
+  const ymd=d=>iso(d).replace(/-/g,"");
+  if(due.includes("T")){const d=fromIso(due),[h,m]=due.slice(11,16).split(":").map(Number),e=new Date(d.getFullYear(),d.getMonth(),d.getDate(),h+1,m);
+    const hm=(x,y)=>`T${pad(x)}${pad(y)}00`;return [ymd(d)+hm(h,m),ymd(e)+hm(e.getHours(),e.getMinutes()),true]}
+  const d=fromIso(due);return [ymd(d),ymd(addDays(d,1)),false];
+}
+function toIcs(list){
+  const st=new Date(), stamp=`${iso(st).replace(/-/g,"")}T${pad(st.getHours())}${pad(st.getMinutes())}${pad(st.getSeconds())}`;
+  const out=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//LifeOS//EN","CALSCALE:GREGORIAN"];
+  for(const it of list){if(!it.due||it.done)continue;const [a,b,timed]=icsTimes(it.due);
+    out.push("BEGIN:VEVENT",`UID:lifeos-${it.id}@local`,`DTSTAMP:${stamp}`,`SUMMARY:${icsEsc(it.text)}`,`CATEGORIES:${it.domain.toUpperCase()}`,
+      timed?`DTSTART:${a}`:`DTSTART;VALUE=DATE:${a}`,timed?`DTEND:${b}`:`DTEND;VALUE=DATE:${b}`);
+    if(it.repeat)out.push(`RRULE:FREQ=${FREQ[it.repeat.unit]};INTERVAL=${it.repeat.every}`);
+    const n=Math.min(leadDays(it),30); if(n>7)out.push("BEGIN:VALARM","ACTION:DISPLAY",`DESCRIPTION:${icsEsc(it.text)}`,`TRIGGER:-P${n}D`,"END:VALARM");
+    out.push("END:VEVENT")}
+  out.push("END:VCALENDAR"); return out.join("\r\n")+"\r\n";
+}
+function gcalUrl(it){
+  const [a,b]=icsTimes(it.due), q=new URLSearchParams({action:"TEMPLATE",text:it.text,dates:`${a}/${b}`,details:"From LifeOS"});
+  if(it.repeat)q.set("recur",`RRULE:FREQ=${FREQ[it.repeat.unit]};INTERVAL=${it.repeat.every}`);
+  return "https://calendar.google.com/calendar/render?"+q;
+}
+function shareFile(file,title,done){
+  if(navigator.canShare&&navigator.canShare({files:[file]}))
+    navigator.share({files:[file],title}).then(done).catch(e=>{if(e.name!=="AbortError")download()});
+  else download();
+  function download(){const a=document.createElement("a");a.href=URL.createObjectURL(file);a.download=file.name;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),5000);done()}
+}
+function exportIcs(){
+  const n=[...items.values()].filter(i=>i.due&&!i.done).length;
+  if(!n){toast("Koi dated item nahi hai",false);return}
+  shareFile(new File([toIcs([...items.values()])],`lifeos-${iso(todayDate())}.ics`,{type:"text/calendar"}),"LifeOS calendar",()=>toast(`${n} dates exported 📅`,false));
+}
 function backupNow(){
   const data={app:"LifeOS",format:1,exported:new Date().toISOString(),items:[...items.values()],
     settings:{name:settings.name||"",kcalGoal:settings.kcalGoal||"",voiceLang:settings.voiceLang||"",myWords:settings.myWords||""}}; // API key is never exported
   const name=`lifeos-backup-${iso(todayDate())}.json`, file=new File([JSON.stringify(data,null,1)],name,{type:"application/json"});
   const done=()=>{settings.lastBackup=iso(todayDate());saveSettings();render();toast("Backup saved",false)};
-  if(navigator.canShare&&navigator.canShare({files:[file]}))
-    navigator.share({files:[file],title:"LifeOS backup"}).then(done).catch(e=>{if(e.name!=="AbortError")download()});
-  else download();
-  function download(){const a=document.createElement("a");a.href=URL.createObjectURL(file);a.download=name;document.body.appendChild(a);a.click();a.remove();
-    setTimeout(()=>URL.revokeObjectURL(a.href),5000);done()}
+  shareFile(file,"LifeOS backup",done);
 }
 // Re-file existing items when "My words" change (explicit "area:" prefixes are left alone).
 async function remapMine(){let n=0;
@@ -996,6 +1062,7 @@ document.addEventListener("click",async e=>{
   if(b.hasAttribute("data-later")){showLater=!showLater;render();return}
   if(b.dataset.v){document.getElementById("sheet").hidden=true;const v=b.dataset.v==="home"?HOME:b.dataset.v;if(view!==v)window.scrollTo(0,0);view=v;lifeArea=null;try{localStorage.setItem("lifeos.view",view)}catch(_){}render();return}
   if(b.hasAttribute("data-foodlog")){showFoodLog=!showFoodLog;render();return}
+  if(b.dataset.refood){await capture(b.dataset.refood);return}
   if(b.hasAttribute("data-chatcam")){document.getElementById("cam").click();return}
   if(b.dataset.area!==undefined){lifeArea=b.dataset.area||null;render();window.scrollTo(0,0);return}
   if(b.dataset.fill){const q=document.getElementById("q");q.value=b.dataset.fill;q.focus();return}
@@ -1011,6 +1078,7 @@ document.addEventListener("click",async e=>{
   if(b.dataset.paste==="cancel"){pasteResult=null;render();return}
   if(b.dataset.paste==="apply"&&backend){await applyPaste();return}
   if(b.dataset.data==="backup"){backupNow();return}
+  if(b.dataset.data==="ics"){exportIcs();return}
   if(b.dataset.data==="restore"){document.getElementById("restoreFile").click();return}
   if(b.dataset.data==="restore-no"){pendingRestore=null;render();return}
   if(b.dataset.data==="restore-yes"&&backend){await applyRestore();return}

@@ -27,6 +27,7 @@ const css=`
 .stk-steps{margin-top:auto;padding-top:14px;display:grid;gap:6px;font-size:13px;line-height:1.35;color:#2b3042}
 .stk-step{background:#ece8ff;border-radius:14px;padding:8px 11px}
 .stk-links{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.stk-cal{display:inline-flex;margin-top:10px;font:600 13px system-ui,sans-serif;color:inherit;opacity:.75;text-decoration:none;min-height:34px;align-items:center}
 .stk-links a{background:#10131a;color:#fff;text-decoration:none;font:700 12px system-ui,sans-serif;padding:8px 12px;border-radius:99px;min-height:34px;display:inline-flex;align-items:center}
 .stk-stamp{position:absolute;top:22px;right:18px;transform:rotate(14deg) scale(1.4);border:3px solid #00a884;color:#00a884;font:800 22px system-ui,sans-serif;
   padding:4px 12px;border-radius:12px;opacity:0;pointer-events:none;background:#f7f5ffd0}
@@ -99,6 +100,7 @@ function cardHtml(it,i,n,today){
     <span class="stk-tag">${i} OF ${n} · ${esc(a.icon)} ${esc(a.label)}</span>
     <div class="stk-big">${esc(it.text)}</div><div class="stk-meta">${esc(metaLine(it,today))}</div>
     <span class="stk-pill ${cls}">${esc(pill)}</span>${steps}
+    ${it.due&&typeof gcalUrl==="function"?`<a class="stk-cal" href="${esc(gcalUrl(it))}" target="_blank" rel="noopener">📅 Calendar mein daalo</a>`:""}
     <span class="stk-stamp" aria-hidden="true">HO GAYA</span><span class="stk-stamp kal" aria-hidden="true">${it.due?"KAL":"BAAD MEIN"}</span></article>`;
 }
 function confetti(){
