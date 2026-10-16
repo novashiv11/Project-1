@@ -98,6 +98,7 @@ def layout(meta, main, depth):
 <meta property="og:title" content="{html.escape(meta["title"])}">
 <meta property="og:description" content="{html.escape(meta["description"])}">
 <meta property="og:url" content="{url}">
+<link rel="icon" href="{base}favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="{base}style.css">
 {head_extra}
 </head><body>

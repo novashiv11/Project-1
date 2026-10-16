@@ -1,0 +1,54 @@
+<!--meta
+{"slug": "add-page-numbers-to-pdf", "title": "Add Page Numbers to PDF", "category": "PDF tools",
+ "description": "Number the pages of a PDF. Choose position, format such as Page 1 of N, font size and starting number. Free, no upload.",
+ "faq": [
+  ["Are my files uploaded?", "No. Page numbers are added on your device, inside your browser. The PDF is never sent anywhere."],
+  ["Can I start from a number other than 1?", "Yes. Set Start at to any number. This is handy when the PDF is one part of a longer document."],
+  ["Can I skip the cover page?", "Yes. Set Number from page to 2 and the first page is left without a number. Combine it with Start at to choose the first number shown."]
+ ]}
+-->
+<script src="../filetools.js"></script>
+<script src="../vendor/pdf-lib.min.js"></script>
+<script src="../pdftools.js"></script>
+<label class="drop" id="drop">Click or drop a PDF here<span>One PDF file</span><input type="file" accept="application/pdf,.pdf"></label>
+<div class="row">
+ <div><label for="pos">Position</label><select id="pos"><option value="bc">Bottom center</option><option value="br">Bottom right</option><option value="bl">Bottom left</option><option value="tc">Top center</option><option value="tr">Top right</option><option value="tl">Top left</option></select></div>
+ <div><label for="fmt">Format</label><select id="fmt"><option value="n">1</option><option value="pn">Page 1</option><option value="pnN">Page 1 of N</option><option value="nN">1 / N</option></select></div>
+ <div><label for="size">Font size</label><input id="size" type="number" min="6" max="48" value="12"></div>
+ <div><label for="start">Start at</label><input id="start" type="number" value="1"></div>
+ <div><label for="from">Number from page</label><input id="from" type="number" min="1" value="1"></div>
+</div>
+<button id="go">Add page numbers</button>
+<div class="result" id="out">Add a PDF to start.</div>
+<script>
+let pdf=null;
+setupPdfDrop(drop,out,p=>{pdf=p;});
+go.onclick=async()=>{
+ if(!pdf){out.textContent='Add a PDF file first.';return;}
+ try{
+  const fs=+size.value,s0=Math.round(+start.value),first=Math.round(+from.value);
+  if(!(fs>=6&&fs<=48))throw new Error('Choose a font size between 6 and 48.');
+  if(!Number.isFinite(s0))throw new Error('Enter a start number.');
+  if(!(first>=1&&first<=pdf.pages))throw new Error(`Number from page must be between 1 and ${pdf.pages}.`);
+  const doc=await openPdf(pdf.bytes,pdf.file.name);
+  const font=await doc.embedFont(PDFLib.StandardFonts.Helvetica),pages=doc.getPages();
+  const total=s0+pages.length-first,m=Math.max(24,fs*2);
+  pages.forEach((p,i)=>{
+   if(i<first-1)return;
+   const n=s0+i-(first-1);
+   const t={n:`${n}`,pn:`Page ${n}`,pnN:`Page ${n} of ${total}`,nN:`${n} / ${total}`}[fmt.value];
+   const {x:bx,y:by,width:w,height:h}=p.getCropBox(),tw=font.widthOfTextAtSize(t,fs);
+   const x=bx+(pos.value[1]==='c'?(w-tw)/2:pos.value[1]==='r'?w-m-tw:m);
+   const y=by+(pos.value[0]==='b'?m-fs/2:h-m-fs/2);
+   p.drawText(t,{x,y,size:fs,font,color:PDFLib.rgb(0,0,0)});
+  });
+  const blob=await savePdf(doc,outName(pdf.file.name,'numbered'));
+  out.innerHTML=`<b>Done!</b> Numbered ${pages.length-first+1} page(s), ${kb(blob.size)}. Your download should start automatically.`;
+ }catch(e){out.textContent=e.message;}
+};
+</script>
+<!--content-->
+<h2>Number your PDF pages in seconds</h2>
+<p>Page numbers make reports, theses, manuals and printed handouts much easier to follow. Add your PDF, choose where the numbers go and how they look, for example "Page 3 of 12" at the bottom center, and click Add page numbers.</p>
+<h2>Flexible and private</h2>
+<p>Start from any number, skip a cover page and pick a font size that suits the document. Numbering happens in your browser, so the PDF never leaves your device and there is no watermark or sign-up.</p>

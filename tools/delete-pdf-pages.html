@@ -1,0 +1,36 @@
+<!--meta
+{"slug": "delete-pdf-pages", "title": "Delete PDF Pages", "category": "PDF tools",
+ "description": "Remove unwanted pages from a PDF by typing page numbers or ranges. Free, works in your browser, no upload.",
+ "faq": [
+  ["Is my PDF uploaded?", "No. Pages are removed on your own device, inside your browser. Your file never leaves your computer or phone."],
+  ["How do I choose pages to remove?", "Type page numbers and ranges separated by commas, for example 2, 5-7. Page 1 is the first page of the document."],
+  ["Is the original file changed?", "No. Your original stays as it is. You download a new copy without the pages you removed."]
+ ]}
+-->
+<script src="../filetools.js"></script>
+<script src="../vendor/pdf-lib.min.js"></script>
+<script src="../pdftools.js"></script>
+<label class="drop" id="drop">Click or drop a PDF here<span>One PDF file</span><input type="file" accept="application/pdf,.pdf"></label>
+<label for="range">Pages to delete</label><input id="range" placeholder="e.g. 2, 5-7">
+<button id="go">Delete pages</button>
+<div class="result" id="out">Add a PDF to start.</div>
+<script>
+let pdf=null;
+setupPdfDrop(drop,out,p=>{pdf=p;});
+go.onclick=async()=>{
+ if(!pdf){out.textContent='Add a PDF file first.';return;}
+ try{
+  const idx=parseRanges(range.value,pdf.pages);
+  if(idx.length>=pdf.pages)throw new Error('You cannot delete every page. Leave at least one page.');
+  const doc=await openPdf(pdf.bytes,pdf.file.name);
+  idx.sort((a,b)=>b-a).forEach(i=>doc.removePage(i));
+  const blob=await savePdf(doc,outName(pdf.file.name,'edited'));
+  out.innerHTML=`<b>Done!</b> Removed ${idx.length} page(s), ${doc.getPageCount()} left, ${kb(blob.size)}. Your download should start automatically.`;
+ }catch(e){out.textContent=e.message;}
+};
+</script>
+<!--content-->
+<h2>Remove blank or unwanted pages</h2>
+<p>Get rid of blank scan pages, old cover sheets or pages you do not want to share. Add your PDF, type the pages to remove, such as 2, 5-7, and click Delete pages. A clean copy downloads straight away.</p>
+<h2>Private and quick</h2>
+<p>Most online editors upload your document first. This tool edits the PDF in your browser, so it works in seconds and keeps personal documents on your device. Your original file is not changed.</p>
