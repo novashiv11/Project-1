@@ -1,0 +1,56 @@
+<!--meta
+{"category": "Image tools", "slug": "heic-to-jpg", "title": "HEIC to JPG Converter",
+ "description": "Convert iPhone HEIC photos to JPG in your browser so you can upload them to any website or form. Many files at once, no upload, free.",
+ "faq": [
+  ["What is a HEIC file?", "HEIC is the photo format iPhones use by default. It saves space, but many websites, forms and Windows PCs cannot open it. Converting to JPG makes the photo work everywhere."],
+  ["Are my photos uploaded to a server?", "No. The conversion runs inside your browser on your own device, so your photos stay private."],
+  ["How can I stop my iPhone saving HEIC photos?", "Open Settings, then Camera, then Formats, and choose Most Compatible. New photos will be saved as JPG. This tool is still handy for photos you already have."]
+ ]}
+-->
+<script src="../filetools.js"></script>
+<script src="../vendor/jszip.min.js"></script>
+<label class="drop" id="drop">Click or drop HEIC photos here<span>.heic or .heif from iPhone or iPad, many at once</span><input type="file" accept=".heic,.heif,image/heic,image/heif" multiple></label>
+<div class="row">
+ <div><label for="q">JPG quality: <span id="qv">90</span>%</label><input id="q" type="range" min="10" max="100" value="90"></div>
+</div>
+<ul class="files" id="list"></ul>
+<div class="result" id="out">Add HEIC photos to start.</div>
+<script>
+let results=[],lib=null;
+q.addEventListener('input',()=>qv.textContent=q.value);
+// The converter is large (about 1.3 MB), so it is only loaded when you add a photo.
+function loadLib(){
+ return lib=lib||new Promise((ok,bad)=>{const s=document.createElement('script');s.src='../vendor/heic2any.min.js';s.onload=()=>ok(window.heic2any);s.onerror=()=>bad(new Error('Could not load the converter'));document.head.appendChild(s);});
+}
+setupDrop(drop,async f=>{
+ const heic=f.filter(x=>/\.(heic|heif)$/i.test(x.name)||/hei[cf]/.test(x.type));
+ if(!heic.length){out.textContent='Those are not HEIC files. For JPG, PNG or WebP use the Image Converter.';return;}
+ out.textContent='Loading converter...';
+ let conv;try{conv=await loadLib();}catch(e){out.textContent=e.message;return;}
+ for(const [i,file] of heic.entries()){
+  out.textContent=`Converting ${i+1} of ${heic.length}...`;
+  const li=document.createElement('li');li.innerHTML='<span class="nm"></span>';list.appendChild(li);
+  const nm=li.querySelector('.nm');
+  try{
+   let r=await conv({blob:file,toType:'image/jpeg',quality:q.value/100});
+   const blobs=Array.isArray(r)?r:[r],base=file.name.replace(/\.[^.]+$/,'');
+   blobs.forEach((blob,k)=>{
+    const name=base+(blobs.length>1?'-'+(k+1):'')+'.jpg';results.push({blob,name});
+    const row=k?document.createElement('li'):li;if(k){row.innerHTML='<span class="nm"></span>';list.appendChild(row);}
+    row.querySelector('.nm').innerHTML=`${name.replace(/</g,'&lt;')}<br><span class="muted">${kb(file.size)} HEIC → <b>${kb(blob.size)}</b> JPG</span>`;
+    const a=document.createElement('a');a.href='#';a.textContent='Download';a.onclick=e=>{e.preventDefault();download(blob,name);};row.appendChild(a);
+   });
+  }catch(err){nm.textContent=file.name+': could not convert ('+(err&&err.message||'unsupported HEIC variant')+')';}
+ }
+ out.innerHTML=`Converted <b>${results.length}</b> photo${results.length===1?'':'s'} to JPG.`;
+ if(results.length>1){
+  const b=document.createElement('button');b.type='button';b.id='zip';b.textContent='Download all as ZIP';out.appendChild(document.createElement('br'));out.appendChild(b);
+  b.onclick=async()=>{const z=new JSZip();results.forEach(r=>z.file(r.name,r.blob));download(await z.generateAsync({type:'blob'}),'heic-to-jpg.zip');};
+ }
+});
+</script>
+<!--content-->
+<h2>Open and upload iPhone photos anywhere</h2>
+<p>iPhones save photos as HEIC files, which keeps them small but causes trouble when a job portal, exam form or office computer only accepts JPG. Drop your HEIC photos here and they are turned into normal JPG images that open on every phone, PC and website. You can convert a whole batch and download them together as a ZIP.</p>
+<h2>Fast, private and free</h2>
+<p>The conversion happens on your own device, so your personal photos are never sent to a server. Large photos can take a few seconds each on older phones. If a form also has a size limit, run the JPG through the Resize Image to KB tool afterwards to bring it under 50 KB, 100 KB or whatever the form asks for.</p>

@@ -1,0 +1,40 @@
+<!--meta
+{"slug": "rotate-pdf", "title": "Rotate PDF", "category": "PDF tools",
+ "description": "Rotate all pages or only chosen pages of a PDF by 90, 180 or 270 degrees and save it. Free, in your browser, no upload.",
+ "faq": [
+  ["Is the rotation permanent?", "Yes. The rotation is saved in the new PDF, so it opens the right way up in every PDF reader and prints correctly."],
+  ["Can I rotate only some pages?", "Yes. Choose Only these pages and type page numbers or ranges, for example 2, 4-6. The other pages stay as they are."],
+  ["Does rotating reduce quality?", "No. Rotating only changes the page direction. Text, images and links are kept exactly as they were."]
+ ]}
+-->
+<script src="../filetools.js"></script>
+<script src="../vendor/pdf-lib.min.js"></script>
+<script src="../pdftools.js"></script>
+<label class="drop" id="drop">Click or drop a PDF here<span>One PDF file</span><input type="file" accept="application/pdf,.pdf"></label>
+<div class="row">
+ <div><label for="angle">Rotate by</label><select id="angle"><option value="90">90° clockwise</option><option value="180">180° (upside down)</option><option value="270">90° counter-clockwise</option></select></div>
+ <div><label for="which">Pages</label><select id="which"><option value="all">All pages</option><option value="some">Only these pages</option></select></div>
+</div>
+<div id="rangeBox" style="display:none"><label for="range">Pages to rotate</label><input id="range" placeholder="e.g. 2, 4-6"></div>
+<button id="go">Rotate PDF</button>
+<div class="result" id="out">Add a PDF to start.</div>
+<script>
+let pdf=null;
+setupPdfDrop(drop,out,p=>{pdf=p;});
+which.onchange=()=>{rangeBox.style.display=which.value==='some'?'':'none';};
+go.onclick=async()=>{
+ if(!pdf){out.textContent='Add a PDF file first.';return;}
+ try{
+  const doc=await openPdf(pdf.bytes,pdf.file.name),pages=doc.getPages();
+  const idx=which.value==='all'?pages.map((_,i)=>i):parseRanges(range.value,pdf.pages);
+  for(const i of idx){const p=pages[i];p.setRotation(PDFLib.degrees((p.getRotation().angle+ +angle.value)%360));}
+  const blob=await savePdf(doc,outName(pdf.file.name,'rotated'));
+  out.innerHTML=`<b>Done!</b> Rotated ${idx.length} of ${pdf.pages} page(s), ${kb(blob.size)}. Your download should start automatically.`;
+ }catch(e){out.textContent=e.message;}
+};
+</script>
+<!--content-->
+<h2>Fix sideways and upside-down pages</h2>
+<p>Scanned documents and phone scans often come out sideways. Add your PDF, pick the direction and click Rotate PDF. You can turn every page at once, or only the pages that are wrong, such as 2, 4-6.</p>
+<h2>Saved for good, kept private</h2>
+<p>The new rotation is stored in the file itself, so the PDF opens the right way in any reader, on any device, and prints correctly. The work happens in your browser, so your document is never uploaded.</p>

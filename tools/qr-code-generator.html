@@ -1,0 +1,166 @@
+<!--meta
+{"category": "QR & utility tools", "slug": "qr-code-generator", "title": "Free QR Code Generator",
+ "description": "Make QR codes for links, text, Wi-Fi, UPI payments, email, phone numbers and contact cards. Custom colours, PNG and SVG download. Free, no sign-up, never expires.",
+ "faq": [
+  ["Do these QR codes expire?", "No. The information is stored inside the QR code itself, so it keeps working forever and does not depend on any website or subscription. Sites that sell \"dynamic\" QR codes route scans through their server, and those codes stop working when you stop paying."],
+  ["How do I make a QR code for UPI payments?", "Choose UPI payment, enter your UPI ID (for example name@okbank) and the name shown to the payer. Add an amount if you want a fixed price, or leave it empty so the payer types it. Any UPI app such as Google Pay, PhonePe or Paytm can scan it."],
+  ["Should I download PNG or SVG?", "PNG is a normal image that works everywhere, including WhatsApp and Word. SVG is a vector file that stays perfectly sharp at any size, so it is best for printing on posters, menus and packaging."]
+ ]}
+-->
+<script src="../filetools.js"></script>
+<script src="../vendor/qrcode-generator.js"></script>
+<style>
+.qr-types{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px}
+.qr-types button{margin:0;padding:7px 12px;font-size:15px;background:var(--bg);color:var(--text);border:1px solid var(--border)}
+.qr-types button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.qr-grp[hidden]{display:none}
+.qr-out{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:18px}
+.qr-out canvas{width:260px;max-width:100%;height:auto;image-rendering:pixelated;border:1px solid var(--border);border-radius:8px}
+.qr-out .btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.qr-out .btns button{margin:0}
+.qr-enc{font-size:13px;word-break:break-all;white-space:pre-wrap;margin:0;max-width:100%}
+input[type=color]{padding:2px;height:44px}
+.chk{display:flex;align-items:center;gap:8px;font-weight:400}
+.chk input{width:auto}
+.warn{color:#b45309;font-size:14px}
+</style>
+<div class="qr-types" id="types">
+ <button type="button" data-t="url" class="on">Link / text</button>
+ <button type="button" data-t="wifi">Wi-Fi</button>
+ <button type="button" data-t="upi">UPI payment</button>
+ <button type="button" data-t="email">Email</button>
+ <button type="button" data-t="phone">Phone</button>
+ <button type="button" data-t="vcard">Contact card</button>
+</div>
+<div class="qr-grp" data-g="url">
+ <label for="url">Website link or any text</label><textarea id="url" style="min-height:80px">https://example.com</textarea>
+</div>
+<div class="qr-grp" data-g="wifi" hidden>
+ <div class="row">
+  <div><label for="ssid">Network name (SSID)</label><input id="ssid" autocomplete="off"></div>
+  <div><label for="wpass">Password</label><input id="wpass" autocomplete="off"></div>
+  <div><label for="wsec">Security</label><select id="wsec"><option value="WPA">WPA / WPA2 / WPA3</option><option value="WEP">WEP</option><option value="nopass">None (open)</option></select></div>
+ </div>
+ <label class="chk"><input type="checkbox" id="whid"> Hidden network</label>
+</div>
+<div class="qr-grp" data-g="upi" hidden>
+ <div class="row">
+  <div><label for="upa">UPI ID</label><input id="upa" placeholder="yourname@okbank" autocomplete="off"></div>
+  <div><label for="upn">Payee name</label><input id="upn" placeholder="Your name or shop"></div>
+  <div><label for="uam">Amount in ₹ (optional)</label><input id="uam" type="number" min="0" step="0.01" placeholder="Payer enters it"></div>
+ </div>
+ <label for="utn">Note (optional)</label><input id="utn" placeholder="e.g. Order 123">
+</div>
+<div class="qr-grp" data-g="email" hidden>
+ <div class="row">
+  <div><label for="eto">Email address</label><input id="eto" type="email"></div>
+  <div><label for="esub">Subject (optional)</label><input id="esub"></div>
+ </div>
+ <label for="ebody">Message (optional)</label><textarea id="ebody" style="min-height:70px"></textarea>
+</div>
+<div class="qr-grp" data-g="phone" hidden>
+ <label for="tel">Phone number (with country code)</label><input id="tel" type="tel" placeholder="+91 98765 43210">
+</div>
+<div class="qr-grp" data-g="vcard" hidden>
+ <div class="row">
+  <div><label for="vfn">First name</label><input id="vfn"></div>
+  <div><label for="vln">Last name</label><input id="vln"></div>
+  <div><label for="vtel">Phone</label><input id="vtel" type="tel"></div>
+  <div><label for="vem">Email</label><input id="vem" type="email"></div>
+  <div><label for="vorg">Company</label><input id="vorg"></div>
+  <div><label for="vurl">Website</label><input id="vurl"></div>
+ </div>
+</div>
+<div class="row">
+ <div><label for="size">Size</label><select id="size"><option value="256">Small (about 256 px)</option><option value="512" selected>Medium (about 512 px)</option><option value="1024">Large (about 1024 px)</option><option value="2048">Print (about 2048 px)</option></select></div>
+ <div><label for="ecc">Error correction</label><select id="ecc"><option value="L">Low (7%)</option><option value="M" selected>Medium (15%)</option><option value="Q">Quartile (25%)</option><option value="H">High (30%)</option></select></div>
+ <div><label for="fg">QR colour</label><input id="fg" type="color" value="#000000"></div>
+ <div><label for="bg">Background</label><input id="bg" type="color" value="#ffffff"></div>
+</div>
+<div class="qr-out">
+ <canvas id="cv" width="256" height="256" aria-label="QR code preview"></canvas>
+ <div class="warn" id="warn"></div>
+ <div class="btns"><button type="button" id="dlpng">Download PNG</button><button type="button" id="dlsvg">Download SVG</button></div>
+ <p class="muted qr-enc" id="enc"></p>
+</div>
+<script>
+qrcode.stringToBytes=qrcode.stringToBytesFuncs['UTF-8'];
+let type='url',qr=null,text='';
+const $=id=>document.getElementById(id);
+const v=id=>$(id).value.trim();
+// Wi-Fi and vCard both escape their separator characters with a backslash.
+const escWifi=s=>s.replace(/([\\;,:"])/g,'\\$1');
+const escVcf=s=>s.replace(/\\/g,'\\\\').replace(/\n/g,'\\n').replace(/([,;])/g,'\\$1');
+const enc=s=>encodeURIComponent(s).replace(/%40/g,'@');
+function payload(){
+ switch(type){
+  case 'url':return $('url').value.trim();
+  case 'wifi':{
+   if(!$('ssid').value)return '';
+   const sec=$('wsec').value;
+   return 'WIFI:T:'+sec+';S:'+escWifi($('ssid').value)+';'+(sec==='nopass'?'':'P:'+escWifi($('wpass').value)+';')+($('whid').checked?'H:true;':'')+';';
+  }
+  case 'upi':{
+   if(!v('upa'))return '';
+   let s='upi://pay?pa='+enc(v('upa'));
+   if(v('upn'))s+='&pn='+enc(v('upn'));
+   if(v('uam')&&+v('uam')>0)s+='&am='+(+v('uam')).toFixed(2);
+   if(v('utn'))s+='&tn='+enc(v('utn'));
+   return s+'&cu=INR';
+  }
+  case 'email':{
+   if(!v('eto'))return '';
+   const q=[];if(v('esub'))q.push('subject='+encodeURIComponent(v('esub')));if($('ebody').value.trim())q.push('body='+encodeURIComponent($('ebody').value.trim()));
+   return 'mailto:'+v('eto')+(q.length?'?'+q.join('&'):'');
+  }
+  case 'phone':return v('tel')?'tel:'+v('tel').replace(/[^\d+]/g,''):'';
+  case 'vcard':{
+   const fn=v('vfn'),ln=v('vln');
+   if(!fn&&!ln&&!v('vtel')&&!v('vem'))return '';
+   const L=['BEGIN:VCARD','VERSION:3.0','N:'+escVcf(ln)+';'+escVcf(fn)+';;;','FN:'+escVcf((fn+' '+ln).trim())];
+   if(v('vorg'))L.push('ORG:'+escVcf(v('vorg')));
+   if(v('vtel'))L.push('TEL;TYPE=CELL:'+v('vtel'));
+   if(v('vem'))L.push('EMAIL:'+escVcf(v('vem')));
+   if(v('vurl'))L.push('URL:'+escVcf(v('vurl')));
+   L.push('END:VCARD');return L.join('\r\n');
+  }
+ }
+}
+function lum(hex){const n=parseInt(hex.slice(1),16);return ((n>>16)*0.299+((n>>8)&255)*0.587+(n&255)*0.114)/255;}
+function render(){
+ text=payload();qr=null;
+ const cv=$('cv'),ctx=cv.getContext('2d');
+ $('warn').textContent='';
+ if(!text){cv.width=cv.height=256;ctx.fillStyle=$('bg').value;ctx.fillRect(0,0,256,256);$('enc').textContent='Fill in the fields above to create your QR code.';return;}
+ try{qr=qrcode(0,$('ecc').value);qr.addData(text,'Byte');qr.make();}
+ catch(e){qr=null;$('enc').textContent='Too much text for one QR code. Shorten it or choose a lower error correction level.';return;}
+ const n=qr.getModuleCount(),m=4,total=n+m*2,s=Math.max(2,Math.floor(+$('size').value/total));
+ cv.width=cv.height=total*s;
+ ctx.fillStyle=$('bg').value;ctx.fillRect(0,0,cv.width,cv.height);ctx.fillStyle=$('fg').value;
+ for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(qr.isDark(r,c))ctx.fillRect((c+m)*s,(r+m)*s,s,s);
+ $('enc').textContent=text;
+ if(lum($('fg').value)>lum($('bg').value)-0.4)$('warn').textContent='Low contrast: many phones cannot read light codes on dark backgrounds. Use a dark QR colour on a light background.';
+}
+function svg(){
+ const n=qr.getModuleCount(),m=4,total=n+m*2,px=$('cv').width;let d='';
+ for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(qr.isDark(r,c))d+='M'+(c+m)+' '+(r+m)+'h1v1h-1z';
+ return '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="'+px+'" height="'+px+'" viewBox="0 0 '+total+' '+total+'" shape-rendering="crispEdges">'
+  +'<rect width="100%" height="100%" fill="'+$('bg').value+'"/><path fill="'+$('fg').value+'" d="'+d+'"/></svg>\n';
+}
+$('types').addEventListener('click',e=>{
+ const b=e.target.closest('button');if(!b)return;
+ type=b.dataset.t;
+ document.querySelectorAll('#types button').forEach(x=>x.classList.toggle('on',x===b));
+ document.querySelectorAll('.qr-grp').forEach(g=>g.hidden=g.dataset.g!==type);
+ render();
+});
+document.querySelectorAll('.card input,.card select,.card textarea').forEach(el=>{el.addEventListener('input',render);el.addEventListener('change',render);});
+$('dlpng').onclick=()=>{if(!qr)return alert('Enter some details first.');$('cv').toBlob(b=>download(b,'qr-code-'+type+'.png'),'image/png');};
+$('dlsvg').onclick=()=>{if(!qr)return alert('Enter some details first.');download(new Blob([svg()],{type:'image/svg+xml'}),'qr-code-'+type+'.svg');};
+render();
+</script>
+<!--content-->
+<h2>QR codes that never expire</h2>
+<p>Every code made here is a static QR code: the link, Wi-Fi password or payment details are stored inside the pattern itself. It will keep working for as long as the printed code exists, with no account, no scan limits and no monthly fee. Many other QR sites sell "dynamic" codes that send each scan through their own server first, and those codes quietly stop working when a trial ends or a subscription lapses. Everything here is generated in your browser, so your Wi-Fi password and UPI ID are never sent anywhere.</p>
+<h2>Tips for codes that scan every time</h2>
+<p>Keep a dark colour on a light background and leave the white border around the code, because phones need contrast and a quiet zone to find it. For printed codes, aim for at least 2 to 3 cm wide and download the SVG so it stays sharp. Choose a higher error correction level if the code may get scratched or dirty, and always test it with your own phone before printing hundreds of copies.</p>

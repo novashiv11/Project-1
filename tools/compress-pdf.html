@@ -1,0 +1,71 @@
+<!--meta
+{"category": "PDF tools", "slug": "compress-pdf", "title": "Compress PDF",
+ "description": "Make a PDF smaller in your browser. Choose low, medium or high compression and see the size before and after. Free, no upload.",
+ "faq": [
+  ["Is my PDF uploaded?", "No. The PDF is compressed on your own device, inside your browser. It never leaves your computer or phone."],
+  ["Will I still be able to select and search the text?", "No. This tool shrinks a PDF by turning each page into a compressed image, so the text can no longer be selected, searched or copied. The pages still look the same, and stronger levels look a little softer. Keep your original if you need selectable text."],
+  ["Why did my PDF not get smaller?", "PDFs that contain mostly plain text are already small, and turning their pages into images can make them bigger. If that happens, the tool tells you and lets you keep the original file."]
+ ]}
+-->
+<script src="../filetools.js"></script>
+<script src="../vendor/pdfjs/pdf.min.js"></script>
+<script src="../vendor/pdf-lib.min.js"></script>
+<label class="drop" id="drop">Click or drop a PDF here<span>Works best on scanned documents and image-heavy PDFs</span><input type="file" accept="application/pdf,.pdf"></label>
+<label for="level">Compression level</label>
+<select id="level">
+ <option value="low">Low - best quality</option>
+ <option value="medium" selected>Medium - recommended</option>
+ <option value="high">High - smallest file</option>
+</select>
+<button onclick="compress()">Compress PDF</button>
+<div class="result" id="out">Choose a PDF to start.</div>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc='../vendor/pdfjs/pdf.worker.min.js';
+const LEVELS={low:{dpi:150,q:0.8},medium:{dpi:110,q:0.65},high:{dpi:72,q:0.5}};
+let file=null,busy=false;
+setupDrop(drop,f=>{const p=f.find(x=>x.type==='application/pdf'||/\.pdf$/i.test(x.name));
+ if(!p){out.textContent='Please choose a PDF file.';return;}
+ file=p;out.innerHTML=`${p.name} <span class="muted">${kb(p.size)}</span> is ready. Pick a level and click Compress PDF.`;});
+function outName(){return file.name.replace(/\.pdf$/i,'')+'-compressed.pdf';}
+async function compress(){
+ if(busy)return;
+ if(!file){out.textContent='Choose a PDF first.';return;}
+ busy=true;
+ const {dpi,q}=LEVELS[level.value];
+ try{
+  let src;
+  try{src=await pdfjsLib.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;}
+  catch(e){throw new Error(e&&e.name==='PasswordException'?'This PDF is password-protected. Remove the password first, then try again.':'This file could not be read. It may be damaged or not a real PDF.');}
+  const doc=await PDFLib.PDFDocument.create(),n=src.numPages;
+  for(let i=1;i<=n;i++){
+   out.textContent=`Compressing page ${i} of ${n}...`;
+   const page=await src.getPage(i),size=page.getViewport({scale:1});
+   let s=dpi/72;const px=size.width*size.height*s*s;if(px>16e6)s*=Math.sqrt(16e6/px);
+   const vp=page.getViewport({scale:s}),c=document.createElement('canvas');
+   c.width=Math.max(1,Math.floor(vp.width));c.height=Math.max(1,Math.floor(vp.height));
+   const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);
+   await page.render({canvasContext:ctx,viewport:vp}).promise;
+   const jpg=await new Promise(ok=>c.toBlob(ok,'image/jpeg',q));c.width=c.height=0;page.cleanup();
+   const img=await doc.embedJpg(await jpg.arrayBuffer());
+   doc.addPage([size.width,size.height]).drawImage(img,{x:0,y:0,width:size.width,height:size.height});
+  }
+  src.destroy();
+  const blob=new Blob([await doc.save()],{type:'application/pdf'}),before=file.size,after=blob.size;
+  const pct=Math.round((1-after/before)*100);
+  if(after<before){
+   out.innerHTML=`<b>${pct}% smaller</b><br>Before: ${kb(before)} &rarr; After: ${kb(after)} (${n} page(s))<br><button id="dl">Download compressed PDF</button>`;
+   dl.onclick=()=>download(blob,outName());
+  }else{
+   out.innerHTML=`<b>No size saved</b><br>The compressed version would be ${kb(after)}, which is not smaller than your original (${kb(before)}). This PDF is already well optimised, so keep the original.<br><button id="orig">Download original</button> <button id="dl" class="small">Download compressed anyway</button>`;
+   orig.onclick=()=>download(file,file.name);dl.onclick=()=>download(blob,outName());
+  }
+ }catch(err){out.textContent=err.message;}
+ busy=false;
+}
+</script>
+<!--content-->
+<h2>Shrink a PDF for email and upload forms</h2>
+<p>Many email services and online application forms reject files above a few megabytes. Choose your PDF, pick a compression level and click Compress PDF. You will see the size before and after, so you know straight away whether it fits the limit. Low compression keeps pages sharp, high compression gives the smallest file.</p>
+<p>Be aware of how it works: every page is redrawn as a compressed JPEG image. That makes scanned documents and photo-heavy PDFs much smaller, but the text in the result can no longer be selected, searched or copied, and stronger levels look softer. PDFs that are mostly plain text are often already small; if compressing would make yours bigger, the tool tells you and offers the original instead.</p>
+<h2>Your documents stay on your device</h2>
+<p>The compression runs entirely in your browser. Nothing is uploaded, so it is safe for contracts, payslips and ID scans. There is no sign-up, no watermark and no limit on the number of files.</p>

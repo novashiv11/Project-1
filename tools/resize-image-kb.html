@@ -1,0 +1,84 @@
+<!--meta
+{"category": "Image tools", "slug": "resize-image-to-kb", "title": "Resize Image to KB (20, 50, 100 KB)",
+ "description": "Reduce a photo or signature to an exact size in KB, like 20 KB, 50 KB or 100 KB, for job, exam and government forms. Set pixel size too. No upload.",
+ "faq": [
+  ["How do I reduce a photo to under 50 KB?", "Add your photo, tap the 50 KB button and press Resize. The tool lowers the JPG quality step by step, and shrinks the picture only if it has to, until the file is just under 50 KB. Then download it."],
+  ["Can I set an exact size like 200 × 230 pixels as well?", "Yes. Type the width and height the form asks for. The photo is resized to exactly those pixels and then compressed to fit your KB limit."],
+  ["Is my photo uploaded anywhere?", "No. Everything happens inside your browser on your own phone or computer, so your photo, signature or documents never leave your device."]
+ ]}
+-->
+<script src="../filetools.js"></script>
+<style>
+.kbq{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.kbq button{margin:0;padding:6px 14px;font-size:15px;background:var(--border);color:var(--text)}
+.kbq button.on{background:var(--accent);color:#fff}
+.prev{display:block;max-width:100%;max-height:320px;margin:12px auto 0;border-radius:8px;border:1px solid var(--border)}
+.kbdl{display:inline-block;margin-top:12px;background:var(--accent);color:#fff;border-radius:8px;padding:10px 18px;text-decoration:none;font-weight:600}
+</style>
+<label class="drop" id="drop">Click or drop a photo here<span>JPG, PNG or WebP. Photo, signature or scanned document</span><input type="file" accept="image/*"></label>
+<label>Target size</label>
+<div class="kbq" id="quick"><button type="button">20</button><button type="button" class="on">50</button><button type="button">100</button><button type="button">200</button><button type="button">500</button></div>
+<div class="row">
+ <div><label for="tkb">Maximum size (KB)</label><input id="tkb" type="number" value="50" min="5" inputmode="numeric"></div>
+ <div><label for="pw">Width in px (optional)</label><input id="pw" type="number" min="1" placeholder="keep" inputmode="numeric"></div>
+ <div><label for="ph">Height in px (optional)</label><input id="ph" type="number" min="1" placeholder="keep" inputmode="numeric"></div>
+</div>
+<button type="button" id="go">Resize to KB</button>
+<div class="result" id="out">Add a photo to start.</div>
+<script>
+let src=null;
+const qb=[...quick.querySelectorAll('button')];
+qb.forEach(b=>b.onclick=()=>{tkb.value=b.textContent;mark();if(src)run();});
+tkb.addEventListener('input',mark);
+function mark(){qb.forEach(b=>b.classList.toggle('on',b.textContent===tkb.value));}
+setupDrop(drop,f=>{const x=f.find(x=>x.type.startsWith('image/'));if(!x){out.textContent='Please choose an image file (JPG, PNG or WebP).';return;}src=x;run();});
+go.onclick=()=>src?run():out.textContent='Add a photo first.';
+function enc(img,w,h,q){
+ const c=document.createElement('canvas');c.width=w;c.height=h;
+ const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);
+ ctx.imageSmoothingQuality='high';ctx.drawImage(img,0,0,w,h);
+ return new Promise(ok=>c.toBlob(ok,'image/jpeg',q));
+}
+// Highest JPEG quality in [lo,0.95] whose file fits; null if even lo is too big.
+async function bestQ(img,w,h,max,lo){
+ let b=await enc(img,w,h,lo);if(b.size>max)return {blob:null,size:b.size};
+ let best=b,a=lo,z=0.95;
+ const top=await enc(img,w,h,z);if(top.size<=max)return {blob:top,q:z};
+ for(let i=0;i<7;i++){const m=(a+z)/2;const t=await enc(img,w,h,m);if(t.size<=max){best=t;a=m;}else z=m;}
+ return {blob:best,q:a};
+}
+async function run(){
+ const kbv=parseFloat(tkb.value);
+ if(!(kbv>=5)){out.textContent='Enter a target size of at least 5 KB.';return;}
+ out.textContent='Working...';
+ const max=Math.floor(kbv*1000); // 1 KB = 1000 bytes here, so it passes both strict and loose checks
+ let img;try{img=await loadImage(src);}catch(e){out.textContent=e.message;return;}
+ const nw=img.naturalWidth,nh=img.naturalHeight;
+ let w=+pw.value||0,h=+ph.value||0;const exact=w>0&&h>0;
+ if(!exact){if(w){h=Math.round(nh*w/nw);}else if(h){w=Math.round(nw*h/nh);}else{w=nw;h=nh;}}
+ let r=await bestQ(img,w,h,max,exact?0.1:0.45),note='';
+ // Quality alone is not enough: shrink the pixel size until it fits.
+ for(let i=0;!r.blob&&i<25;i++){
+  const s=Math.max(0.5,Math.min(0.92,Math.sqrt(max/r.size)*0.95));
+  w=Math.max(16,Math.round(w*s));h=Math.max(16,Math.round(h*s));
+  r=await bestQ(img,w,h,max,exact?0.1:0.45);
+  if(w<=16&&h<=16&&!r.blob)break;
+  if(exact)note='The exact pixel size could not fit in '+kbv+' KB, so the photo was made smaller.';
+ }
+ URL.revokeObjectURL(img.src);
+ if(!r.blob){out.textContent='Could not reach '+kbv+' KB. Try a larger size.';return;}
+ const name=src.name.replace(/\.[^.]+$/,'')+'-'+kbv+'kb.jpg';
+ const url=URL.createObjectURL(r.blob);
+ out.innerHTML=`Done: <b id="fkb">${(r.blob.size/1024).toFixed(1)} KB</b> <span class="muted">(${r.blob.size.toLocaleString()} bytes, limit ${kbv} KB)</span><br>`+
+  `Size: <b id="fdim" style="font-size:17px">${w} × ${h} px</b> <span class="muted">· was ${kb(src.size)}, ${nw} × ${nh} px · quality ${Math.round(r.q*100)}%</span>`+
+  (note?`<br><span class="muted">${note}</span>`:'')+
+  `<br><a href="#" class="kbdl" id="dl">Download JPG</a><img class="prev" src="${url}" alt="Resized preview">`;
+ dl.onclick=e=>{e.preventDefault();download(r.blob,name);};
+ out.dataset.bytes=r.blob.size;
+}
+</script>
+<!--content-->
+<h2>Make a photo fit the KB limit on any form</h2>
+<p>Job applications, exam registrations and government portals often say things like "photo under 50 KB" or "signature between 10 and 20 KB". Instead of guessing with a quality slider, type the limit (or tap 20, 50, 100, 200 or 500 KB) and this tool finds the best quality that still fits. If quality alone is not enough, it gently reduces the picture size too. The final size in KB and pixels is shown before you download, so you know it will be accepted.</p>
+<h2>Exact pixel sizes for passport photos and signatures</h2>
+<p>Some forms also ask for exact dimensions, such as 200 × 230 pixels for a photo or 140 × 60 pixels for a signature. Enter the width and height and the image is resized to exactly that before it is compressed. Crop your photo first if it needs a different shape, so the face is not stretched. Everything runs in your browser, so your documents stay private.</p>

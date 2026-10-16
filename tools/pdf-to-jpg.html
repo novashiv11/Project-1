@@ -1,0 +1,87 @@
+<!--meta
+{"category": "PDF tools", "slug": "pdf-to-jpg", "title": "PDF to JPG Converter",
+ "description": "Convert every page of a PDF into a JPG image in your browser. Choose quality and resolution, download pages one by one or as a ZIP. Free, no upload.",
+ "faq": [
+  ["Is my PDF uploaded to a server?", "No. The pages are rendered into images on your own device, inside your browser. Your PDF never leaves your computer or phone."],
+  ["Which resolution should I choose?", "150 DPI is good for viewing on screen and sharing. Choose 300 DPI if you want to print the images or zoom in on small text. Higher resolution means bigger files."],
+  ["Can I convert password-protected PDFs?", "PDFs that need a password to open cannot be converted. Remove the password first, then try again."]
+ ]}
+-->
+<script src="../filetools.js"></script>
+<script src="../vendor/pdfjs/pdf.min.js"></script>
+<script src="../vendor/jszip.min.js"></script>
+<style>
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-top:16px}
+.thumbs figure{margin:0;padding:8px;border:1px solid var(--border);border-radius:10px;background:var(--bg);text-align:center;font-size:13px}
+.thumbs img{display:block;width:100%;height:auto;max-height:200px;object-fit:contain;background:#fff;border-radius:4px}
+.thumbs figcaption{margin:6px 0 4px;color:var(--muted)}
+.thumbs a{display:inline-block;background:var(--accent);color:#fff;border-radius:6px;padding:4px 10px;text-decoration:none;font-weight:600}
+</style>
+<label class="drop" id="drop">Click or drop a PDF here<span>Every page becomes a JPG image</span><input type="file" accept="application/pdf,.pdf"></label>
+<div class="row">
+ <div><label for="dpi">Resolution</label><select id="dpi"><option value="96">Screen (96 DPI)</option><option value="150" selected>Standard (150 DPI)</option><option value="300">Print (300 DPI)</option></select></div>
+ <div><label for="quality">JPG quality</label><select id="quality"><option value="0.95">High</option><option value="0.85" selected>Medium</option><option value="0.7">Low (smaller files)</option></select></div>
+</div>
+<button onclick="convert()">Convert to JPG</button> <button id="zipBtn" onclick="zipAll()" hidden>Download all as ZIP</button>
+<div class="result" id="out">Choose a PDF to start.</div>
+<div class="thumbs" id="thumbs"></div>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc='../vendor/pdfjs/pdf.worker.min.js';
+let file=null,pages=[],busy=false;
+setupDrop(drop,f=>{const p=f.find(x=>x.type==='application/pdf'||/\.pdf$/i.test(x.name));
+ if(!p){out.textContent='Please choose a PDF file.';return;}
+ file=p;reset();out.innerHTML=`${p.name} <span class="muted">${kb(p.size)}</span> is ready. Pick the options and click Convert to JPG.`;});
+function reset(){pages.forEach(p=>URL.revokeObjectURL(p.url));pages=[];thumbs.innerHTML='';zipBtn.hidden=true;}
+function baseName(){return file.name.replace(/\.pdf$/i,'').replace(/[^\w.-]+/g,'_')||'page';}
+// Renders one page to a JPEG blob; keeps the canvas under ~16 megapixels so phones don't run out of memory.
+async function renderPage(page,dpi,q){
+ let vp=page.getViewport({scale:dpi/72});
+ const px=vp.width*vp.height,max=16e6;
+ if(px>max)vp=page.getViewport({scale:dpi/72*Math.sqrt(max/px)});
+ const c=document.createElement('canvas');c.width=Math.floor(vp.width);c.height=Math.floor(vp.height);
+ const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);
+ await page.render({canvasContext:ctx,viewport:vp}).promise;
+ const blob=await new Promise(ok=>c.toBlob(ok,'image/jpeg',q));
+ const r={blob,width:c.width,height:c.height};c.width=c.height=0;page.cleanup();return r;
+}
+async function convert(){
+ if(busy)return;
+ if(!file){out.textContent='Choose a PDF first.';return;}
+ busy=true;reset();
+ const dpi=+document.getElementById('dpi').value,q=+quality.value,base=baseName();
+ try{
+  let pdf;
+  try{pdf=await pdfjsLib.getDocument({data:new Uint8Array(await file.arrayBuffer())}).promise;}
+  catch(e){throw new Error(e&&e.name==='PasswordException'?'This PDF is password-protected. Remove the password first, then try again.':'This file could not be read. It may be damaged or not a real PDF.');}
+  const n=pdf.numPages;
+  for(let i=1;i<=n;i++){
+   out.textContent=`Converting page ${i} of ${n}...`;
+   const r=await renderPage(await pdf.getPage(i),dpi,q);
+   const name=n>1?`${base}-page-${i}.jpg`:`${base}.jpg`,url=URL.createObjectURL(r.blob);
+   pages.push({name,blob:r.blob,url});
+   const fig=document.createElement('figure');
+   fig.innerHTML=`<img alt="Page ${i}" src="${url}"><figcaption>Page ${i} &middot; ${r.width}&times;${r.height} &middot; ${kb(r.blob.size)}</figcaption><a href="${url}" download="${name}">Download</a>`;
+   thumbs.appendChild(fig);
+  }
+  pdf.destroy();
+  const total=pages.reduce((s,p)=>s+p.blob.size,0);
+  zipBtn.hidden=n<2;
+  out.innerHTML=`<b>Done!</b> ${n} page(s) converted, ${kb(total)} in total. Download pages below${n>1?' or get them all as a ZIP':''}.`;
+ }catch(err){out.textContent=err.message;}
+ busy=false;
+}
+async function zipAll(){
+ if(!pages.length)return;
+ out.textContent='Creating ZIP...';
+ const zip=new JSZip();pages.forEach(p=>zip.file(p.name,p.blob));
+ const blob=await zip.generateAsync({type:'blob',compression:'STORE'});
+ download(blob,baseName()+'-jpg.zip');
+ out.innerHTML=`<b>Done!</b> ZIP with ${pages.length} images, ${kb(blob.size)}. Your download should start automatically.`;
+}
+</script>
+<!--content-->
+<h2>Turn PDF pages into images</h2>
+<p>Need a page from a PDF as a picture for a presentation, a social media post or a chat message? Choose your PDF, pick a resolution and quality, and click Convert to JPG. Every page becomes its own image. Download the pages you need one by one, or grab them all at once as a ZIP file.</p>
+<p>Use Standard (150 DPI) for sharing and viewing on screen. Use Print (300 DPI) when you need sharp text or plan to print. Lower quality gives smaller files that are quicker to send.</p>
+<h2>Private and free</h2>
+<p>Many PDF converters upload your document to their servers. This one works entirely in your browser, so contracts, bank statements and ID documents stay on your device. There is no sign-up, no watermark and no page limit.</p>

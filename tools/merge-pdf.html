@@ -1,0 +1,50 @@
+<!--meta
+{"category": "PDF tools", "slug": "merge-pdf", "title": "Merge PDF Files",
+ "description": "Combine multiple PDF files into one, in any order. Works in your browser, free, no upload and no watermark.",
+ "faq": [
+  ["Are my PDF files uploaded?", "No. The files are merged on your own device, inside your browser. They never leave your computer or phone."],
+  ["Is there a limit on files or size?", "There is no fixed limit. Very large files depend on your device's memory, but typical documents merge in a second or two."],
+  ["Can I merge password-protected PDFs?", "PDFs that need a password to open cannot be merged. Remove the password first, then merge."]
+ ]}
+-->
+<script src="../filetools.js"></script>
+<script src="../vendor/pdf-lib.min.js"></script>
+<label class="drop" id="drop">Click or drop PDF files here<span>Add two or more PDFs</span><input type="file" accept="application/pdf,.pdf" multiple></label>
+<ul class="files" id="list"></ul>
+<button onclick="merge()">Merge PDFs</button>
+<div class="result" id="out">Add PDF files to start.</div>
+<script>
+let files=[];
+setupDrop(drop,f=>{files=files.concat(f.filter(x=>x.type==='application/pdf'||/\.pdf$/i.test(x.name)));show();});
+function show(){
+ list.innerHTML='';
+ files.forEach((f,i)=>{const li=document.createElement('li');
+  li.innerHTML=`<span class="nm">${i+1}. ${f.name} <span class="muted">${kb(f.size)}</span></span><button class="small">↑</button><button class="small">↓</button><button class="small">✕</button>`;
+  const [up,dn,rm]=li.querySelectorAll('button');
+  up.onclick=()=>{if(i){[files[i-1],files[i]]=[files[i],files[i-1]];show();}};
+  dn.onclick=()=>{if(i<files.length-1){[files[i+1],files[i]]=[files[i],files[i+1]];show();}};
+  rm.onclick=()=>{files.splice(i,1);show();};
+  list.appendChild(li);});
+ out.textContent=files.length?`${files.length} file(s) ready. Use the arrows to change the order.`:'Add PDF files to start.';
+}
+async function merge(){
+ if(files.length<2){out.textContent='Add at least two PDF files.';return;}
+ out.textContent='Merging...';
+ try{
+  const merged=await PDFLib.PDFDocument.create();
+  for(const f of files){
+   let src;
+   try{src=await PDFLib.PDFDocument.load(await f.arrayBuffer());}
+   catch(e){throw new Error(`${f.name} could not be read (it may be damaged or password-protected).`);}
+   (await merged.copyPages(src,src.getPageIndices())).forEach(p=>merged.addPage(p));
+  }
+  const blob=new Blob([await merged.save()],{type:'application/pdf'});
+  download(blob,'merged.pdf');
+  out.innerHTML=`<b>Done!</b> ${merged.getPageCount()} pages, ${kb(blob.size)}. Your download should start automatically.`;
+ }catch(err){out.textContent=err.message;}
+}
+</script>
+<!--content-->
+<h2>Combine PDFs privately</h2>
+<p>Join reports, invoices, scanned pages or application documents into a single PDF. Add your files, arrange them with the arrow buttons and click Merge. The merged file downloads straight away.</p>
+<p>Most online PDF tools upload your files to their servers. This one does not: the merging runs entirely in your browser, which makes it faster and keeps sensitive documents private.</p>

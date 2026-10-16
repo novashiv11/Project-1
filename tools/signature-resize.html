@@ -1,0 +1,130 @@
+<!--meta
+{"slug": "signature-resize", "title": "Signature Resizer for Online Forms", "category": "Image tools",
+ "description": "Crop, clean and resize a photo of your signature to exact pixel sizes like 140x60 px under 20 KB for exam and job application forms. Free, no upload.",
+ "faq": [
+  ["How do I resize my signature to 140x60 pixels under 20 KB?", "Photograph your signature, load it here, keep 'Auto-crop' and 'Clean background' on, choose the 140 × 60 px preset and download. The tool lowers the JPG quality automatically until the file is under the limit you set."],
+  ["What does 'clean background' do?", "It turns the paper pure white and the ink dark, removing shadows and the grey tint that phone cameras add. Move the threshold slider if thin strokes disappear (move right) or the paper still looks dirty (move left)."],
+  ["Is my signature uploaded to a server?", "No. The image is processed entirely on your device inside your browser, so your signature never leaves your computer or phone."]
+ ]}
+-->
+<script src="../filetools.js"></script>
+<style>
+#src{max-width:100%;height:auto;display:block;touch-action:none;cursor:crosshair;border:1px solid var(--border);border-radius:4px;margin-top:8px}
+#outc{max-width:100%;height:auto;display:block;border:1px solid var(--border);margin-top:12px;background:#fff}
+.sg-check{display:flex;align-items:center;gap:8px}
+.sg-check input{width:auto;margin:0}
+input[type=range]{padding:0}
+.sg-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.sg-btns button{margin:0}
+</style>
+<label class="drop" id="drop">Click or drop a photo of your signature<span>Sign in dark ink on plain white paper and photograph it in good light</span><input type="file" accept="image/*"></label>
+<div id="ed" hidden>
+ <p class="muted" style="margin-bottom:0">Drag on the image to select your signature, or use Auto-crop.</p>
+ <canvas id="src" aria-label="Signature photo. Drag to select the crop area."></canvas>
+ <div class="sg-btns"><button class="small" id="auto" type="button">Auto-crop to ink</button><button class="small" id="whole" type="button">Use whole image</button></div>
+ <label class="sg-check"><input type="checkbox" id="clean" checked> Clean background (white paper, dark ink)</label>
+ <div id="thrBox"><label for="thr">Threshold: <span id="tv"></span></label><input id="thr" type="range" min="30" max="245" value="150"></div>
+ <div class="row">
+  <div><label for="preset">Size preset</label><select id="preset">
+   <option value="140,60,20">140 × 60 px, max 20 KB (SSC-style)</option>
+   <option value="160,80,20">160 × 80 px, max 20 KB</option>
+   <option value="custom">Custom</option>
+  </select></div>
+  <div><label for="ow">Width (px)</label><input id="ow" type="number" value="140" min="20" max="2000"></div>
+  <div><label for="oh">Height (px)</label><input id="oh" type="number" value="60" min="20" max="2000"></div>
+  <div><label for="mk">Max size (KB)</label><input id="mk" type="number" value="20" min="2" max="2000"></div>
+ </div>
+ <canvas id="outc"></canvas>
+ <div class="result" id="out"></div>
+ <button id="dl" type="button">Download JPG</button>
+</div>
+<p class="muted" style="font-size:14px">Presets are common examples only. Always check the size, file size and format given in the latest official notification for your exam or job.</p>
+<script>
+let work=null,crop=null,result=null,busy=0,drag=null;
+function gray(d,i){return .299*d[i]+.587*d[i+1]+.114*d[i+2];}
+function otsu(data){
+ const h=new Array(256).fill(0);let n=0;
+ for(let i=0;i<data.length;i+=4){h[Math.round(gray(data,i))]++;n++;}
+ let sum=0;for(let i=0;i<256;i++)sum+=i*h[i];
+ let sB=0,wB=0,best=0,t=150;
+ for(let i=0;i<256;i++){wB+=h[i];if(!wB)continue;const wF=n-wB;if(!wF)break;sB+=i*h[i];
+  const mB=sB/wB,mF=(sum-sB)/wF,v=wB*wF*(mB-mF)*(mB-mF);if(v>best){best=v;t=i;}}
+ return Math.min(245,Math.max(30,t+1));
+}
+function setThr(){const c=cropCanvas();thr.value=otsu(c.getContext('2d').getImageData(0,0,c.width,c.height).data);tv.textContent=thr.value;}
+function autoCrop(){
+ const W=work.width,H=work.height,d=work.getContext('2d').getImageData(0,0,W,H).data,t=otsu(d);
+ const cols=new Array(W).fill(0),rows=new Array(H).fill(0);
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(gray(d,(y*W+x)*4)<t){cols[x]++;rows[y]++;}
+ const mc=Math.max(1,H*.005),mr=Math.max(1,W*.005);
+ let x0=cols.findIndex(v=>v>mc),x1=W-1-[...cols].reverse().findIndex(v=>v>mc),y0=rows.findIndex(v=>v>mr),y1=H-1-[...rows].reverse().findIndex(v=>v>mr);
+ if(x0<0||y0<0){crop={x:0,y:0,w:W,h:H};return;}
+ const p=Math.round(Math.max(x1-x0,y1-y0)*.05)+2;
+ x0=Math.max(0,x0-p);y0=Math.max(0,y0-p);x1=Math.min(W-1,x1+p);y1=Math.min(H-1,y1+p);
+ crop={x:x0,y:y0,w:x1-x0+1,h:y1-y0+1};
+}
+function cropCanvas(){const c=document.createElement('canvas');c.width=crop.w;c.height=crop.h;c.getContext('2d').drawImage(work,crop.x,crop.y,crop.w,crop.h,0,0,crop.w,crop.h);return c;}
+function drawSrc(){
+ src.width=work.width;src.height=work.height;const ctx=src.getContext('2d');ctx.drawImage(work,0,0);
+ ctx.fillStyle='rgba(0,0,0,.45)';const{x,y,w,h}=crop;
+ ctx.fillRect(0,0,src.width,y);ctx.fillRect(0,y+h,src.width,src.height-y-h);ctx.fillRect(0,y,x,h);ctx.fillRect(x+w,y,src.width-x-w,h);
+ ctx.strokeStyle='#2563eb';ctx.lineWidth=Math.max(2,src.width/300);ctx.strokeRect(x,y,w,h);
+}
+function toBlob(c,q){return new Promise(ok=>c.toBlob(ok,'image/jpeg',q));}
+async function run(){
+ if(!work)return;const id=++busy;
+ const W=Math.min(2000,Math.max(20,Math.round(+ow.value)||140)),H=Math.min(2000,Math.max(20,Math.round(+oh.value)||60)),max=Math.max(1,+mk.value||20)*1000;
+ const c=cropCanvas();
+ if(clean.checked){const ctx=c.getContext('2d'),im=ctx.getImageData(0,0,c.width,c.height),d=im.data,t=+thr.value;
+  for(let i=0;i<d.length;i+=4){const v=gray(d,i),o=v>=t?255:Math.round(v*.35);d[i]=d[i+1]=d[i+2]=o;}ctx.putImageData(im,0,0);}
+ const o=document.createElement('canvas');o.width=W;o.height=H;const x=o.getContext('2d');
+ x.fillStyle='#fff';x.fillRect(0,0,W,H);x.imageSmoothingQuality='high';
+ const s=Math.min(W*.96/c.width,H*.92/c.height),dw=c.width*s,dh=c.height*s;
+ x.drawImage(c,(W-dw)/2,(H-dh)/2,dw,dh);
+ // Highest JPEG quality that stays under the limit (1 KB counted as 1000 bytes, to be safe either way).
+ let blob=await toBlob(o,.92),q=.92;
+ if(blob.size>max){let lo=.05,hi=.92,okB=null,okQ=0;
+  for(let i=0;i<8;i++){const m=(lo+hi)/2,b=await toBlob(o,m);if(b.size<=max){okB=b;okQ=m;lo=m;}else hi=m;}
+  if(!okB){const b=await toBlob(o,lo);if(b.size<=max){okB=b;okQ=lo;}}
+  if(okB){blob=okB;q=okQ;}else q=0;}
+ if(id!==busy)return;
+ outc.width=W;outc.height=H;outc.getContext('2d').drawImage(o,0,0);outc.style.width=Math.min(W*2,W>400?W:W*2)+'px';
+ result=blob;
+ const fits=blob.size<=max;
+ out.innerHTML=`<b>${W} × ${H} px</b> · ${kb(blob.size)} (${blob.size.toLocaleString()} bytes)`+(q?` · JPG quality ${Math.round(q*100)}%`:'')+
+  (fits?` · under ${mk.value} KB`:`<br><span class="muted">Could not get under ${mk.value} KB at this size. Try a smaller width and height.</span>`);
+ dl.disabled=!fits;
+}
+setupDrop(drop,async f=>{
+ const file=f.find(x=>x.type.startsWith('image/'));if(!file)return;
+ try{const img=await loadImage(file);const s=Math.min(1,1400/Math.max(img.naturalWidth,img.naturalHeight));
+  work=document.createElement('canvas');work.width=Math.round(img.naturalWidth*s);work.height=Math.round(img.naturalHeight*s);
+  const ctx=work.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,work.width,work.height);ctx.drawImage(img,0,0,work.width,work.height);URL.revokeObjectURL(img.src);
+  ed.hidden=false;autoCrop();setThr();drawSrc();run();}
+ catch(e){alert(e.message);}
+});
+auto.addEventListener('click',()=>{autoCrop();setThr();drawSrc();run();});
+whole.addEventListener('click',()=>{crop={x:0,y:0,w:work.width,h:work.height};setThr();drawSrc();run();});
+function pt(e){const r=src.getBoundingClientRect(),k=src.width/r.width;return{x:Math.min(src.width,Math.max(0,(e.clientX-r.left)*k)),y:Math.min(src.height,Math.max(0,(e.clientY-r.top)*(src.height/r.height)))};}
+src.addEventListener('pointerdown',e=>{if(!work)return;e.preventDefault();src.setPointerCapture(e.pointerId);drag={a:pt(e),prev:crop};});
+src.addEventListener('pointermove',e=>{if(!drag)return;const b=pt(e),a=drag.a;
+ const r={x:Math.round(Math.min(a.x,b.x)),y:Math.round(Math.min(a.y,b.y)),w:Math.round(Math.abs(a.x-b.x)),h:Math.round(Math.abs(a.y-b.y))};
+ if(r.w>=4&&r.h>=4){crop=r;drawSrc();}});
+['pointerup','pointercancel'].forEach(t=>src.addEventListener(t,()=>{if(!drag)return;const changed=crop!==drag.prev;drag=null;if(changed){setThr();run();}}));
+clean.addEventListener('change',()=>{thrBox.hidden=!clean.checked;run();});
+thr.addEventListener('input',()=>{tv.textContent=thr.value;run();});
+preset.addEventListener('change',()=>{if(preset.value!=='custom'){const[w,h,k]=preset.value.split(',');ow.value=w;oh.value=h;mk.value=k;}run();});
+[ow,oh,mk].forEach(e=>e.addEventListener('input',()=>{preset.value='custom';run();}));
+dl.addEventListener('click',()=>{if(result)download(result,`signature-${outc.width}x${outc.height}.jpg`);});
+</script>
+<!--content-->
+<h2>Resize your signature for exam and job applications</h2>
+<p>Online application forms for government exams, bank jobs, university admissions and recruitment portals usually ask for a scanned signature in a fixed pixel size and under a strict file size, such as 140 × 60 pixels and less than 20 KB. You do not need a scanner: sign on white paper with a dark pen, take a photo with your phone, and this tool crops it, removes the grey background, resizes it to the exact dimensions and squeezes the file under the limit. It all runs in your browser, so your signature is never uploaded. Requirements differ between forms and change over time, so always follow the official notification.</p>
+<table>
+<tr><th>Preset</th><th>Pixel size</th><th>Max file size</th></tr>
+<tr><td>SSC-style signature</td><td>140 × 60 px</td><td>20 KB</td></tr>
+<tr><td>Larger signature</td><td>160 × 80 px</td><td>20 KB</td></tr>
+<tr><td>Custom</td><td>Any width × height</td><td>Any limit you enter</td></tr>
+</table>
+<h2>Tips for a clear, accepted signature</h2>
+<p>Use a black or dark blue pen and sign a little larger than usual so the strokes stay visible after shrinking. Photograph the paper flat, in daylight, without your shadow falling across it. If thin parts of the signature fade after cleaning, move the threshold slider to the right; if specks or shadows remain, move it to the left. Check the preview before downloading: the signature should be readable and fill most of the box.</p>

@@ -1,0 +1,181 @@
+<!--meta
+{"slug": "passport-photo-maker", "title": "Passport Photo Maker", "category": "Image tools",
+ "description": "Make passport and visa photos in exact sizes (35x45 mm, 2x2 inch, 50x70 mm) and print them on a 4x6 or A4 sheet. Free, runs in your browser, no upload.",
+ "faq": [
+  ["Is my photo uploaded anywhere?", "No. The photo is cropped and resized on your own device inside your browser. Nothing is sent to a server, so it is safe for personal documents."],
+  ["How do I print passport photos at home or at a shop?", "Choose a size, position your face inside the guide, then download the 4x6 inch sheet. Print it at 100% / actual size (no 'fit to page') on 4x6 photo paper, or send the file to any photo shop, and cut along the thin grey lines."],
+  ["Will my photo be accepted?", "This tool gets the size right, but acceptance also depends on lighting, background, expression and how recent the photo is. Rules change, so always check the latest official requirements for your passport or visa before you print."]
+ ]}
+-->
+<script src="../filetools.js"></script>
+<style>
+.pp-stage{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start;margin-top:16px}
+.pp-frame{flex:0 0 auto;width:min(100%,300px)}
+#pv{width:100%;height:auto;display:block;touch-action:none;cursor:grab;border:1px solid var(--border);border-radius:4px;background:#fff}
+#pv:active{cursor:grabbing}
+.pp-ctl{flex:1 1 240px;min-width:0}
+.pp-ctl label:first-child{margin-top:0}
+.pp-check{display:flex;align-items:center;gap:8px}
+.pp-check input{width:auto;margin:0}
+input[type=range]{padding:0}
+.pp-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.pp-btns button{margin:0}
+#sheetPrev[hidden]{display:none}
+#sheetPrev{max-width:100%;max-height:420px;display:block;border:1px solid var(--border);margin-top:12px}
+</style>
+<label class="drop" id="drop">Click or drop your photo here<span>JPG, PNG or WebP. A plain light background and even lighting work best.</span><input type="file" accept="image/*"></label>
+<div class="row">
+ <div><label for="preset">Photo size</label><select id="preset">
+  <option value="india">India passport / visa: 35 × 45 mm</option>
+  <option value="inus">Indian visa (applying from USA): 2 × 2 in</option>
+  <option value="us">US passport / visa: 2 × 2 in</option>
+  <option value="uk">UK passport: 35 × 45 mm</option>
+  <option value="schengen">Schengen visa: 35 × 45 mm</option>
+  <option value="canada">Canada passport: 50 × 70 mm</option>
+  <option value="custom">Custom size (mm)</option>
+ </select></div>
+ <div id="customBox" hidden><div class="row">
+  <div><label for="cw">Width (mm)</label><input id="cw" type="number" value="35" min="10" max="150"></div>
+  <div><label for="ch">Height (mm)</label><input id="ch" type="number" value="45" min="10" max="150"></div>
+ </div></div>
+</div>
+<div id="ed" hidden>
+ <div class="pp-stage">
+  <div class="pp-frame"><canvas id="pv" aria-label="Photo preview. Drag to move, use the zoom slider to resize."></canvas>
+   <p class="muted" style="font-size:14px;margin:6px 0 0">Drag the photo to move it. Fit the top of the head and the chin to the oval and put the eyes on the line.</p></div>
+  <div class="pp-ctl">
+   <label for="zr">Zoom: <span id="zv">100</span>%</label><input id="zr" type="range" min="20" max="400" value="100">
+   <label for="br">Brightness: <span id="bv">100</span>%</label><input id="br" type="range" min="60" max="160" value="100">
+   <label for="bg">Background for empty / transparent areas</label><select id="bg"><option value="#ffffff">White</option><option value="#f2f2f2">Off-white</option><option value="#e6eef7">Light blue</option></select>
+   <label class="pp-check"><input type="checkbox" id="guides" checked> Show face guide</label>
+   <button class="small" id="reset" type="button">Reset position</button>
+  </div>
+ </div>
+ <div class="result" id="info"></div>
+ <div class="pp-btns">
+  <button id="dlPhoto" type="button">Download photo (JPG)</button>
+  <button id="dl46" type="button">4×6 in print sheet</button>
+  <button id="dlA4" type="button">A4 print sheet</button>
+ </div>
+ <p class="muted" id="sheetInfo"></p>
+ <img id="sheetPrev" alt="Print sheet preview" hidden>
+</div>
+<p class="muted" style="font-size:14px">Sizes and guides are for convenience only. Always check the latest official photo rules for your passport or visa before printing.</p>
+<script>
+const DPI=300;
+// top = top of head guide, head = head height (crown to chin), both as a fraction of photo height. Approximate.
+const P={
+ india:{w:35,h:45,u:'mm',top:.08,head:.74},
+ inus:{w:2,h:2,u:'in',top:.12,head:.6},
+ us:{w:2,h:2,u:'in',top:.12,head:.6},
+ uk:{w:35,h:45,u:'mm',top:.08,head:.74},
+ schengen:{w:35,h:45,u:'mm',top:.08,head:.74},
+ canada:{w:50,h:70,u:'mm',top:.16,head:.48},
+ custom:{u:'mm',top:.1,head:.7}
+};
+let img=null,zoom=1,cx=0,cy=0,raf=0;
+const layer=document.createElement('canvas');
+function cur(){const p=P[preset.value];if(preset.value==='custom'){p.w=Math.min(150,Math.max(10,+cw.value||35));p.h=Math.min(150,Math.max(10,+ch.value||45));}return p;}
+function dims(){const p=cur(),k=p.u==='in'?DPI:DPI/25.4;return[Math.round(p.w*k),Math.round(p.h*k)];}
+function label(){const p=cur();return p.u==='in'?`${p.w}x${p.h}in`:`${p.w}x${p.h}mm`;}
+function cover(w,h){return Math.max(w/img.naturalWidth,h/img.naturalHeight);}
+function render(c,guides){
+ const[w,h]=dims();if(c.width!==w||c.height!==h){c.width=w;c.height=h;}
+ const ctx=c.getContext('2d');ctx.fillStyle=bg.value;ctx.fillRect(0,0,w,h);
+ if(img){
+  layer.width=w;layer.height=h;const t=layer.getContext('2d');t.imageSmoothingQuality='high';
+  const s=cover(w,h)*zoom;t.drawImage(img,w/2-cx*s,h/2-cy*s,img.naturalWidth*s,img.naturalHeight*s);
+  const f=br.value/100;
+  if(f!==1){const d=t.getImageData(0,0,w,h),a=d.data;for(let i=0;i<a.length;i+=4){a[i]*=f;a[i+1]*=f;a[i+2]*=f;}t.putImageData(d,0,0);}
+  ctx.drawImage(layer,0,0);
+ }
+ if(guides)drawGuides(ctx,w,h);
+}
+function drawGuides(ctx,w,h){
+ const p=cur(),top=p.top*h,hh=p.head*h,lw=Math.max(2,w/220);
+ ctx.save();ctx.lineWidth=lw;ctx.strokeStyle='rgba(37,99,235,.9)';ctx.setLineDash([lw*4,lw*3]);
+ ctx.beginPath();ctx.ellipse(w/2,top+hh/2,hh*.37,hh/2,0,0,Math.PI*2);ctx.stroke();
+ const ey=top+hh*.45;ctx.strokeStyle='rgba(220,38,38,.9)';
+ ctx.beginPath();ctx.moveTo(w*.08,ey);ctx.lineTo(w*.92,ey);ctx.stroke();
+ ctx.setLineDash([]);ctx.strokeStyle='rgba(37,99,235,.35)';ctx.beginPath();ctx.moveTo(w/2,0);ctx.lineTo(w/2,h);ctx.stroke();
+ ctx.fillStyle='rgba(220,38,38,.95)';ctx.font=`${Math.round(w/22)}px system-ui,sans-serif`;ctx.fillText('eyes',w*.08,ey-lw*2);
+ ctx.restore();
+}
+function draw(){cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{render(pv,guides.checked);showInfo();});}
+function showInfo(){const[w,h]=dims(),p=cur();info.innerHTML=`Output: <b>${w} × ${h} px</b> at ${DPI} DPI (${p.w} × ${p.h} ${p.u==='in'?'in':'mm'})`;}
+function setZoom(z){zoom=Math.min(4,Math.max(.2,z));zr.value=Math.round(zoom*100);zv.textContent=zr.value;draw();}
+function resetPos(){if(!img)return;cx=img.naturalWidth/2;cy=img.naturalHeight/2;setZoom(1);}
+setupDrop(drop,async f=>{
+ const file=f.find(x=>x.type.startsWith('image/'));if(!file)return;
+ try{const im=await loadImage(file);img=im;ed.hidden=false;sheetPrev.hidden=true;sheetInfo.textContent='';br.value=100;bv.textContent=100;resetPos();}
+ catch(e){alert(e.message);}
+});
+preset.addEventListener('change',()=>{customBox.hidden=preset.value!=='custom';sheetPrev.hidden=true;sheetInfo.textContent='';draw();});
+[cw,ch].forEach(e=>e.addEventListener('input',draw));
+[bg,guides].forEach(e=>e.addEventListener('change',draw));
+zr.addEventListener('input',()=>setZoom(zr.value/100));
+br.addEventListener('input',()=>{bv.textContent=br.value;draw();});
+reset.addEventListener('click',resetPos);
+// Drag with mouse, pen or one finger; pinch with two fingers.
+const pts=new Map();let pinch=null;
+function pdist(){const[a,b]=[...pts.values()];return Math.hypot(a.x-b.x,a.y-b.y)||1;}
+pv.addEventListener('pointerdown',e=>{if(!img)return;e.preventDefault();pv.setPointerCapture(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pts.size===2)pinch={d:pdist(),z:zoom};});
+pv.addEventListener('pointermove',e=>{
+ const p=pts.get(e.pointerId);if(!p)return;
+ if(pts.size===1){const k=pv.width/pv.getBoundingClientRect().width,s=cover(pv.width,pv.height)*zoom;cx-=(e.clientX-p.x)*k/s;cy-=(e.clientY-p.y)*k/s;}
+ p.x=e.clientX;p.y=e.clientY;
+ if(pts.size===2&&pinch)setZoom(pinch.z*pdist()/pinch.d);else draw();
+});
+['pointerup','pointercancel'].forEach(t=>pv.addEventListener(t,e=>{pts.delete(e.pointerId);pinch=null;}));
+pv.addEventListener('wheel',e=>{if(!img)return;e.preventDefault();setZoom(zoom*(e.deltaY<0?1.06:1/1.06));},{passive:false});
+// Write 300 DPI into the JPEG (JFIF) header so printers use the right physical size.
+async function withDpi(blob){
+ const b=new Uint8Array(await blob.arrayBuffer());
+ if(b[2]===0xFF&&b[3]===0xE0&&b[6]===0x4A&&b[7]===0x46&&b[8]===0x49&&b[9]===0x46){b[13]=1;b[14]=DPI>>8;b[15]=DPI&255;b[16]=DPI>>8;b[17]=DPI&255;}
+ return new Blob([b],{type:'image/jpeg'});
+}
+function jpeg(c){return new Promise(ok=>c.toBlob(b=>ok(withDpi(b)),'image/jpeg',.92));}
+dlPhoto.addEventListener('click',async()=>{const c=document.createElement('canvas');render(c,false);download(await jpeg(c),`passport-photo-${label()}.jpg`);});
+function fit(W,H,pw,ph){
+ let best=null;
+ for(const[m,g]of[[30,20],[0,0]]){// spaced layout first, tight layout if it fits more copies
+  const cols=Math.max(0,Math.floor((W-2*m+g)/(pw+g))),rows=Math.max(0,Math.floor((H-2*m+g)/(ph+g))),n=cols*rows;
+  if(!best||n>best.n)best={W,H,cols,rows,n,g};
+ }
+ return best;
+}
+async function sheet(W,H,name,title){
+ const photo=document.createElement('canvas');render(photo,false);const pw=photo.width,ph=photo.height;
+ const a=fit(W,H,pw,ph),b=fit(H,W,pw,ph),L=b.n>a.n?b:a;
+ if(!L.n){sheetInfo.textContent=`This photo size is too large to fit on a ${title} sheet.`;sheetPrev.hidden=true;return;}
+ const c=document.createElement('canvas');c.width=L.W;c.height=L.H;const ctx=c.getContext('2d');
+ ctx.fillStyle='#fff';ctx.fillRect(0,0,L.W,L.H);
+ const x0=Math.round((L.W-(L.cols*pw+(L.cols-1)*L.g))/2),y0=Math.round((L.H-(L.rows*ph+(L.rows-1)*L.g))/2);
+ ctx.strokeStyle='#a0a0a0';ctx.lineWidth=2;
+ for(let r=0;r<L.rows;r++)for(let k=0;k<L.cols;k++){
+  const x=x0+k*(pw+L.g),y=y0+r*(ph+L.g);ctx.drawImage(photo,x,y);ctx.strokeRect(x-1,y-1,pw+2,ph+2);
+ }
+ const blob=await jpeg(c);
+ if(sheetPrev.src)URL.revokeObjectURL(sheetPrev.src);
+ sheetPrev.src=URL.createObjectURL(blob);sheetPrev.hidden=false;
+ sheetInfo.innerHTML=`<b>${L.n}</b> copies on a ${title} sheet (${L.W} × ${L.H} px at ${DPI} DPI). Print at 100% / actual size and cut along the grey lines.`;
+ download(blob,`passport-photos-${label()}-${name}.jpg`);
+}
+dl46.addEventListener('click',()=>sheet(1800,1200,'4x6','4×6 in'));
+dlA4.addEventListener('click',()=>sheet(2480,3508,'A4','A4'));
+showInfo();
+</script>
+<!--content-->
+<h2>Passport and visa photos in the exact size, made on your device</h2>
+<p>Passport offices, visa centres and online application forms ask for photos in a precise size, and a photo that is slightly off can get an application delayed. Pick your document, load a photo taken against a plain light wall, then drag and zoom until your head fills the oval and your eyes sit on the red line. Download a single photo for online forms, or a 4×6 inch or A4 sheet with as many copies as fit, ready to print at home or at any photo shop. Everything happens in your browser, so your photo is never uploaded. Requirements change from time to time, so check the latest official rules before you submit.</p>
+<table>
+<tr><th>Document</th><th>Photo size</th><th>Pixels at 300 DPI</th><th>Copies per 4×6 in</th></tr>
+<tr><td>India passport / visa</td><td>35 × 45 mm</td><td>413 × 531</td><td>8</td></tr>
+<tr><td>Indian visa from the USA</td><td>2 × 2 in</td><td>600 × 600</td><td>6</td></tr>
+<tr><td>US passport / visa</td><td>2 × 2 in</td><td>600 × 600</td><td>6</td></tr>
+<tr><td>UK passport</td><td>35 × 45 mm</td><td>413 × 531</td><td>8</td></tr>
+<tr><td>Schengen visa</td><td>35 × 45 mm</td><td>413 × 531</td><td>8</td></tr>
+<tr><td>Canada passport</td><td>50 × 70 mm</td><td>591 × 827</td><td>4</td></tr>
+</table>
+<h2>Tips for a photo that gets accepted</h2>
+<p>Stand about a metre in front of a plain white or light-coloured wall, face the camera straight on with a neutral expression and both eyes open, and make sure there are no shadows on your face or behind you. Remove glasses if the rules for your country require it, and avoid hats or anything covering your face unless it is worn for religious or medical reasons. When printing the sheet, turn off any "fit to page" or "scale" option so each photo comes out at its true size.</p>

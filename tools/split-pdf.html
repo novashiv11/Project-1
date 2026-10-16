@@ -1,0 +1,57 @@
+<!--meta
+{"slug": "split-pdf", "title": "Split PDF", "category": "PDF tools",
+ "description": "Extract a page range from a PDF or split every page into its own file. Free, works in your browser, no upload.",
+ "faq": [
+  ["Are my files uploaded when I split a PDF?", "No. The PDF is split on your own device, inside your browser. It is never sent to a server."],
+  ["How do I write the pages I want?", "Use page numbers and ranges separated by commas, for example 1-3, 5, 8-10. You can also write 4-end to mean page 4 to the last page."],
+  ["What do I get when I split every page?", "You get a ZIP file with one PDF per page, named page-1.pdf, page-2.pdf and so on. Most computers and phones can open ZIP files without extra apps."]
+ ]}
+-->
+<script src="../filetools.js"></script>
+<script src="../vendor/pdf-lib.min.js"></script>
+<script src="../vendor/jszip.min.js"></script>
+<script src="../pdftools.js"></script>
+<style>.modes label{display:flex;align-items:center;gap:8px;font-weight:400;margin:6px 0}.modes input{width:auto}</style>
+<label class="drop" id="drop">Click or drop a PDF here<span>One PDF file</span><input type="file" accept="application/pdf,.pdf"></label>
+<div class="modes">
+ <label><input type="radio" name="mode" value="range" checked> Extract pages into one PDF</label>
+ <label><input type="radio" name="mode" value="all"> Split every page into its own PDF (ZIP)</label>
+</div>
+<div id="rangeBox"><label for="range">Pages to extract</label><input id="range" placeholder="e.g. 1-3, 5, 8-10"></div>
+<button id="go">Split PDF</button>
+<div class="result" id="out">Add a PDF to start.</div>
+<script>
+let pdf=null;
+setupPdfDrop(drop,out,p=>{pdf=p;});
+document.querySelectorAll('[name=mode]').forEach(r=>r.onchange=()=>{rangeBox.style.display=r.value==='range'&&r.checked?'':'none';});
+go.onclick=async()=>{
+ if(!pdf){out.textContent='Add a PDF file first.';return;}
+ const mode=document.querySelector('[name=mode]:checked').value;
+ try{
+  const src=await openPdf(pdf.bytes,pdf.file.name);
+  if(mode==='range'){
+   const idx=parseRanges(range.value,pdf.pages);
+   const doc=await PDFLib.PDFDocument.create();
+   (await doc.copyPages(src,idx)).forEach(p=>doc.addPage(p));
+   const blob=await savePdf(doc,outName(pdf.file.name,'pages'));
+   out.innerHTML=`<b>Done!</b> ${idx.length} page(s), ${kb(blob.size)}. Your download should start automatically.`;
+  }else{
+   out.textContent='Splitting...';
+   const zip=new JSZip();
+   for(let i=0;i<pdf.pages;i++){
+    const doc=await PDFLib.PDFDocument.create();
+    const [p]=await doc.copyPages(src,[i]);doc.addPage(p);
+    zip.file(`page-${i+1}.pdf`,await doc.save());
+   }
+   const blob=await zip.generateAsync({type:'blob'});
+   download(blob,outName(pdf.file.name,'split').replace(/\.pdf$/,'.zip'));
+   out.innerHTML=`<b>Done!</b> ${pdf.pages} PDFs in one ZIP, ${kb(blob.size)}. Your download should start automatically.`;
+  }
+ }catch(e){out.textContent=e.message;}
+};
+</script>
+<!--content-->
+<h2>Pull out just the pages you need</h2>
+<p>Only need a few pages of a long report, a single chapter or one signed form? Add the PDF, type the pages you want, such as 1-3, 5, 8-10, and click Split PDF. You get a new PDF with only those pages, in the order you typed them.</p>
+<h2>Split a PDF into single pages, privately</h2>
+<p>Choose the second option to turn every page into its own PDF. The files arrive together in one ZIP download. Everything runs in your browser, so contracts, bank statements and other private documents never leave your device.</p>

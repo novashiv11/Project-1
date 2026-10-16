@@ -1,6 +1,8 @@
-# QuickCalc Tools: a passive-income tools website
+# ToolNest: a passive-income tools website
 
-A free website of calculators and tools (loan EMI, compound interest, BMI, age, word counter, password generator and more).
+A free website of 36 tools that run entirely in the browser: PDF tools (merge, split, compress, PDF to JPG, rotate, watermark...),
+image tools (resize to KB, passport photo, signature resize, HEIC to JPG, crop, convert), QR code generator/scanner and calculators.
+Files never leave the user's device, which is the selling point over upload-based competitors and something chatbots can't replace.
 It earns money from **Google AdSense ads** and **affiliate links** when people find the tools on Google.
 It costs **$0** to run (hosted free on GitHub Pages) and needs almost no maintenance.
 
@@ -31,7 +33,7 @@ then income that grows as pages start ranking. More tools mean more pages that c
 
 ## Adding a new tool (the way to grow income)
 
-Copy any file in `tools/`, change the meta block (`slug`, `title`, `description`, `faq`), the tool HTML/JS and the article text, then push.
+Copy any file in `tools/`, change the meta block (`slug`, `title`, `description`, `category`, `faq`), the tool HTML/JS and the article text, then push.
 The home page, sitemap and SEO tags update automatically. Ideas that get lots of searches: income tax, inflation, car loan, fuel cost, pregnancy due date,
 sleep, time zone converter, random number generator, currency converter, credit card payoff.
 
@@ -42,4 +44,4 @@ python3 build.py                      # writes the site to _site/
 python3 -m http.server -d _site 8000  # preview at http://localhost:8000
 ```
 
-No dependencies besides Python 3.
+No dependencies besides Python 3. Browser libraries are vendored in `static/vendor/` (pdf-lib, pdf.js, JSZip, heic2any, qrcode-generator, jsQR) with their licenses.

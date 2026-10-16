@@ -1,0 +1,52 @@
+<!--meta
+{"slug": "watermark-pdf", "title": "Watermark PDF", "category": "PDF tools",
+ "description": "Add a text watermark such as CONFIDENTIAL or DRAFT to every page of a PDF. Set angle, opacity, size and color. Free, no upload.",
+ "faq": [
+  ["Are my documents uploaded?", "No. The watermark is added on your own device, inside your browser. Your PDF never leaves your computer or phone."],
+  ["Which characters can I use?", "Letters, numbers and common symbols used in English and Western European languages work. Characters such as Chinese, Arabic or emoji are not supported by the built-in font."],
+  ["Can the watermark be removed later?", "The text is added to each page of the new PDF. It is not locked, so someone with a PDF editor could remove it, but it clearly marks the document in normal use."]
+ ]}
+-->
+<script src="../filetools.js"></script>
+<script src="../vendor/pdf-lib.min.js"></script>
+<script src="../pdftools.js"></script>
+<style>input[type=color]{height:46px;padding:4px}</style>
+<label class="drop" id="drop">Click or drop a PDF here<span>One PDF file</span><input type="file" accept="application/pdf,.pdf"></label>
+<label for="text">Watermark text</label><input id="text" value="CONFIDENTIAL" maxlength="80">
+<div class="row">
+ <div><label for="style">Style</label><select id="style"><option value="diag">Diagonal</option><option value="center">Centered (horizontal)</option></select></div>
+ <div><label for="size">Font size</label><input id="size" type="number" min="8" max="200" value="60"></div>
+ <div><label for="opacity">Opacity: <span id="opv">30</span>%</label><input id="opacity" type="range" min="5" max="100" value="30"></div>
+ <div><label for="color">Color</label><input id="color" type="color" value="#d32f2f"></div>
+</div>
+<button id="go">Add watermark</button>
+<div class="result" id="out">Add a PDF to start.</div>
+<script>
+let pdf=null;
+setupPdfDrop(drop,out,p=>{pdf=p;});
+opacity.oninput=()=>{opv.textContent=opacity.value;};
+go.onclick=async()=>{
+ if(!pdf){out.textContent='Add a PDF file first.';return;}
+ try{
+  const t=text.value.trim(),fs=+size.value;
+  if(!t)throw new Error('Type the watermark text first.');
+  if(!(fs>=8&&fs<=200))throw new Error('Choose a font size between 8 and 200.');
+  const doc=await openPdf(pdf.bytes,pdf.file.name);
+  const font=await doc.embedFont(PDFLib.StandardFonts.HelveticaBold);
+  let tw;
+  try{tw=font.widthOfTextAtSize(t,fs);}catch(e){throw new Error('The watermark text has characters this font cannot show. Use plain letters, numbers and common symbols.');}
+  const a=style.value==='diag'?45:0,r=a*Math.PI/180,cos=Math.cos(r),sin=Math.sin(r),th=fs*0.7;
+  for(const p of doc.getPages()){
+   const {x:bx,y:by,width:w,height:h}=p.getCropBox(),cx=bx+w/2,cy=by+h/2;
+   p.drawText(t,{x:cx-cos*tw/2+sin*th/2,y:cy-sin*tw/2-cos*th/2,size:fs,font,color:hexToRgb(color.value),opacity:opacity.value/100,rotate:PDFLib.degrees(a)});
+  }
+  const blob=await savePdf(doc,outName(pdf.file.name,'watermarked'));
+  out.innerHTML=`<b>Done!</b> Watermarked ${pdf.pages} page(s), ${kb(blob.size)}. Your download should start automatically.`;
+ }catch(e){out.textContent=e.message;}
+};
+</script>
+<!--content-->
+<h2>Mark documents as draft or confidential</h2>
+<p>A watermark tells readers at a glance that a document is a draft, confidential, a sample or a copy. Type your text, choose diagonal or straight across, then set the size, color and how see-through it should be. Every page gets the same watermark.</p>
+<h2>No upload, no sign-up</h2>
+<p>Documents that need a watermark are often the ones you least want to upload. This tool adds the watermark in your browser, so the file stays on your device. Keep the opacity low, around 20 to 30 percent, so the page underneath stays easy to read.</p>
