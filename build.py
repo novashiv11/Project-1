@@ -24,6 +24,8 @@ ROOT = Path(__file__).parent
 OUT = ROOT / "_site"
 CFG = json.loads((ROOT / "config.json").read_text())
 META_RE = re.compile(r"<!--meta\s*(\{.*?\})\s*-->", re.S)
+# Home page section order; tools without a "category" are calculators.
+CATEGORIES = ["PDF tools", "Image tools", "QR & utility tools", "Calculators"]
 
 
 def parse(path):
@@ -36,6 +38,7 @@ def parse(path):
     tool, _, content = body.partition("<!--content-->")
     if not content:
         tool, content = "", tool
+    meta.setdefault("category", "Calculators")
     meta.update(tool=tool.strip(), content=content.strip())
     return meta
 
@@ -117,6 +120,14 @@ def faq_html(faq):
     return f"<h2>Frequently asked questions</h2>{items}"
 
 
+def related(tool, tools, n=6):
+    same = [t for t in tools if t["category"] == tool["category"] and t is not tool][:n]
+    if not same:
+        return ""
+    links = "".join(f'<a class="card" href="../{t["slug"]}/"><strong>{t["title"]}</strong></a>' for t in same)
+    return f'<h2>Related tools</h2><div class="grid">{links}</div>'
+
+
 def write(slug, page):
     dest = OUT / slug / "index.html" if slug else OUT / "index.html"
     dest.parent.mkdir(parents=True, exist_ok=True)
@@ -137,6 +148,7 @@ def main():
             f'<h1>{t["title"]}</h1><p class="muted">{t["description"]}</p>'
             f'<div class="card">{t["tool"]}</div>{ad_slot()}'
             f'<article>{t["content"]}</article>{affiliates(t["slug"])}{faq_html(t.get("faq"))}{ad_slot()}'
+            f'{related(t, tools)}'
         )
         write(t["slug"], layout(t, main_html, 1))
 
@@ -145,17 +157,21 @@ def main():
             "{{contact_email}}", CFG["contact_email"])
         write(p["slug"], layout(p, f'<h1>{p["title"]}</h1>{body}', 1))
 
+    cats = sorted({t["category"] for t in tools},
+                  key=lambda c: CATEGORIES.index(c) if c in CATEGORIES else len(CATEGORIES))
     cards = "".join(
-        f'<a class="card" href="{t["slug"]}/"><strong>{t["title"]}</strong>'
-        f'<span>{t["description"]}</span></a>'
-        for t in tools
+        f'<h2>{c}</h2><div class="grid">' + "".join(
+            f'<a class="card" href="{t["slug"]}/"><strong>{t["title"]}</strong>'
+            f'<span>{t["description"]}</span></a>'
+            for t in tools if t["category"] == c) + "</div>"
+        for c in cats
     )
     home = {"slug": "", "title": f'{CFG["site_name"]} - {CFG["tagline"]}',
             "description": CFG["tagline"] + ". No sign-up, nothing to install."}
     write("", layout(home,
                      f'<h1>{CFG["site_name"]}</h1><p class="muted">{CFG["tagline"]}. '
                      f'No sign-up, nothing to install, your data never leaves your device.</p>'
-                     f'{ad_slot()}<div class="grid">{cards}</div>', 0))
+                     f'{ad_slot()}{cards}', 0))
 
     today = datetime.date.today().isoformat()
     slugs = [""] + [t["slug"] for t in tools] + [p["slug"] for p in pages]
