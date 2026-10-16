@@ -100,3 +100,9 @@
   then 4 engineer agents in parallel, one file each: app/ui/orb.js (home), stack.js (Focus cards, XP/levels), timeline.js (river),
   finance.js (Money: spend, fixed bills, deadlines, Irish tax calendar + CA check-up with revenue.ie links, Ask my CA / Import CA chat).
 - Integrated: 63 tests green (each module has tests/test_ui_*.py). Deployed to novashiv11/lifeos.
+
+## Session 11 (2026-10-16): v2.1 My words
+- Me → Settings: "My words" (e.g. `Bruno = pet`), stored only in phone settings + backup. Beats keywords, after explicit `area:` prefix.
+- Saving re-files existing items (remapMine); pet names also make `X weight 24kg` a pet metric.
+- Orb links: added € Money. tests/test_mywords.py (E2E). 64 tests OK. Deployed lifeos main e97b25d.
+- Python CLI unchanged (no personal words there yet).

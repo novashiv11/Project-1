@@ -91,6 +91,7 @@ EXTRA_VIEWS.orb={
     const links=`<nav class="o3k-links" aria-label="Other screens">
       <button type="button" data-v="today" aria-label="Open the list">☰ List</button>
       ${EXTRA_VIEWS.timeline?`<button type="button" data-v="timeline" aria-label="Open the timeline">〰 Timeline</button>`:""}
+      ${EXTRA_VIEWS.finance?`<button type="button" data-v="finance" aria-label="Open money">€ Money</button>`:""}
       <button type="button" data-v="jarvis" aria-label="Open Jarvis chat">🧠 Jarvis</button></nav>`;
     if(!all.length)return `<div class="o3k" data-orbroot><div class="o3k-stage">${orbHtml()}</div>
       <p class="o3k-say">Mujhe kuch bhi batao — likho ya orb dabake bolo.</p>${links}

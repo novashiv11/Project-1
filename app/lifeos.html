@@ -268,9 +268,23 @@ const wd=d=>(d.getDay()+6)%7; // Monday=0
 const mkDate=(y,m,d)=>{const x=new Date(y,m-1,d);return x.getMonth()===m-1&&x.getDate()===d?x:null};
 function todayDate(){const n=new Date();return new Date(n.getFullYear(),n.getMonth(),n.getDate())}
 
+// Personal words live only on the phone (settings.myWords), e.g. "Bruno = pet". Never in the repo.
+let MY_WORDS=[];
+function areaFor(w){w=w.trim().toLowerCase().replace(/s$/,"");if(!w)return null;
+  const alias={dog:"pet",cat:"pet",house:"home",ghar:"home",finance:"money",kid:"kids",doc:"document",id:"document",friend:"family",fun:"social",learn:"growth",order:"shopping",car:"vehicle"};
+  return [...AREAS,FALLBACK].find(a=>a.id===w||a.id===alias[w]||a.label.toLowerCase().replace(/s\b/g,"").split(/[ &]+/).includes(w))?.id||null}
+function setMyWords(src){MY_WORDS=[];
+  for(const line of String(src||"").split(/[\n,;]+/)){const m=line.match(/^\s*(.+?)\s*(?:=|→|->|:)\s*(.+?)\s*$/);if(!m)continue;
+    const d=areaFor(m[2]);if(!d)continue;
+    const words=m[1].split("/").map(w=>w.trim().replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).filter(Boolean);
+    if(words.length)MY_WORDS.push([new RegExp(`(?<![\\p{L}\\d])(?:${words.join("|")})(?![\\p{L}\\d])`,"iu"),d])}
+  return MY_WORDS}
+const myArea=text=>(MY_WORDS.find(([rx])=>rx.test(text))||[])[1]||null;
+const isPet=text=>PET_RE.test(text)||MY_WORDS.some(([rx,d])=>d==="pet"&&rx.test(text));
 function classify(text){
   const m=text.match(/^\s*(\w+)\s*:/);
   if(m){const d=LEGACY[m[1].toLowerCase()]||m[1].toLowerCase();if(BY_ID[d])return d}
+  const mine=myArea(text); if(mine)return mine;
   for(const [d,rx] of AREA_RE) if(rx.test(text))return d;
   return FALLBACK.id;
 }
@@ -319,7 +333,7 @@ function parseRepeat(text){
 function parseMetrics(text){
   const out=[];
   for(const [m,rx] of METRICS){const hit=text.match(rx);if(!hit)continue;
-    let name=m.name; if(m.per_subject)name=(PET_RE.test(text)&&!/\b(my|meri|mera)\b/i.test(text)?"pet.":"me.")+name;
+    let name=m.name; if(m.per_subject)name=(isPet(text)&&!/\b(my|meri|mera)\b/i.test(text)?"pet.":"me.")+name;
     out.push({name,value:parseFloat(hit[1].replace(/,/g,"")),unit:m.unit})}
   return out;
 }
@@ -421,7 +435,8 @@ const MON_SHORT=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","No
 /* ---------- settings, guides, brief ---------- */
 let settings={};
 try{settings=JSON.parse(localStorage.getItem("lifeos.settings")||"{}")}catch(e){}
-function saveSettings(){try{localStorage.setItem("lifeos.settings",JSON.stringify(settings))}catch(e){}}
+function saveSettings(){setMyWords(settings.myWords);try{localStorage.setItem("lifeos.settings",JSON.stringify(settings))}catch(e){}}
+setMyWords(settings.myWords);
 const GUIDES=(LIFE.guides||[]).map(g=>({...g,rx:new RegExp(`\\b(?:${g.pattern})\\b`,"i")}));
 const guideFor=it=>GUIDES.find(g=>g.rx.test(it.text));
 const openGuides=new Set();
@@ -648,6 +663,8 @@ function prefsPanel(){
     <div class="acts" style="display:flex;gap:8px;flex-wrap:wrap"><button class="go" style="padding:10px 14px" data-data="backup">Back up now</button><button class="linkbtn" data-data="restore">Restore from file</button></div></div>${restore}</section>
     <section><h2>Settings</h2><form class="setup" id="prefs">
     <label>Your name<input id="pname" value="${esc(settings.name||"")}" autocomplete="given-name"></label>
+    <label>My words (pet, people, shops → area)<textarea id="pwords" rows="3" placeholder="Bruno = pet&#10;Ravi = family&#10;Tesco = money">${esc(settings.myWords||"")}</textarea></label>
+    <span class="covers">One per line. Items with these words go to that area. Stays on this phone.</span>
     <label>Daily calorie goal (optional)<input id="pgoal" type="number" inputmode="numeric" value="${esc(settings.kcalGoal||"")}" placeholder="e.g. 2200"></label>
     <label>Voice language<select id="plang">${[["en-IN","English (India), good for Hinglish"],["en-IE","English (Ireland)"],["hi-IN","Hindi"]].map(([v,l])=>`<option value="${v}"${(settings.voiceLang||"en-IN")===v?" selected":""}>${l}</option>`).join("")}</select></label>
     <button class="go" type="submit" style="padding:12px">Save settings</button></form>
@@ -655,7 +672,7 @@ function prefsPanel(){
 }
 function backupNow(){
   const data={app:"LifeOS",format:1,exported:new Date().toISOString(),items:[...items.values()],
-    settings:{name:settings.name||"",kcalGoal:settings.kcalGoal||"",voiceLang:settings.voiceLang||""}}; // API key is never exported
+    settings:{name:settings.name||"",kcalGoal:settings.kcalGoal||"",voiceLang:settings.voiceLang||"",myWords:settings.myWords||""}}; // API key is never exported
   const name=`lifeos-backup-${iso(todayDate())}.json`, file=new File([JSON.stringify(data,null,1)],name,{type:"application/json"});
   const done=()=>{settings.lastBackup=iso(todayDate());saveSettings();render();toast("Backup saved",false)};
   if(navigator.canShare&&navigator.canShare({files:[file]}))
@@ -664,6 +681,11 @@ function backupNow(){
   function download(){const a=document.createElement("a");a.href=URL.createObjectURL(file);a.download=name;document.body.appendChild(a);a.click();a.remove();
     setTimeout(()=>URL.revokeObjectURL(a.href),5000);done()}
 }
+// Re-file existing items when "My words" change (explicit "area:" prefixes are left alone).
+async function remapMine(){let n=0;
+  for(const it of [...items.values()]){if(/^\s*\w+\s*:/.test(it.text))continue;const d=myArea(it.text);
+    if(d&&d!==it.domain){await backend.put({...it,domain:d});n++}}
+  return n}
 async function applyRestore(){
   const r=pendingRestore; pendingRestore=null; if(!r)return;
   for(const id of [...items.keys()])if(!r.items.some(i=>i.id===id))await backend.del(id);
@@ -1008,11 +1030,12 @@ document.addEventListener("click",async e=>{
   else if(b.hasAttribute("data-showdone")){showDone=!showDone;render()}
   else if(b.id==="toastUndo"){document.getElementById("toast").hidden=true;await undo()}
 });
-document.addEventListener("submit",e=>{
+document.addEventListener("submit",async e=>{
   if(e.target.id==="setup"){e.preventDefault();settings.name=document.getElementById("sname").value.trim();
     settings.key=document.getElementById("skey").value.trim();delete settings.editing;saveSettings();render()}
   if(e.target.id==="prefs"){e.preventDefault();settings.name=document.getElementById("pname").value.trim();
-    settings.kcalGoal=document.getElementById("pgoal").value.trim();settings.voiceLang=document.getElementById("plang").value;saveSettings();render();toast("Settings saved",false)}
+    settings.kcalGoal=document.getElementById("pgoal").value.trim();settings.voiceLang=document.getElementById("plang").value;
+    settings.myWords=document.getElementById("pwords").value.trim();saveSettings();const n=await remapMine();render();toast(n?`Saved · ${n} item${n>1?"s":""} moved`:"Settings saved",false)}
   if(e.target.id==="askform"){e.preventDefault();const i=document.getElementById("aq"),t=i.value.trim();if(t){i.value="";askClaude(t)}}
   if(e.target.id==="pasteform"){e.preventDefault();pasteResult=parseClaude(document.getElementById("paste").value);render()}
   if(e.target.id==="chatform"){e.preventDefault();const i=document.getElementById("cq"),t=i.value.trim();if(t&&backend){i.value="";askJarvis(t)}}
