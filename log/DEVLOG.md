@@ -116,3 +116,9 @@
 - manifest share_target (GET title/text/url): sharing from WhatsApp/Gmail/Chrome prefills the capture box (≤500 chars), URL cleaned.
 - manifest shortcuts: long-press icon → Focus / Food / Money (?v=…). Needs app re-install on the phone to pick up (Chrome re-reads manifest in ~1 day).
 - tests/test_share.py. 69 tests OK. Deployed lifeos main 20147c5.
+
+## Session 14 (2026-10-16): v2.4 My life + Letters + Drive sync
+- Jarvis "🧠 My life": settings.lifeContext (phone only, in backup), sent with every handoff/API call; learns via `learn:`/`forget:` lines + remember_fact tool; "refresh" → LIFECONTEXT block; `#ctx=` link loads for review.
+- Agents: app/ui/letters.js (photos → dated items, Sonnet in key mode, numbers scrubbed), app/ui/sync.js (Drive appData, needs GOOGLE_CLIENT_ID: docs/DRIVE_SYNC.md).
+- Page hooks (save/boot/prefs, auto ⋯ menu), `updated` stamps, backup nudge. Removed personal data from finance.js prompt + tests.
+- 84 tests OK. Deployed lifeos main. Founder's personal context delivered as a file only (not in repo).

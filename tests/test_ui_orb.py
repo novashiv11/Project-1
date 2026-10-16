@@ -9,7 +9,7 @@ class OrbHomeTest(PhoneBase):
         self.pg.evaluate("view = HOME; render()")
 
     def test_orb_bubbles_and_fit(self):
-        self.pg.evaluate("settings.name = 'Shivam'")
+        self.pg.evaluate("settings.name = 'Asha'")
         self.add("IRP card expires in 60 days", "dentist kal 4pm", "NCT due today", "lunch 650 kcal")
         self.home()
         self.assertEqual(self.pg.evaluate("view"), "orb")
@@ -22,7 +22,7 @@ class OrbHomeTest(PhoneBase):
         self.assertNotIn("lunch", text)  # food never floats
         self.assertTrue(bubs[0].startswith("NCT"))  # due today ranks before the open renewal window
         say = self.pg.inner_text(".o3k-say")
-        self.assertIn("Shivam", say)
+        self.assertIn("Asha", say)
         self.assertIn("2 cheezein", say)  # today + window open; kal waits for the week
         self.assertTrue(self.pg.is_visible(".o3k-go"))
         self.assertEqual(self.pg.evaluate("document.documentElement.scrollWidth"), 390)

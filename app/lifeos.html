@@ -745,7 +745,7 @@ function exportIcs(){
 }
 function backupNow(){
   const data={app:"LifeOS",format:1,exported:new Date().toISOString(),items:[...items.values()],
-    settings:{name:settings.name||"",kcalGoal:settings.kcalGoal||"",voiceLang:settings.voiceLang||"",myWords:settings.myWords||""}}; // API key is never exported
+    settings:{name:settings.name||"",kcalGoal:settings.kcalGoal||"",voiceLang:settings.voiceLang||"",myWords:settings.myWords||"",lifeContext:settings.lifeContext||""}}; // API key is never exported
   const name=`lifeos-backup-${iso(todayDate())}.json`, file=new File([JSON.stringify(data,null,1)],name,{type:"application/json"});
   const done=()=>{settings.lastBackup=iso(todayDate());saveSettings();render();toast("Backup saved",false)};
   shareFile(file,"LifeOS backup",done);
@@ -763,6 +763,20 @@ async function applyRestore(){
   undoStack=[]; render(); toast(`Restored ${r.items.length} items`,false);
 }
 
+/* ---------- My life: what Jarvis knows about this person. Lives only on the phone (settings.lifeContext) ---------- */
+const CTX_MAX=6000;
+const aboutMe=()=>{const c=(settings.lifeContext||"").trim();return c?`About me (my life context; trust it over guesses, and use it to personalise every answer):\n${c}\n\n`:""};
+const LEARN_RULE=`If you learned a lasting fact about my life (people, places, pets, home, work, money, health, habits, preferences, goals), add one line per fact to the block: "learn: <short fact>". If a fact in my context is now wrong, add "forget: <words from that line>". Only facts about me, never ID, PPSN, passport or account numbers.`;
+function learnFacts(learn,forget){
+  let lines=(settings.lifeContext||"").split("\n");
+  for(const f of forget){const k=f.toLowerCase().trim();if(k.length>=3)lines=lines.filter(l=>!l.toLowerCase().includes(k))}
+  const have=new Set(lines.map(l=>l.replace(/^[-•*]\s*/,"").trim().toLowerCase()));
+  const add=learn.map(f=>f.replace(/\b\d{6,}\b/g,"").trim()).filter(f=>f&&!have.has(f.toLowerCase()));
+  if(add.length){if(!lines.some(l=>/^#+\s*learned/i.test(l)))lines.push("","## Learned");lines.push(...add.map(f=>"- "+f))}
+  settings.lifeContext=lines.join("\n").replace(/\n{3,}/g,"\n\n").trim().slice(0,CTX_MAX);saveSettings();
+  return add.length;
+}
+
 /* ---------- Jarvis: chat with Claude using the user's own key (phone app only) ---------- */
 const MODEL="claude-haiku-5-5";
 const SYSTEM=`You are Jarvis, the assistant inside LifeOS, a private life-admin app. The user lives in Ireland and may write in English or Hinglish; reply in the same style, briefly (at most 4 short sentences unless asked for detail).
@@ -770,12 +784,16 @@ Each user message starts with today's date and a snapshot of their LifeOS items 
 When the user tells you something to remember, a task, a date or a plan, call add_item with one short line in their words, including the date in plain words (e.g. "IRP card expires 2027-01-20", "dentist kal 4pm", "rent every month"). Call add_item once per separate thing.
 When the user says they finished something on the list, call complete_item with its id.
 For Irish admin (IRP/immigration, NCT, motor tax, Revenue, RTB, PPSN) give general guidance and point to the official site (irishimmigration.ie, ncts.ie, motortax.ie, revenue.ie, rtb.ie, citizensinformation.ie). If you are not sure of a fee, deadline or rule, say so and point to the official site instead of guessing.
+When you learn a lasting fact about the user's life (people, places, pets, home, work, preferences, goals) or a fact in "About me" changes, call remember_fact. Learn only from this user's own life.
 Never ask for passport, IRP, PPSN or bank numbers. When the user sends a photo of a card, letter or bill, save only what they must act on (expiry/renewal dates, amounts due and due dates) and never copy document, card or account numbers into items or replies.`;
 const TOOLS=[
  {name:"add_item",description:"Save a new note, task, reminder or dated item to the user's LifeOS.",strict:true,
   input_schema:{type:"object",properties:{text:{type:"string",description:"One short line, with any date in plain words"}},required:["text"],additionalProperties:false}},
  {name:"complete_item",description:"Mark an existing item done by its id. Recurring items move to their next date.",strict:true,
-  input_schema:{type:"object",properties:{id:{type:"integer"}},required:["id"],additionalProperties:false}}];
+  input_schema:{type:"object",properties:{id:{type:"integer"}},required:["id"],additionalProperties:false}},
+ {name:"remember_fact",description:"Add a lasting fact about the user's life to their private life context, optionally removing an outdated line.",strict:true,
+  input_schema:{type:"object",properties:{fact:{type:"string",description:"One short fact, e.g. 'Dog Bruno, female, eats kibble mixed with meat'"},
+    forget:{type:"string",description:"Words from an outdated context line to remove, or empty string"}},required:["fact","forget"],additionalProperties:false}}];
 let chatMsgs=[], chatLog=[], chatBusy=false;
 const CHAT_OK=!window.claude; // inside claude.ai the page can't reach the API; the phone app can
 function snapshot(today){
@@ -786,12 +804,15 @@ function snapshot(today){
 async function callClaude(){
   const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":settings.key,
     "anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-    body:JSON.stringify({model:MODEL,max_tokens:2048,system:SYSTEM,tools:TOOLS,messages:chatMsgs,output_config:{effort:"low"},cache_control:{type:"ephemeral"}})});
+    body:JSON.stringify({model:MODEL,max_tokens:2048,system:[{type:"text",text:SYSTEM,cache_control:{type:"ephemeral"}},...(aboutMe()?[{type:"text",text:aboutMe()}]:[])],tools:TOOLS,messages:chatMsgs,output_config:{effort:"low"},cache_control:{type:"ephemeral"}})});
   const data=await r.json().catch(()=>({}));
   if(!r.ok){const m=data.error&&data.error.message||r.statusText;throw new Error(r.status===401?"That API key didn't work. Check it in Jarvis settings.":r.status===429?"Too many requests right now. Try again in a minute.":m)}
   return data;
 }
 async function runTool(b){
+  if(b.name==="remember_fact"&&typeof b.input.fact==="string"&&b.input.fact.trim()){
+    const n=learnFacts([b.input.fact],b.input.forget?[b.input.forget]:[]);
+    chatLog.push({who:"act",text:`🧠 learned: ${b.input.fact.trim()}`});return n?"Saved to life context.":"Already known."}
   if(b.name==="add_item"&&typeof b.input.text==="string"&&b.input.text.trim()){
     const id=Math.max(0,...items.keys())+1, it={id,created:nowStamp(),done:false,...parse(b.input.text.trim(),todayDate())};
     await backend.put(it); chatLog.push({who:"act",text:`✓ saved to ${area(it.domain).label}${it.due?` · ${it.due}`:""}: ${it.text}`});
@@ -839,8 +860,8 @@ function vJarvis(){
   const bubbles=chatLog.length?chatLog.map(m=>m.who==="img"?`<div class="msg img"><img src="${m.src}" alt="Photo you sent"></div>`:`<div class="msg ${m.who}">${esc(m.text)}</div>`).join(""):
     `<div class="msg bot">Hi${settings.name?" "+esc(settings.name):""}! Tell me anything to remember, or ask: "IRP renewal kab start karun?"</div>`;
   return `<div class="jhead"><div class="orb${chatBusy?" busy":""}"></div><div style="flex:1"><b>Jarvis</b><small>● ${chatBusy?"soch raha hai…":`online · knows your ${items.size} items`}</small></div>
-    <button class="linkbtn" data-chat="new">New</button><button class="linkbtn" data-chat="settings">⚙︎</button></div>
-    <div class="chat">${bubbles}${chatBusy?`<div class="msg act">Jarvis is thinking…</div>`:""}</div>
+    <button class="linkbtn" data-teach aria-expanded="${showTeach}" aria-label="My life context">🧠</button><button class="linkbtn" data-chat="new">New</button><button class="linkbtn" data-chat="settings">⚙︎</button></div>
+    ${showTeach?teachPanel():""}<div class="chat">${bubbles}${chatBusy?`<div class="msg act">Jarvis is thinking…</div>`:""}</div>
     <form class="dock" id="chatform" autocomplete="off"><input id="cq" placeholder="Jarvis se pucho…" aria-label="Message Jarvis">
     <button class="db" type="button" data-chatcam aria-label="Send a photo">📷</button><button class="db go" type="submit" aria-label="Send">↑</button></form>`;
 }
@@ -852,7 +873,7 @@ function claudePrompt(q){
   if(snap.length>5000)snap=snap.slice(0,5000)+"\n…(more items not shown)";
   return `You are Jarvis, my life-admin assistant inside my LifeOS app. I live in Ireland. Reply in my style (English or Hinglish), short and practical. For Irish admin (IRP, NCT, motor tax, Revenue, RTB) point me to the official site if you're not sure.
 
-${snap}
+${aboutMe()}${snap}
 
 My question: ${q}
 
@@ -860,6 +881,7 @@ If I should save anything (tasks, dates, renewals) or mark something done, end y
 LIFEOS
 + one short line per new item, with the date in plain words (e.g. IRP card expires 2027-01-20)
 done #<id> for each finished item
+${LEARN_RULE}
 Never include passport, IRP, PPSN or bank numbers.`;
 }
 function askClaude(q,prompt){ // must run inside a tap/submit handler: clipboard + opening the app need a user gesture
@@ -869,7 +891,14 @@ function askClaude(q,prompt){ // must run inside a tap/submit handler: clipboard
   askedQ=q; view="jarvis"; render();
   toast("Claude khul raha hai (question copied too). Reply ke baad LIFEOS lines yahan paste karo.",false);
 }
-let askedQ="", showProject=false, showPaste=false;
+let askedQ="", showProject=false, showPaste=false, showTeach=false, teachDraft=null;
+function teachPanel(){
+  const v=teachDraft!=null?teachDraft:(settings.lifeContext||"");
+  return `<div class="setup"><b>🧠 My life: what Jarvis knows about you</b>
+    <span class="covers">Jarvis reads this before every answer and keeps adding to it (it learns from your chats and list). Only on this phone. No ID or account numbers.</span>
+    <textarea id="ctx" rows="10" placeholder="## Me&#10;- From India, live in Ireland&#10;## Pets&#10;- Dog Bruno, eats kibble with meat&#10;## How to help me&#10;- Short answers, Hinglish">${esc(v)}</textarea>
+    <div class="acts"><button class="go" style="padding:10px 14px" data-teachsave>Save</button><button class="linkbtn" data-teachrefresh>✨ Claude se update karwao</button></div></div>`;
+}
 function memoryPrompt(){
   let snap=snapshot(todayDate());
   if(snap.length>4000)snap=snap.slice(0,4000)+"\n…(more items not shown)";
@@ -878,43 +907,73 @@ Only include things you actually know from our chats. Don't invent dates; if you
 For monthly bills write the day if you know it ("Eir bill every month on the 5th"); if you don't, write "paid each month" without "every".
 Skip anything already in my list:
 
-${snap}
+${aboutMe()}${snap}
 
 Reply with ONLY this block:
 LIFEOS
 + one short line per item, with the date in plain words (e.g. "IRP card expires 2027-01-20", "rent every month", "mom birthday 3 jan")
+${LEARN_RULE}
 Never include passport, IRP, PPSN or bank numbers.`;
 }
-const PROJECT_INSTRUCTIONS=`You are Jarvis, my life-admin assistant for my LifeOS app. I live in Ireland and write in English or Hinglish; reply the same way, short and practical.
-The newest lifeos-backup-*.json file in this project is my list (items have id, text, domain, due date, repeat, done). Use it to answer questions about my dates, renewals, bills and plans. Treat the other files (letters, cards, bills) as reference: read dates from them, never copy ID, passport, PPSN or account numbers.
-For Irish admin (IRP/immigration, NCT, motor tax, Revenue, RTB) give general steps and point to the official site when unsure.
-Whenever I should save something new or mark something done, end your reply with:
+const PROJECT_INSTRUCTIONS=`You are Jarvis: my personal life OS. One person only: me. Learn from my life, adapt to it, and never answer generically when my facts say otherwise.
+SOURCES: "About me" (below, if present) is who I am. The newest lifeos-backup-*.json in this project is my live list (id, text, domain, due, repeat, done). Other files (letters, bills, cards): read dates and amounts, never copy ID, passport, PPSN or account numbers.
+ANSWER: short and practical, in my style (English or Hinglish). Lead with the answer. Give one recommendation with a default. For Irish admin (IRP/immigration, NCT, motor tax, Revenue, RTB) give the steps and the official link; say so when unsure. Nudge me about one thing I'm missing (renewal coming up, stale dispute, idea never acted on).
+LEARN: whenever something should change, end your reply with:
 LIFEOS
 + one short line per new item, with the date in plain words
 done #<id> for finished items
-I paste that block back into the app.`;
+learn: <fact> for each lasting fact about my life you picked up (forget: <words> when one changed)
+I paste that block back into the app. Learn only from my life: my list, my files, my chats.
+When I say "refresh", rewrite my whole About me (sections: Me, People, Pets, Home, Money, Health, Documents, Projects, How to help me, Unknown; max 45 lines) as a block starting with the line LIFECONTEXT.
+When I say "weekly": 3 actions for this week, 1 thing I'm avoiding, 1 win.`;
+function refreshPrompt(){
+  let snap=snapshot(todayDate()); if(snap.length>5000)snap=snap.slice(0,5000)+"\n…(more items not shown)";
+  return `You keep my "life context": the private notes my assistant Jarvis reads before every answer. Rewrite it so it is complete, current and compact.
+Use my current context, my LifeOS list below, and your memory of me and our past chats (search them if you can). Only facts about MY life, nothing generic, nothing invented. Mark guesses with "(?)".
+Sections (skip empty ones): ## Me (where from, where I live, languages, work, style) · ## People · ## Pets · ## Home · ## Money · ## Health · ## Documents & deadlines (dates only, never numbers) · ## Projects & ideas · ## How to help me (tone, pet peeves).
+Max 45 short lines. Never include ID, PPSN, passport, bank or policy numbers, or full addresses.
+
+Current context:
+${(settings.lifeContext||"(empty)").trim()}
+
+${snap}
+
+Reply with ONLY this block:
+LIFECONTEXT
+<the new context>`;
+}
 function parseClaude(text){
-  const at=text.search(/^\s*LIFEOS\s*$/m), body=at>=0?text.slice(at):text, adds=[], dones=[];
+  const cx=text.search(/^\s*LIFECONTEXT\s*$/m);
+  if(cx>=0){const body=text.slice(cx).replace(/^\s*LIFECONTEXT\s*\n/,"").replace(/\b\d{6,}\b/g,"").trim().slice(0,CTX_MAX);
+    if(body.length>=20)return {adds:[],dones:[],learn:[],forget:[],context:body}}
+  const at=text.search(/^\s*LIFEOS\s*$/m), body=at>=0?text.slice(at):text, adds=[], dones=[], learn=[], forget=[];
   for(const raw of body.split(/\r?\n/)){const l=raw.trim();let m;
     if((m=l.match(/^\+\s*(.{3,200})$/))||(at>=0&&(m=l.match(/^[•*-]\s+(.{3,200})$/))))adds.push(m[1].trim());
-    else if(m=l.match(/^done\s*#?(\d+)\b/i))dones.push(+m[1]);}
-  return {adds:[...new Set(adds)],dones:[...new Set(dones)].filter(id=>items.has(id)&&!items.get(id).done)};
+    else if(m=l.match(/^done\s*#?(\d+)\b/i))dones.push(+m[1]);
+    else if(m=l.match(/^learn\s*:\s*(.{3,200})$/i))learn.push(m[1].trim());
+    else if(m=l.match(/^forget\s*:\s*(.{3,200})$/i))forget.push(m[1].trim());}
+  return {adds:[...new Set(adds)],dones:[...new Set(dones)].filter(id=>items.has(id)&&!items.get(id).done),learn:[...new Set(learn)],forget:[...new Set(forget)]};
 }
 async function applyPaste(){
   const r=pasteResult; pasteResult=null; if(!r)return;
+  if(r.context){settings.lifeContext=r.context;saveSettings();buzz(15);render();toast("🧠 Life context updated",false);return}
   for(const t of r.adds)await capture(t);
   for(const id of r.dones)await complete(id);
-  buzz(15); render(); toast(`Ho gaya ✓ ${r.adds.length} saved${r.dones.length?`, ${r.dones.length} done`:""}`,false);
+  const n=(r.learn||[]).length||(r.forget||[]).length?learnFacts(r.learn||[],r.forget||[]):0;
+  buzz(15); render(); toast(`Ho gaya ✓ ${r.adds.length} saved${r.dones.length?`, ${r.dones.length} done`:""}${n?`, ${n} learned 🧠`:""}`,false);
 }
 function vAskClaude(){
-  const pv=pasteResult?(pasteResult.adds.length||pasteResult.dones.length?`<div class="setup"><b>From Claude</b><div class="pv">
-      ${pasteResult.adds.map(t=>`<div>＋ ${esc(t)}</div>`).join("")}${pasteResult.dones.map(id=>`<div>✓ done: ${esc(items.get(id).text)}</div>`).join("")}</div>
+  const pr=pasteResult, pv=pr?(pr.context||pr.adds.length||pr.dones.length||(pr.learn||[]).length||(pr.forget||[]).length?`<div class="setup"><b>${pr.context?"New life context":"From Claude"}</b><div class="pv">
+      ${pr.context?`<div style="white-space:pre-wrap">${esc(pr.context)}</div>`:""}
+      ${pr.adds.map(t=>`<div>＋ ${esc(t)}</div>`).join("")}${pr.dones.map(id=>`<div>✓ done: ${esc(items.get(id).text)}</div>`).join("")}
+      ${(pr.learn||[]).map(t=>`<div>🧠 learn: ${esc(t)}</div>`).join("")}${(pr.forget||[]).map(t=>`<div>🧹 forget: ${esc(t)}</div>`).join("")}</div>
       <div class="acts"><button class="go" style="padding:10px 14px" data-paste="apply">Save all</button><button class="linkbtn" data-paste="cancel">Cancel</button></div></div>`
     :`<div class="setup"><b>Nothing to save found.</b><span class="covers">Paste the part of Claude's reply that starts with LIFEOS.</span><button class="linkbtn" data-paste="cancel">OK</button></div>`):"";
   return `<div class="jhead"><div class="orb"></div><div style="flex:1"><b>Jarvis</b><small>● via your Claude app · no extra cost</small></div><button class="linkbtn" data-chat="settings" aria-label="Jarvis settings">⚙︎</button></div>
     <div class="chat"><div class="msg bot">Hi${settings.name?" "+esc(settings.name):""}! 👇 Neeche sawal likho aur ↑ dabao.
 Main tumhari list ke saath <b>Claude app</b> khol dunga (tumhara subscription, koi extra paisa nahi).</div>
-    <div class="acts"><button class="ex" data-memimport>🧠 Import what Claude knows about me</button><button class="ex" data-project aria-expanded="${showProject}">📁 Claude Project setup</button>${askedQ||pasteResult?"":`<button class="ex" data-showpaste>📋 Paste Claude's reply</button>`}</div>
+    <div class="acts"><button class="ex" data-teach aria-expanded="${showTeach}">🧠 My life (${(settings.lifeContext||"").trim()?(settings.lifeContext.trim().split("\n").filter(l=>l.trim()&&!l.startsWith("#")).length+" facts"):"teach Jarvis"})</button><button class="ex" data-memimport>📥 Import what Claude knows about me</button><button class="ex" data-project aria-expanded="${showProject}">📁 Claude Project setup</button>${askedQ||pasteResult?"":`<button class="ex" data-showpaste>📋 Paste Claude's reply</button>`}</div>
+    ${showTeach?teachPanel():""}
     ${showProject?`<div class="setup"><b>LifeOS inside a Claude Project</b>
       <span class="covers">Every chat in the project will know your list and your files. One-time setup, about 2 minutes:</span>
       <ol style="margin:0;padding-left:20px;display:grid;gap:6px"><li>Open claude.ai → <b>Projects</b> → <b>New project</b> → name it “LifeOS”.</li>
@@ -1088,7 +1147,10 @@ document.addEventListener("click",async e=>{
   if(b.hasAttribute("data-memimport")){askClaude("🧠 Import what Claude knows about me",memoryPrompt());return}
   if(b.hasAttribute("data-showpaste")){showPaste=true;render();document.getElementById("paste").focus();return}
   if(b.hasAttribute("data-project")){showProject=!showProject;render();return}
-  if(b.hasAttribute("data-copyinstr")){try{await navigator.clipboard.writeText(PROJECT_INSTRUCTIONS);toast("Instructions copied ✓ Paste them in the project.",false)}catch(_){toast("Couldn't copy. Long-press to copy from docs instead.",false)}return}
+  if(b.hasAttribute("data-teach")){showTeach=!showTeach;teachDraft=null;render();return}
+  if(b.hasAttribute("data-teachsave")){settings.lifeContext=document.getElementById("ctx").value.replace(/\b\d{6,}\b/g,"").trim().slice(0,CTX_MAX);teachDraft=null;saveSettings();render();toast("🧠 Jarvis ne yaad kar liya",false);return}
+  if(b.hasAttribute("data-teachrefresh")){const t=document.getElementById("ctx");if(t){settings.lifeContext=t.value.trim().slice(0,CTX_MAX);saveSettings()}askClaude("🧠 Update my life context",refreshPrompt());return}
+  if(b.hasAttribute("data-copyinstr")){try{await navigator.clipboard.writeText(PROJECT_INSTRUCTIONS+(aboutMe()?"\n\n"+aboutMe():""));toast("Instructions copied ✓ Paste them in the project.",false)}catch(_){toast("Couldn't copy. Long-press to copy from docs instead.",false)}return}
   if(b.dataset.chat==="nokey"){settings.key="";delete settings.editing;saveSettings();render();return}
   if(b.dataset.askclaude!==undefined){document.getElementById("answer").hidden=true;askClaude(b.dataset.askclaude);return}
   if(b.hasAttribute("data-readclip")){try{const t=await navigator.clipboard.readText();document.getElementById("paste").value=t}catch(_){toast("Long-press the box and tap Paste.",false)}return}
@@ -1148,5 +1210,12 @@ if(shared||launch.has("v"))history.replaceState(null,"",location.pathname);
 render();
 if(window.claude&&claude.use)connect();else{backend=localBackend;backend.load();note(backend.label);render()}
 hook("boot");
+// A "#ctx=<base64url>" link loads a life context for review (the fragment never reaches the server; nothing saves until Save).
+function loadCtxLink(){if(!location.hash.startsWith("#ctx="))return;
+  try{const b=atob(location.hash.slice(5).replace(/-/g,"+").replace(/_/g,"/"));
+    teachDraft=new TextDecoder().decode(Uint8Array.from(b,c=>c.charCodeAt(0))).slice(0,CTX_MAX);view="jarvis";showTeach=true;
+    render();toast("🧠 Life context mila · check karo aur Save dabao",false)}catch(e){}
+  history.replaceState(null,"",location.pathname)}
+loadCtxLink(); window.addEventListener("hashchange",loadCtxLink);
 if(sharedText){view=HOME;render();const q=document.getElementById("q");q.value=sharedText;q.focus();toast("Shared ✓ · date add karo aur ↑ dabao",false)}
 </script>

@@ -167,7 +167,7 @@ class PhoneAppTest(PhoneBase):
     def test_jarvis_chat_saves_item(self):
         self.tab('jarvis')
         self.pg.click("button[data-chat=settings]")
-        self.pg.fill("#sname", "Shivam")
+        self.pg.fill("#sname", "Asha")
         self.pg.fill("#skey", "sk-ant-test")
         self.pg.click("#setup button[type=submit]")
         self.pg.fill("#cq", "IRP 20 Jan 2027 ko expire hoga")

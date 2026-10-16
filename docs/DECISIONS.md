@@ -29,3 +29,4 @@
 - 2026-10-15 · UI v1.1: simplicity first. Home is a single grouped list; secondary features live behind ⋯. Add features only when the founder asks.
 - 2026-10-16 · v2.0 UI = Orb home + Focus stack + Timeline + Money, as independent view modules (parallel agents; one file per module).
 - 2026-10-16: personal names → area mapping lives in phone settings (`myWords`), never in life.json/repo.
+- 2026-10-16: personal life context lives in phone settings (lifeContext) and is loaded via #ctx= fragment links; never in repo.

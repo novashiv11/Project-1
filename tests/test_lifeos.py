@@ -293,14 +293,14 @@ class RealWorldDatesTest(unittest.TestCase):
     def test_past_context_dates_are_not_due_dates(self):
         self.assertIsNone(parse("Passport renewal: chase embassy (application delivered 25 Aug)", NOW)["due"])
         self.assertEqual(parse("Local Property Tax: last paid 27 Oct 2025, next due around Nov 2026", NOW)["due"], "2026-11-01")
-        self.assertIsNone(parse("Currys refund: deadline was 14 Oct 2026", NOW)["due"])
+        self.assertIsNone(parse("Shop refund: deadline was 14 Oct 2026", NOW)["due"])
 
     def test_explicit_date_beats_weekday_word(self):
         self.assertEqual(parse("Acoustic wall panels: wait for Black Friday on 27 Nov", NOW)["due"], "2026-11-27")
 
     def test_month_year_and_birthdays(self):
         self.assertEqual(parse("Sony return: Oct 2026", NOW)["due"], "2026-10-01")
-        p = parse("Mom birthday 19 Sep", NOW)
+        p = parse("Dad birthday 7 Mar", NOW)
         self.assertEqual((p["due"], p["repeat"]), ("2027-09-19", {"every": 1, "unit": "year"}))
 
     def test_monthly_bill_day(self):
@@ -315,5 +315,5 @@ class RealWorldDatesTest(unittest.TestCase):
     def test_new_keywords(self):
         for text, want in {"Kitchen cabinets: repaint": "home", "Attic insulation with an SEAI grant": "home",
                            "Eir: every month": "money", "BOI Savings direct debit": "money",
-                           "Neighbour boundary dispute": "home", "Narwal vacuum dispute": "money"}.items():
+                           "Neighbour boundary dispute": "home", "Robovac dispute": "money"}.items():
             self.assertEqual(parse(text, NOW)["domain"], want, text)

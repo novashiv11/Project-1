@@ -82,11 +82,11 @@ const CAL=[
   {d:"31 Oct",y:"2026",what:"Pay & File: 2025 tax return + balance, and 2026 preliminary tax",
    who:"If you're self-assessed (Form 11), e.g. PAYE with €5,000+ side/investment income. ROS pay+file gets an extension (18 Nov 2026 announced) — check revenue.ie.",url:LINK.payfile},
   {d:"31 Oct",y:"2026",what:"File CGT for 2025 share sales (return due even if no tax)",
-   who:"If you sold shares/ETFs in 2025 (Trading 212 / Trade Republic).",url:LINK.cgt},
+   who:"If you sold shares/ETFs in 2025 (e.g. via a broker app).",url:LINK.cgt},
   {d:"Prelim",y:"tax",what:"Preliminary tax = lesser of 90% of this year's or 100% of last year's liability",
    who:"Self-assessed people, paid with Pay & File.",url:LINK.prelim},
   {d:"15 Dec",y:"2026",what:"Pay CGT on gains made 1 Jan – 30 Nov 2026",
-   who:"If you sold shares at a profit this year (Trading 212 / Trade Republic).",url:LINK.cgt},
+   who:"If you sold shares at a profit this year (e.g. via a broker app).",url:LINK.cgt},
   {d:"31 Jan",y:"2027",what:"Pay CGT on gains made in December 2026",
    who:"If you sell shares in December.",url:LINK.cgt},
   {d:"€1,270",y:"per year",what:"CGT annual exemption: first €1,270 of gains each year are tax-free (not transferable)",
@@ -195,8 +195,8 @@ function snap(today,max){let s=snapshot(today);return s.length>max?s.slice(0,max
 function caPrompt(){
   const all=[...items.values()], today=todayDate(), s=stats(all,today);
   const fixed=s.fixed.slice(0,15).map(i=>`- ${i.text}${i.due?` (next ${i.due})`:""}`).join("\n")||"- none logged";
-  return `Act as my chartered accountant (Ireland). I'm an Irish tax resident PAYE employee and I invest via Trading 212 and Trade Republic (shares/ETFs, some dividends). Be professional, specific and short; cite revenue.ie pages where useful.
-
+  return `Act as my chartered accountant (Ireland). I'm an Irish tax resident. Be professional, specific and short; cite revenue.ie pages where useful.
+${typeof aboutMe==="function"?"\n"+aboutMe().trim()+"\n":""}
 Spending this month: ${eur(s.cur)} (last month ${eur(s.prev)}). Last 6 months: ${s.ms.map(m=>`${m.label} ${eur(Math.round(m.v))}`).join(", ")}.
 Fixed monthly costs I logged (≈${eur(Math.round(s.fixedTotal))}/month where amounts are known):
 ${fixed}
@@ -213,7 +213,7 @@ Say clearly if something needs a professional tax adviser.
 ${LIFEOS_BLOCK}`;
 }
 function importPrompt(){
-  return `Search our past conversations (use your memory and chat search) for any earlier finance, CA, tax or budgeting analysis we did together: Revenue / myAccount, tax credits, CGT on Trading 212 / Trade Republic, dividends, pensions, savings goals, bills and subscriptions.
+  return `Search our past conversations (use your memory and chat search) for any earlier finance, CA, tax or budgeting analysis we did together: Revenue / myAccount, tax credits, CGT on shares/ETFs, dividends, pensions, savings goals, bills and subscriptions.
 Return every action item, deadline, recurring payment, savings goal and open question from those chats as LIFEOS lines.
 Only include things we actually discussed. Don't invent dates; if you only know the month, write the month. For recurring payments write the amount and day if known ("Eir bill €45 every month on the 5th").
 Skip anything already in my list:

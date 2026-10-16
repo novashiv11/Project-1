@@ -19,7 +19,7 @@ CASES = [e for a in AREAS for e in a["examples"]] + [
     "1Z999AA10123456784 arriving tomorrow", "random thought", "my weight 72kg", "dog weight 24.5kg",
     "bins every other week", "food: Greek Yoghurt (150 g) · 146 kcal · 13.5 g protein · 5.7 g sugar", "lunch 650 kcal", "Passport renewal: chase embassy (application delivered 25 Aug)",
     "Local Property Tax: last paid 27 Oct 2025, next due around Nov 2026", "Acoustic wall panels: wait for Black Friday on 27 Nov",
-    "Sony return: Oct 2026", "Mom birthday 19 Sep", "Currys refund: deadline was 14 Oct 2026", "Eir: every month", "Mortgage every 1st", "Change elec and gas supplier", "Eir bill every month on the 5th", "rent every month on the 20th", "gym every monday 7am", "lunch with Ravi on Nov 2nd at 13:30", "vet 3 din baad",
+    "Sony return: Oct 2026", "Dad birthday 7 Mar", "Shop refund: deadline was 14 Oct 2026", "Eir: every month", "Mortgage every 1st", "Change elec and gas supplier", "Eir bill every month on the 5th", "rent every month on the 20th", "gym every monday 7am", "lunch with Ravi on Nov 2nd at 13:30", "vet 3 din baad",
 ]
 HARNESS = """
 const exp=require(process.argv[2]); const T=new Date(2026,9,14); const bad=[];
