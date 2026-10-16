@@ -31,7 +31,7 @@
 - [ ] Import from photos of IRP/insurance letters in bulk (ICS export from phone: done v2.2)
 
 ## Later (P2)
-- [ ] Voice capture; phone share-sheet
+- [x] Voice capture; phone share-sheet (v2.3)
 - [ ] Two-way Google Calendar sync
 - [ ] Package tracking via carrier APIs
 - [ ] Web/mobile UI; encrypted sync

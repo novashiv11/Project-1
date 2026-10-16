@@ -1122,6 +1122,13 @@ document.addEventListener("submit",async e=>{
     rec.start();
   });
 })();
+// Android share-sheet (manifest share_target, GET: ?title=&text=&url=) and home-screen shortcuts (?v=…) land here
+const launch=new URLSearchParams(location.search);
+if(launch.has("v")&&(EXTRA_VIEWS[launch.get("v")]||["today","life","review","all","jarvis","food"].includes(launch.get("v"))))view=launch.get("v");
+const shared=["title","text","url"].some(k=>launch.has(k));
+const sharedText=shared?[...new Set(["title","text","url"].map(k=>(launch.get(k)||"").trim()).filter(Boolean))].join(" ").slice(0,500):"";
+if(shared||launch.has("v"))history.replaceState(null,"",location.pathname);
 render();
 if(window.claude&&claude.use)connect();else{backend=localBackend;backend.load();note(backend.label);render()}
+if(sharedText){view=HOME;render();const q=document.getElementById("q");q.value=sharedText;q.focus();toast("Shared ✓ · date add karo aur ↑ dabao",false)}
 </script>

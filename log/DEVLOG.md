@@ -111,3 +111,8 @@
 - Food: "Phir se khaya?" 1-tap favourites (top 6, last 60 days) + 7-day kcal bars with goal line.
 - Calendar: Me → "Export calendar (.ics)" (JS toIcs mirrors lifeos/ics.py, test compares both); Focus card "📅 Calendar mein daalo" (Google Calendar template link, RRULE for repeats).
 - backup/ics share via shared shareFile(). tests/test_food_cal.py. 66 tests OK. Deployed lifeos main.
+
+## Session 13 (2026-10-16): v2.3 share-sheet + shortcuts
+- manifest share_target (GET title/text/url): sharing from WhatsApp/Gmail/Chrome prefills the capture box (≤500 chars), URL cleaned.
+- manifest shortcuts: long-press icon → Focus / Food / Money (?v=…). Needs app re-install on the phone to pick up (Chrome re-reads manifest in ~1 day).
+- tests/test_share.py. 69 tests OK. Deployed lifeos main 20147c5.
