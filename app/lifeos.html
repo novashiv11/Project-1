@@ -231,6 +231,7 @@ section,.brief,.cards,.chat,.setup,.scan,.answer,.guide{grid-template-columns:mi
     <button data-v="today" id="tab-list" role="menuitem"><i>☰</i><span><b>List</b><small>Everything due, in one list</small></span></button>
     <button data-v="stack" id="tab-stack" role="menuitem" hidden><i>🃏</i><span><b>Focus</b><small>One thing at a time, swipe to finish</small></span></button>
     <button data-v="timeline" id="tab-timeline" role="menuitem" hidden><i>〰</i><span><b>Timeline</b><small>Your life on one line</small></span></button>
+    <button data-v="finance" id="tab-finance" role="menuitem" hidden><i>💶</i><span><b>Money</b><small>Bills, spending, tax deadlines, CA check-up</small></span></button>
     <button data-v="jarvis" id="tab-jarvis" role="menuitem"><i>🧠</i><span><b>Jarvis</b><small>Ask Claude about your life</small></span></button>
     <button data-v="food" id="tab-food" role="menuitem"><i>🍽</i><span><b>Food</b><small>Calories today, scan barcodes</small></span></button>
     <button data-v="life" id="tab-life" role="menuitem"><i>◐</i><span><b>Life areas</b><small>Home, money, documents, pets…</small></span></button>
@@ -966,7 +967,7 @@ document.getElementById("cap").addEventListener("submit",async e=>{
   else{document.getElementById("answer").hidden=true;await capture(text)}
 });
 document.getElementById("sheet").addEventListener("click",e=>{if(e.target.id==="sheet")e.target.hidden=true});
-for(const v of ["stack","timeline"])document.getElementById("tab-"+v).hidden=!EXTRA_VIEWS[v];
+for(const v of ["stack","timeline","finance"])document.getElementById("tab-"+v).hidden=!EXTRA_VIEWS[v];
 document.addEventListener("click",async e=>{
   const b=e.target.closest("button"); if(!b)return;
   if(b.id==="more"){const sh=document.getElementById("sheet");sh.hidden=!sh.hidden;b.setAttribute("aria-expanded",String(!sh.hidden));return}
