@@ -385,12 +385,15 @@ function answer(q,items,today){
 }
 
 /* ---------- storage: private db per person, device storage as fallback ---------- */
+// Extension points for app/ui/*.js modules: LIFEOS_HOOKS.save (after each local save), .boot (after items load), .prefs (HTML for the Me screen)
+const HOOKS=window.LIFEOS_HOOKS=window.LIFEOS_HOOKS||{};
+function hook(name,...args){return (HOOKS[name]||[]).map(f=>{try{return f(...args)}catch(e){console.error(e);return ""}})}
 let items=new Map(), backend=null, undoStack=[];
 const LS_KEY="lifeos.items.v1";
 const localBackend={
   label:"Saved on this device only",
   load(){try{const raw=localStorage.getItem(LS_KEY);(raw?JSON.parse(raw):[]).forEach(i=>items.set(i.id,upgrade(i)))}catch(e){}},
-  save(){try{localStorage.setItem(LS_KEY,JSON.stringify([...items.values()]))}catch(e){}},
+  save(){try{localStorage.setItem(LS_KEY,JSON.stringify([...items.values()]))}catch(e){}hook("save",[...items.values()])},
   async put(it){items.set(it.id,it);this.save();render()},
   async del(id){items.delete(id);this.save();render()}
 };
@@ -414,7 +417,7 @@ const clone=o=>o?JSON.parse(JSON.stringify(o)):null;
 
 async function change(id,next,msg){
   undoStack.push({id,prev:clone(items.get(id))});
-  if(next)await backend.put(next);else await backend.del(id);
+  if(next){next.updated=nowStamp();await backend.put(next)}else await backend.del(id);
   toast(msg);
 }
 async function undo(){
@@ -693,7 +696,7 @@ function prefsPanel(){
     <span class="covers">Last backup: ${esc(lb)}</span>
     <div class="acts" style="display:flex;gap:8px;flex-wrap:wrap"><button class="go" style="padding:10px 14px" data-data="backup">Back up now</button><button class="linkbtn" data-data="restore">Restore from file</button></div></div>${restore}
     <div class="setup"><span>📅 Saari dates apne calendar mein (Google/Samsung/Outlook). Renewals ke saath early alarm bhi.</span>
-    <div class="acts"><button class="go" style="padding:10px 14px" data-data="ics">Export calendar (.ics)</button></div></div></section>
+    <div class="acts"><button class="go" style="padding:10px 14px" data-data="ics">Export calendar (.ics)</button></div></div>${hook("prefs").join("")}</section>
     <section><h2>Settings</h2><form class="setup" id="prefs">
     <label>Your name<input id="pname" value="${esc(settings.name||"")}" autocomplete="given-name"></label>
     <label>My words (pet, people, shops → area)<textarea id="pwords" rows="3" placeholder="Bruno = pet&#10;Ravi = family&#10;Tesco = money">${esc(settings.myWords||"")}</textarea></label>
@@ -1018,8 +1021,17 @@ async function snooze(id,el){
 const EXTRA_VIEWS=window.EXTRA_VIEWS||(window.EXTRA_VIEWS={});
 const HOME=EXTRA_VIEWS.orb?"orb":"today";
 let view=HOME; // the app always opens on home
+// Data lives on one phone: nudge a backup when there's enough to lose and the last one is 14+ days old (home screens only).
+function backupNudge(today){
+  const lb=settings.lastBackup, age=lb?Math.round((today-fromIso(lb))/864e5):null, show=(view===HOME||view==="today")&&items.size>=5&&(age===null||age>=14)&&!settings.syncOn;
+  let b=document.getElementById("backupNudge");
+  if(!show){if(b)b.remove();return}
+  if(!b){b=document.createElement("button");Object.assign(b,{id:"backupNudge",type:"button"});b.dataset.data="backup";document.getElementById("banners").appendChild(b)}
+  b.textContent=age===null?"💾 Backup nahi hua · ab karo":`💾 Backup ${age} din purana`;
+}
 function render(){
   const all=[...items.values()], today=todayDate();
+  backupNudge(today);
   document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.v===view));
   document.body.dataset.view=view;
   const dn=new Date(); document.getElementById("today").textContent=`${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][dn.getDay()]} · ${dn.getDate()} ${MON_SHORT[dn.getMonth()]}`;
@@ -1056,6 +1068,11 @@ document.getElementById("cap").addEventListener("submit",async e=>{
 });
 document.getElementById("sheet").addEventListener("click",e=>{if(e.target.id==="sheet")e.target.hidden=true});
 for(const v of ["stack","timeline","finance"])document.getElementById("tab-"+v).hidden=!EXTRA_VIEWS[v];
+// Modules with a `menu:{icon,title,sub}` get a ⋯ menu entry automatically (inserted before "Me").
+for(const [v,x] of Object.entries(EXTRA_VIEWS))if(x.menu&&!document.getElementById("tab-"+v)){
+  const b=document.createElement("button");Object.assign(b,{id:"tab-"+v,type:"button"});b.dataset.v=v;b.setAttribute("role","menuitem");
+  b.innerHTML=`<i>${esc(x.menu.icon)}</i><span><b>${esc(x.menu.title)}</b><small>${esc(x.menu.sub||"")}</small></span>`;
+  document.getElementById("tab-all").before(b)}
 document.addEventListener("click",async e=>{
   const b=e.target.closest("button"); if(!b)return;
   if(b.id==="more"){const sh=document.getElementById("sheet");sh.hidden=!sh.hidden;b.setAttribute("aria-expanded",String(!sh.hidden));return}
@@ -1130,5 +1147,6 @@ const sharedText=shared?[...new Set(["title","text","url"].map(k=>(launch.get(k)
 if(shared||launch.has("v"))history.replaceState(null,"",location.pathname);
 render();
 if(window.claude&&claude.use)connect();else{backend=localBackend;backend.load();note(backend.label);render()}
+hook("boot");
 if(sharedText){view=HOME;render();const q=document.getElementById("q");q.value=sharedText;q.focus();toast("Shared ✓ · date add karo aur ↑ dabao",false)}
 </script>

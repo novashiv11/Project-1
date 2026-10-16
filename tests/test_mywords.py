@@ -29,5 +29,17 @@ class MyWordsTest(PhoneBase):
         self.assertEqual(self.pg.evaluate("parse('Bruno vet kal', todayDate()).domain"), "pet")
 
 
+class BackupNudgeTest(PhoneBase):
+    def test_nudge_shows_until_backed_up(self):
+        self.pg.evaluate("window.__dl = 0; HTMLAnchorElement.prototype.click = function(){ window.__dl++ }; navigator.canShare = null; 0")
+        self.add("a 1", "b 2", "c 3", "d 4", "e 5")
+        self.pg.wait_for_selector("#backupNudge")
+        self.assertIn("Backup", self.pg.inner_text("#backupNudge"))
+        self.pg.click("#backupNudge")
+        self.pg.wait_for_function("!document.getElementById('backupNudge')")
+        self.assertEqual(self.pg.evaluate("window.__dl"), 1)
+        self.assertTrue(self.pg.evaluate("[...items.values()].every(i => i.updated)"))
+
+
 if __name__ == "__main__":
     unittest.main()
