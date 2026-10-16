@@ -301,7 +301,7 @@ class RealWorldDatesTest(unittest.TestCase):
     def test_month_year_and_birthdays(self):
         self.assertEqual(parse("Sony return: Oct 2026", NOW)["due"], "2026-10-01")
         p = parse("Dad birthday 7 Mar", NOW)
-        self.assertEqual((p["due"], p["repeat"]), ("2027-09-19", {"every": 1, "unit": "year"}))
+        self.assertEqual((p["due"], p["repeat"]), ("2027-03-07", {"every": 1, "unit": "year"}))
 
     def test_monthly_bill_day(self):
         self.assertEqual(parse("Eir bill every month on the 5th", NOW)["due"], "2026-11-05")
