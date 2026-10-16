@@ -1,0 +1,63 @@
+<!--meta
+{"category": "Image tools", "slug": "image-converter", "title": "Image Converter (JPG, PNG, WebP)",
+ "description": "Convert images between JPG, PNG and WebP in your browser. Convert many files at once and download them one by one or as a ZIP. No upload.",
+ "faq": [
+  ["Which format should I convert to?", "Choose JPG for photos and for forms that only accept JPG or JPEG. Choose PNG for screenshots, logos and images that need sharp edges or a transparent background. Choose WebP for small files on websites."],
+  ["What happens to transparent backgrounds?", "PNG and WebP keep transparency. JPG cannot store it, so transparent areas become white."],
+  ["Are my images uploaded?", "No. The conversion happens inside your browser, so your pictures never leave your phone or computer."]
+ ]}
+-->
+<script src="../filetools.js"></script>
+<script src="../vendor/jszip.min.js"></script>
+<label class="drop" id="drop">Click or drop images here<span>JPG, PNG, WebP, GIF or BMP, many at once</span><input type="file" accept="image/*" multiple></label>
+<div class="row">
+ <div><label for="fmt">Convert to</label><select id="fmt"><option value="image/jpeg">JPG</option><option value="image/png">PNG</option><option value="image/webp">WebP</option></select></div>
+ <div id="qbox"><label for="q">Quality: <span id="qv">90</span>%</label><input id="q" type="range" min="10" max="100" value="90"></div>
+</div>
+<ul class="files" id="list"></ul>
+<div class="result" id="out">Add images to start.</div>
+<script>
+let files=[],results=[];
+const EXT={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'};
+setupDrop(drop,f=>{files=files.concat(f.filter(x=>x.type.startsWith('image/')));run();});
+[q,fmt].forEach(e=>e.addEventListener('change',run));
+q.addEventListener('input',()=>qv.textContent=q.value);
+function convert(img,type,quality){
+ const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;
+ const ctx=c.getContext('2d');
+ if(type==='image/jpeg'){ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);}
+ ctx.drawImage(img,0,0);
+ return new Promise((ok,bad)=>c.toBlob(b=>b?ok(b):bad(new Error('Your browser could not create this format')),type,quality));
+}
+async function run(){
+ qbox.style.display=fmt.value==='image/png'?'none':'';
+ if(!files.length)return;
+ out.textContent='Converting...';list.innerHTML='';results=[];
+ const type=fmt.value,ext=EXT[type],used={};
+ for(const f of files){
+  const li=document.createElement('li');list.appendChild(li);
+  try{
+   const img=await loadImage(f);
+   const blob=await convert(img,type,q.value/100);URL.revokeObjectURL(img.src);
+   let base=f.name.replace(/\.[^.]+$/,''),name=base+'.'+ext;
+   for(let n=2;used[name];n++)name=base+'-'+n+'.'+ext;used[name]=1;
+   results.push({blob,name});
+   li.innerHTML=`<span class="nm"></span><a href="#">Download</a>`;
+   li.querySelector('.nm').innerHTML=`${name.replace(/</g,'&lt;')}<br><span class="muted">${kb(f.size)} → <b>${kb(blob.size)}</b> · ${img.naturalWidth}×${img.naturalHeight}</span>`;
+   li.querySelector('a').onclick=e=>{e.preventDefault();download(blob,name);};
+  }catch(err){li.innerHTML=`<span class="nm">${err.message.replace(/</g,'&lt;')}</span>`;}
+ }
+ out.innerHTML=`Converted <b>${results.length}</b> of ${files.length} file${files.length>1?'s':''} to ${ext.toUpperCase()}.`;
+ if(results.length>1){
+  const b=document.createElement('button');b.type='button';b.id='zip';b.textContent='Download all as ZIP';out.appendChild(document.createElement('br'));out.appendChild(b);
+  b.onclick=async()=>{const z=new JSZip();results.forEach(r=>z.file(r.name,r.blob));download(await z.generateAsync({type:'blob'}),'converted-images.zip');};
+ }
+ const c=document.createElement('button');c.type='button';c.className='small';c.textContent='Clear';c.style.marginLeft='8px';
+ c.onclick=()=>{files=[];results=[];list.innerHTML='';out.textContent='Add images to start.';};out.appendChild(c);
+}
+</script>
+<!--content-->
+<h2>Change JPG, PNG and WebP files in seconds</h2>
+<p>Some websites only accept JPG, others want PNG, and many images you save from the web are WebP files that older apps cannot open. Add your pictures, choose the format you need and each file is converted straight away. Download them one at a time, or get all of them together in a single ZIP file. Width and height stay the same as the original.</p>
+<h2>Private and works offline once loaded</h2>
+<p>The conversion uses your browser's own image engine, so nothing is uploaded and there is no file limit or waiting in a queue. That makes it safe for ID cards, certificates and personal photos. For a smaller file, convert to JPG or WebP and lower the quality a little; 80–90% looks the same as the original for most photos.</p>

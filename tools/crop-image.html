@@ -1,0 +1,87 @@
+<!--meta
+{"category": "Image tools", "slug": "crop-image", "title": "Crop Image Online",
+ "description": "Crop photos in your browser by dragging a box. Square, 4:3, 16:9 and 3:4 passport-style presets. Works on phone and computer, no upload.",
+ "faq": [
+  ["How do I crop a photo for a form or passport size?", "Add the photo and pick 3:4, which suits most passport-style photos, or 1:1 for a square profile picture. Drag the box over the face, resize it from a corner, then download."],
+  ["Does cropping reduce quality?", "No. The cropped area keeps the full original resolution. JPG photos are saved at high quality and PNG images stay lossless."],
+  ["Is my image uploaded?", "No. Cropping happens inside your browser, so the photo never leaves your device."]
+ ]}
+-->
+<script src="../filetools.js"></script>
+<style>
+.cropwrap{position:relative;display:none;margin:16px auto 0;width:fit-content;max-width:100%;touch-action:none;user-select:none;-webkit-user-select:none}
+.cropwrap img{display:block;max-width:100%;max-height:70vh;pointer-events:none}
+.cbox{position:absolute;border:2px solid #fff;outline:1px solid rgba(0,0,0,.6);box-shadow:0 0 0 9999px rgba(0,0,0,.5);cursor:move;touch-action:none}
+.cropwrap{overflow:hidden}
+.cbox i{position:absolute;width:22px;height:22px;background:#fff;border:2px solid var(--accent);border-radius:50%;touch-action:none}
+.cbox i[data-h=nw]{left:-11px;top:-11px;cursor:nwse-resize}.cbox i[data-h=ne]{right:-11px;top:-11px;cursor:nesw-resize}
+.cbox i[data-h=sw]{left:-11px;bottom:-11px;cursor:nesw-resize}.cbox i[data-h=se]{right:-11px;bottom:-11px;cursor:nwse-resize}
+.ratios{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.ratios button{margin:0;padding:6px 14px;font-size:15px;background:var(--border);color:var(--text)}
+.ratios button.on{background:var(--accent);color:#fff}
+</style>
+<label class="drop" id="drop">Click or drop an image here<span>JPG, PNG or WebP</span><input type="file" accept="image/*"></label>
+<label>Shape</label>
+<div class="ratios" id="ratios"><button type="button" data-r="0" class="on">Free</button><button type="button" data-r="1">1:1</button><button type="button" data-r="1.3333">4:3</button><button type="button" data-r="1.7778">16:9</button><button type="button" data-r="0.75">3:4</button></div>
+<div class="cropwrap" id="wrap"><img id="pic" alt="Image to crop"><div class="cbox" id="box"><i data-h="nw"></i><i data-h="ne"></i><i data-h="sw"></i><i data-h="se"></i></div></div>
+<button type="button" id="go">Crop and download</button>
+<div class="result" id="out">Add an image to start.</div>
+<script>
+let file=null,ratio=0,c={x:0,y:0,w:0,h:0},drag=null; // c is in original image pixels
+const R={'1':1,'1.3333':4/3,'1.7778':16/9,'0.75':3/4};
+setupDrop(drop,f=>{const x=f.find(x=>x.type.startsWith('image/'));if(!x){out.textContent='Please choose an image file.';return;}
+ file=x;if(pic.src)URL.revokeObjectURL(pic.src);pic.src=URL.createObjectURL(x);});
+pic.onload=()=>{wrap.style.display='block';reset();};
+pic.onerror=()=>{out.textContent='This image could not be opened.';};
+ratios.querySelectorAll('button').forEach(b=>b.onclick=()=>{ratios.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));ratio=R[b.dataset.r]||0;if(file)reset();});
+function W(){return pic.naturalWidth}function H(){return pic.naturalHeight}
+function reset(){
+ let w=W()*0.8,h=H()*0.8;
+ if(ratio){if(w/h>ratio)w=h*ratio;else h=w/ratio;}
+ c={x:(W()-w)/2,y:(H()-h)/2,w,h};draw();
+}
+function draw(){
+ const s=pic.clientWidth/W();
+ Object.assign(box.style,{left:c.x*s+'px',top:c.y*s+'px',width:c.w*s+'px',height:c.h*s+'px'});
+ out.innerHTML=`Crop: <b>${Math.round(c.w)} × ${Math.round(c.h)} px</b> <span class="muted">from ${W()} × ${H()} px</span>`;
+}
+addEventListener('resize',()=>{if(file)draw();});
+box.addEventListener('pointerdown',e=>{
+ e.preventDefault();box.setPointerCapture(e.pointerId);
+ drag={h:e.target.dataset.h||'move',sx:e.clientX,sy:e.clientY,o:{...c}};
+});
+box.addEventListener('pointermove',e=>{
+ if(!drag)return;
+ const s=pic.clientWidth/W(),dx=(e.clientX-drag.sx)/s,dy=(e.clientY-drag.sy)/s,o=drag.o,min=Math.max(10,W()/100);
+ if(drag.h==='move'){
+  c.x=Math.min(Math.max(0,o.x+dx),W()-o.w);c.y=Math.min(Math.max(0,o.y+dy),H()-o.h);
+ }else{
+  // The opposite corner stays fixed.
+  const left=drag.h.includes('w'),top=drag.h.includes('n');
+  const ax=left?o.x+o.w:o.x,ay=top?o.y+o.h:o.y;
+  let w=left?o.w-dx:o.w+dx,h=top?o.h-dy:o.h+dy;
+  const maxW=left?ax:W()-ax,maxH=top?ay:H()-ay;
+  w=Math.min(Math.max(min,w),maxW);h=Math.min(Math.max(min,h),maxH);
+  if(ratio){if(w/h>ratio)w=h*ratio;else h=w/ratio;}
+  c={x:left?ax-w:ax,y:top?ay-h:ay,w,h};
+ }
+ draw();
+});
+['pointerup','pointercancel'].forEach(t=>box.addEventListener(t,()=>drag=null));
+go.onclick=()=>{
+ if(!file){out.textContent='Add an image first.';return;}
+ const w=Math.round(c.w),h=Math.round(c.h),cv=document.createElement('canvas');cv.width=w;cv.height=h;
+ const png=file.type==='image/png',ctx=cv.getContext('2d');
+ if(!png){ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);}
+ ctx.drawImage(pic,Math.round(c.x),Math.round(c.y),w,h,0,0,w,h);
+ cv.toBlob(b=>{
+  download(b,file.name.replace(/\.[^.]+$/,'')+'-cropped.'+(png?'png':'jpg'));
+  out.innerHTML=`Saved <b>${w} × ${h} px</b> <span class="muted">· ${kb(b.size)}</span>`;
+ },png?'image/png':'image/jpeg',0.92);
+};
+</script>
+<!--content-->
+<h2>Crop photos to the right shape for forms and profiles</h2>
+<p>Application forms often want a photo that shows just your face and shoulders, and social sites want square profile pictures. Add your image, choose a shape such as 1:1 for square or 3:4 for passport-style photos, then drag the box into place and resize it from any corner. The size of the crop in pixels is shown as you go, and it works with a finger on a phone as well as with a mouse.</p>
+<h2>Full quality, nothing uploaded</h2>
+<p>The cropped picture keeps the original resolution, so it stays sharp. Because cropping happens inside your browser, your photo is never sent anywhere. If the form also has a size limit in KB or needs exact pixels, open the Resize Image to KB tool next and enter the numbers it asks for.</p>
