@@ -27,3 +27,4 @@
 - 2026-10-15 · UI v1.0: dark-first 'Jarvis home' (mockup A) + life wheel (B). Mockups kept in docs/mockups.
 - 2026-10-15 · Jarvis default = free handoff to the user's Claude app (claude.ai/new?q=) + paste-back of LIFEOS lines; API key optional. Embedding claude.ai or reusing a consumer subscription via API isn't possible/allowed.
 - 2026-10-15 · UI v1.1: simplicity first. Home is a single grouped list; secondary features live behind ⋯. Add features only when the founder asks.
+- 2026-10-16 · v2.0 UI = Orb home + Focus stack + Timeline + Money, as independent view modules (parallel agents; one file per module).

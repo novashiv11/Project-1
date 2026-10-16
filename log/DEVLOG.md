@@ -94,3 +94,9 @@
   E2E navigates via the menu (tab() helper). 37 tests green.
 - Founder: 'simple is boring, rethink year-3000'. 3 concept mockups sent (Orb voice-core, Timeline river, Card stack w/ XP). Mockups not committed (contain founder's items). Awaiting pick.
 - Groundwork for parallel agents: app/ui/*.js view modules (EXTRA_VIEWS registry, HOME=orb when present), LIFEOS_DIST build override, PhoneBase test base with per-class temp builds, menu entries List/Focus/Timeline.
+
+## 2026-10-16 · Session 10: v2.0 via 4 parallel agents
+- Founder: "10x progress, use agents" + "add finance from CA chat". Lead built groundwork (EXTRA_VIEWS registry, LIFEOS_DIST, PhoneBase),
+  then 4 engineer agents in parallel, one file each: app/ui/orb.js (home), stack.js (Focus cards, XP/levels), timeline.js (river),
+  finance.js (Money: spend, fixed bills, deadlines, Irish tax calendar + CA check-up with revenue.ie links, Ask my CA / Import CA chat).
+- Integrated: 63 tests green (each module has tests/test_ui_*.py). Deployed to novashiv11/lifeos.

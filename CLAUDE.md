@@ -24,6 +24,7 @@
 - `app/lifeos.html` the app page (JS mirror of parse.py, guarded by tests/test_parity.py). The claude.ai artifact EjccpLbiwHgHC6A3J9Z9Xy is legacy (v0.5); the product is the PWA
 - `pwa/` (pwa.js reminders/install, sw.js offline+periodic nudges, privacy.html, screens/) + `scripts/build_pwa.py` → `dist/` → copy to ../lifeos, push main (GitHub Pages)
 - Tests: `python3 -m unittest -q` (unit + JS parity + `tests/test_e2e.py` phone E2E in headless Chromium, APIs faked)
+- View modules: `app/ui/{orb,stack,timeline,finance}.js` register `EXTRA_VIEWS` (orb = HOME); tests in `tests/test_ui_*.py` subclass `PhoneBase`
 - Play Store: `docs/PLAY_STORE.md` (PWABuilder TWA; founder steps pending). Next items: ROADMAP "Next"
 
 ## Kickoff line the founder can paste
