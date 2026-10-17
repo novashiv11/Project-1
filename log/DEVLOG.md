@@ -69,7 +69,7 @@
 
 ## 2026-10-15 · Session 9: redesign mockups
 - Founder: "app mei feel nai". Proposed Jarvis home + native feel + personality; founder chose mockups first.
-- 3 mockups in docs/mockups/: A Jarvis Dark (greeting + now cards + dock + bottom nav), B Life Wheel (light, area ring/score),
+- 3 mockups (images removed for privacy): A Jarvis Dark (greeting + now cards + dock + bottom nav), B Life Wheel (light, area ring/score),
   C Chat-first (Jarvis feed with inline task cards and action chips). Awaiting pick; nothing built.
 - v1.0 redesign shipped (founder: "next" = my pick A home + B wheel). Dark-first tokens (+light), header date/avatar, #banners
   slot for pwa buttons, fixed Jarvis dock (#cap) + 5-tab bottom nav (Home/Life/Jarvis/Week/Me), hero greeting + Hinglish sub,
@@ -83,11 +83,11 @@
 - Leverage the founder's Claude account (apps can't read claude.ai chats/memory/files directly): "🧠 Import what Claude knows
   about me" opens Claude with a memory/past-chats prompt that returns a LIFEOS block (skips items already listed); "📁 Claude
   Project setup" card: copy project instructions + backup upload steps (docs/CLAUDE_PROJECT.md). 31 tests green.
-- Founder's real Claude-memory import (39 lines) exposed parser bugs; fixed in py+js with tests: dates after "paid/delivered/was…"
-  ignored; "Nov 2026" → 1st; explicit day-month beats weekday words ("Black Friday on 27 Nov"); birthdays repeat yearly;
-  "every month on the 5th" → next 5th; home/money keywords (kitchen, attic, SEAI, Eir, BOI, disputes…). Memory prompt asks for
+- A real Claude-memory import exposed parser bugs; fixed in py+js with tests: dates after "paid/delivered/was…"
+  ignored; "Nov 2026" → 1st; explicit day-month beats weekday words; birthdays repeat yearly;
+  "every month on the 5th" → next 5th; more home/money keywords. Memory prompt asks for
   bill days. 📋 paste chip always visible. Cleaned import block given to founder in chat (not stored in repo). 36 tests green.
-- Founder: 'overwhelming, try something else'. Fixed 'every 1st' + mortgage. Proposing a radically simpler single-list design (mockup).
+- Founder: 'overwhelming, try something else'. Fixed 'every 1st' + money keywords. Proposing a radically simpler single-list design (mockup).
 - v1.1 SIMPLE (founder: "overwhelming"): home = title "Aaj" + capture box + one list grouped Aaj / Is hafte / Jaldi aane wala
   (≤30d or lead) / Baad mein (undated + far, collapsed). Rows: ◯ tap = done, swipe ← = snooze, guide link only when relevant.
   Bottom nav + tiles + hero removed; Jarvis/Food/Life/Week/Me moved into ⋯ sheet. "Window open" only for items >14d away.

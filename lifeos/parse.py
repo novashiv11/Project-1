@@ -50,7 +50,7 @@ def _month_day(mon, day, year, today):
     return d
 
 
-# A date right after "paid / delivered / was …" is history, not a due date ("last paid 27 Oct 2025").
+# A date right after "paid / delivered / was …" is history, not a due date ("last paid 3 Feb 2025").
 _DATE_ANY = (rf"(?:\d{{1,2}}(?:st|nd|rd|th)?\s+{_MON}(?:\s+\d{{4}})?|{_MON}\s+\d{{1,2}}(?:st|nd|rd|th)?(?:,?\s+\d{{4}})?"
              rf"|\d{{4}}-\d{{2}}-\d{{2}}|\d{{1,2}}/\d{{1,2}}/\d{{4}})")
 PAST_RE = re.compile(rf"\b(?:last\s+paid|paid|delivered|was|since|bought|ordered|received|submitted|applied)\s+(?:on\s+)?{_DATE_ANY}")
