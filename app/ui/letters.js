@@ -94,14 +94,20 @@ function noKeyMode(){
       ${pasteResult.adds.map(t=>`<div>＋ ${esc(t)}</div>`).join("")}${pasteResult.dones.map(id=>`<div>✓ done: ${esc(items.get(id).text)}</div>`).join("")}</div>
       <div class="acts"><button class="go" data-paste="apply">Save all</button><button class="linkbtn" data-paste="cancel">Cancel</button></div></div>`
     :`<div class="setup"><b>Nothing to save found.</b><span class="covers">Paste the part of Claude's reply that starts with LIFEOS.</span><button class="linkbtn" data-paste="cancel">OK</button></div>`):"";
-  return `<div class="setup"><ol class="let-steps"><li>Tap <b>Open Claude</b> (prompt copied)</li><li>Attach the photos in Claude</li><li>Paste the LIFEOS lines back here</li></ol>
-      <button class="go" data-let="open">Open Claude ↗</button></div>
+  const canShare=!!(navigator.share&&navigator.canShare);
+  return `<div class="setup"><ol class="let-steps"><li><b>Photos chuno</b></li><li><b>Claude ko bhejo</b> → share menu mein Claude app (prompt copied: wahan paste karo)</li><li>Claude ki LIFEOS lines yahan paste karo</li></ol>
+      ${canShare?`<label class="let-btn">📸 Photos chuno${freeFiles.length?` (${freeFiles.length})`:""}<input class="let-file" type="file" accept="image/*" multiple data-let-free aria-label="Pick photos of letters"></label>
+      ${freeFiles.length?`<button class="go" data-let="share">Claude ko bhejo (${freeFiles.length} photo${freeFiles.length>1?"s":""}) ↗</button>`:""}
+      <button class="linkbtn" data-let="open">Ya Claude kholo aur khud attach karo ↗</button>`
+      :`<button class="go" data-let="open">Open Claude ↗</button>`}</div>
     <form class="setup" id="letpaste"><textarea id="paste" rows="4" placeholder="Paste LIFEOS lines here…" aria-label="Claude's reply"></textarea>
       <div class="acts"><button class="linkbtn" type="button" data-readclip>📋 Paste clipboard</button><button class="go" type="submit">Check</button></div></form>${pv}`;
 }
 
+let freeFiles=[];
 document.addEventListener("change",e=>{
   const t=e.target;
+  if(t.matches&&t.matches("[data-let-free]")){freeFiles=[...(t.files||[])].filter(f=>/^image\//.test(f.type)).slice(0,10);render();return}
   if(t.matches&&t.matches("[data-let-files]")){const fs=[...(t.files||[])].filter(f=>/^image\//.test(f.type)).slice(0,10);if(fs.length&&!busy)readPhotos(fs);return}
   if(t.dataset&&t.dataset.letOn!==undefined){const r=rows[+t.dataset.letOn];if(r)r.on=t.checked;
     const b=document.querySelector("[data-let=add]");if(b)b.textContent=`Add ${checked().length}`}
@@ -120,6 +126,14 @@ document.addEventListener("submit",e=>{
 document.addEventListener("click",async e=>{
   const b=e.target.closest&&e.target.closest("[data-let]"); if(!b)return;
   if(b.dataset.let==="open"){askClaude("📸 Letters → reminders",claudePromptLetters());view="letters";render();return}
+  if(b.dataset.let==="share"){ // needs this tap (user activation) for the share sheet
+    const text=claudePromptLetters();
+    try{navigator.clipboard&&navigator.clipboard.writeText(text).catch(()=>{})}catch(_){}
+    const data={files:freeFiles,text,title:"Letters → reminders"};
+    try{if(navigator.canShare&&!navigator.canShare(data))delete data.text;await navigator.share(data);freeFiles=[];render();
+      toast("Claude mein prompt paste karo (copied). Reply ki LIFEOS lines yahan paste karo.",false)}
+    catch(x){if(x&&x.name==="AbortError")return;askClaude("📸 Letters → reminders",text);view="letters";render()}
+    return}
   if(b.dataset.let==="clear"){rows=[];err="";render();return}
   if(b.dataset.let==="add"){
     if(typeof backend==="undefined"||!backend)return;

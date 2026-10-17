@@ -897,7 +897,7 @@ function teachPanel(){
   return `<div class="setup"><b>🧠 My life: what Jarvis knows about you</b>
     <span class="covers">Jarvis reads this before every answer and keeps adding to it (it learns from your chats and list). Only on this phone. No ID or account numbers.</span>
     <textarea id="ctx" rows="10" placeholder="## Me&#10;- From India, live in Ireland&#10;## Pets&#10;- Dog Bruno, eats kibble with meat&#10;## How to help me&#10;- Short answers, Hinglish">${esc(v)}</textarea>
-    <div class="acts"><button class="go" style="padding:10px 14px" data-teachsave>Save</button><button class="linkbtn" data-teachrefresh>✨ Claude se update karwao</button></div></div>`;
+    <div class="acts"><button class="go" style="padding:10px 14px" data-teachsave>Save</button><button class="linkbtn" data-teachpaste>📋 Paste</button><button class="linkbtn" data-teachrefresh>✨ Claude se update karwao</button></div></div>`;
 }
 function memoryPrompt(){
   let snap=snapshot(todayDate());
@@ -1148,6 +1148,7 @@ document.addEventListener("click",async e=>{
   if(b.hasAttribute("data-showpaste")){showPaste=true;render();document.getElementById("paste").focus();return}
   if(b.hasAttribute("data-project")){showProject=!showProject;render();return}
   if(b.hasAttribute("data-teach")){showTeach=!showTeach;teachDraft=null;render();return}
+  if(b.hasAttribute("data-teachpaste")){try{const t=await navigator.clipboard.readText();if(t&&t.trim()){teachDraft=t.trim().slice(0,CTX_MAX);render();toast("Paste ho gaya · Save dabao",false)}}catch(_){toast("Box mein long-press karke Paste karo",false)}return}
   if(b.hasAttribute("data-teachsave")){settings.lifeContext=document.getElementById("ctx").value.replace(/\b\d{6,}\b/g,"").trim().slice(0,CTX_MAX);teachDraft=null;saveSettings();render();toast("🧠 Jarvis ne yaad kar liya",false);return}
   if(b.hasAttribute("data-teachrefresh")){const t=document.getElementById("ctx");if(t){settings.lifeContext=t.value.trim().slice(0,CTX_MAX);saveSettings()}askClaude("🧠 Update my life context",refreshPrompt());return}
   if(b.hasAttribute("data-copyinstr")){try{await navigator.clipboard.writeText(PROJECT_INSTRUCTIONS+(aboutMe()?"\n\n"+aboutMe():""));toast("Instructions copied ✓ Paste them in the project.",false)}catch(_){toast("Couldn't copy. Long-press to copy from docs instead.",false)}return}

@@ -122,3 +122,7 @@
 - Agents: app/ui/letters.js (photos → dated items, Sonnet in key mode, numbers scrubbed), app/ui/sync.js (Drive appData, needs GOOGLE_CLIENT_ID: docs/DRIVE_SYNC.md).
 - Page hooks (save/boot/prefs, auto ⋯ menu), `updated` stamps, backup nudge. Removed personal data from finance.js prompt + tests.
 - 84 tests OK. Deployed lifeos main. Founder's personal context delivered as a file only (not in repo).
+
+## Session 15 (2026-10-17): v2.5 upload fix
+- Founder: "upload click not working". Free mode Letters had no photo picker: added pick → "Claude ko bhejo" (Web Share files + prompt copied); fallback Open Claude.
+- My life: 📋 Paste button (file-viewer links can be blocked). Privacy sweep: removed real-life strings from tests/devlog, mockup images. 90 tests OK.

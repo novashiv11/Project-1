@@ -84,9 +84,21 @@ class LettersViewTest(PhoneBase):
         self.assertEqual(self.items(), ["IRP card expires 2027-01-20"])
         self.assertEqual(len(self.sent[0]["messages"][0]["content"]), 2)  # 1 image + instruction
 
+    def test_free_mode_shares_photos_to_claude(self):
+        self.pg.evaluate("""window.__shared=null; navigator.canShare=()=>true;
+          navigator.share=async d=>{window.__shared={n:d.files.length,text:d.text}}; navigator.clipboard.writeText=async()=>{}; 0""")
+        self.tab("letters")
+        self.pg.set_input_files("input[data-let-free]", [str(x) for x in self.pngs])
+        self.pg.click("[data-let=share]")
+        self.pg.wait_for_function("window.__shared")
+        shared = self.pg.evaluate("window.__shared")
+        self.assertEqual(shared["n"], 2)
+        self.assertIn("LIFEOS", shared["text"])
+        self.assertEqual(self.pg.query_selector_all("[data-let=share]"), [])
+
     def test_no_key_open_claude_and_paste_back(self):
         self.tab("letters")
-        self.assertIn("Attach the photos in Claude", self.pg.inner_text("#view"))
+        self.assertIn("Claude ko bhejo", self.pg.inner_text("#view"))
         self.assertEqual(self.pg.query_selector_all("input[data-let-files]"), [])
         self.pg.evaluate(STUB)
         self.pg.click("[data-let=open]")
