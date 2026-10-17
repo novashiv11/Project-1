@@ -125,4 +125,4 @@
 
 ## Session 15 (2026-10-17): v2.5 upload fix
 - Founder: "upload click not working". Free mode Letters had no photo picker: added pick → "Claude ko bhejo" (Web Share files + prompt copied); fallback Open Claude.
-- My life: 📋 Paste button (file-viewer links can be blocked). Privacy sweep: removed real-life strings from tests/devlog, mockup images. 90 tests OK.
+- My life: 📋 Paste button (file-viewer links can be blocked). Privacy sweep: removed real-life strings from tests/devlog, mockup images. 85 tests OK.
