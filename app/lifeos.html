@@ -422,6 +422,7 @@ async function change(id,next,msg){
 }
 async function undo(){
   const u=undoStack.pop(); if(!u)return;
+  if(u.batch){for(const it of u.batch)await backend.put(it);toast(`Undone · ${u.batch.length} back`,false);return}
   if(u.prev)await backend.put(u.prev);else await backend.del(u.id);
   toast("Undone",false);
 }
@@ -679,11 +680,29 @@ function vReview(all,today){
     `<section><h2>Next 7 days</h2>${list(next,today,"Nothing scheduled.")}</section>`;
 }
 let filter="", showDone=false;
+// Items saved together (same minute, 3+) are an import. Show them so a bad import can be removed in one tap.
+function importBatches(all){
+  const g={};for(const i of all)if(!i.done&&i.created)(g[i.created.slice(0,16)]=g[i.created.slice(0,16)]||[]).push(i);
+  const kept=settings.keptBatches||[];
+  return Object.entries(g).filter(([k,v])=>v.length>=3&&!kept.includes(k)).sort((a,b)=>b[0].localeCompare(a[0])).map(([k,v])=>({key:k,items:v}));
+}
+function batchPanel(all){
+  const bs=importBatches(all); if(!bs.length)return "";
+  return `<section id="imports"><h2>🧹 Imports · check these</h2>${bs.slice(0,3).map(b=>`<div class="setup"><b>${b.items.length} items added together · ${esc(b.key.slice(5,10))} ${esc(b.key.slice(11))}</b>
+    <div class="pv">${b.items.slice(0,4).map(i=>`<div>• ${esc(i.text.length>70?i.text.slice(0,69)+"…":i.text)}</div>`).join("")}${b.items.length>4?`<div>…and ${b.items.length-4} more</div>`:""}</div>
+    <div class="acts"><button class="go" style="padding:10px 14px" data-batchdel="${esc(b.key)}">Delete all ${b.items.length}</button><button class="linkbtn" data-batchkeep="${esc(b.key)}">Keep, they're right</button></div></div>`).join("")}</section>`;
+}
+async function deleteBatch(key){
+  const its=importBatches([...items.values()]).find(b=>b.key===key); if(!its)return;
+  undoStack.push({batch:its.items.map(clone)});
+  for(const it of its.items)await backend.del(it.id);
+  buzz(15);render();toast(`🧹 ${its.items.length} deleted`);
+}
 function vAll(all,today){
   const doms=[...new Set(all.map(i=>area(i.domain).id))].sort();
   const rows=all.filter(i=>(showDone||!i.done)&&(!filter||area(i.domain).id===filter)).sort((a,b)=>b.id-a.id);
   return `<div class="brief"><div class="hello">${settings.name?esc(settings.name):"Me"}</div><div class="sub">${items.size} things in LifeOS · ${streak(all,today)}-day streak</div></div>`+
-    prefsPanel()+`<section><h2>Everything</h2><div class="filters"><button data-f="" aria-pressed="${!filter}">All</button>${doms.map(d=>`<button data-f="${d}" aria-pressed="${filter===d}">${area(d).icon} ${esc(area(d).label)}</button>`).join("")}<button data-showdone aria-pressed="${showDone}">Show done</button></div>`+
+    batchPanel(all)+prefsPanel()+`<section><h2>Everything</h2><div class="filters"><button data-f="" aria-pressed="${!filter}">All</button>${doms.map(d=>`<button data-f="${d}" aria-pressed="${filter===d}">${area(d).icon} ${esc(area(d).label)}</button>`).join("")}<button data-showdone aria-pressed="${showDone}">Show done</button></div>`+
     list(rows,today,"Nothing here.",{del:true})+`</section>`;
 }
 let pendingRestore=null;
@@ -766,7 +785,8 @@ async function applyRestore(){
 /* ---------- My life: what Jarvis knows about this person. Lives only on the phone (settings.lifeContext) ---------- */
 const CTX_MAX=6000;
 const aboutMe=()=>{const c=(settings.lifeContext||"").trim();return c?`About me (my life context; trust it over guesses, and use it to personalise every answer):\n${c}\n\n`:""};
-const LEARN_RULE=`If you learned a lasting fact about my life (people, places, pets, home, work, money, health, habits, preferences, goals), add one line per fact to the block: "learn: <short fact>". If a fact in my context is now wrong, add "forget: <words from that line>". Only facts about me, never ID, PPSN, passport or account numbers.`;
+const LEARN_RULE=`"+" lines are ONLY things I must do, pay, renew, attend or track (with a date if known). Facts about who I am, my preferences, projects or background are NEVER "+" lines.
+If you learned a lasting fact about my life (people, places, pets, home, work, money, health, habits, preferences, goals), add one line per fact to the block: "learn: <short fact>". If a fact in my context is now wrong, add "forget: <words from that line>". Only facts about me, never ID, PPSN, passport or account numbers.`;
 function learnFacts(learn,forget){
   let lines=(settings.lifeContext||"").split("\n");
   for(const f of forget){const k=f.toLowerCase().trim();if(k.length>=3)lines=lines.filter(l=>!l.toLowerCase().includes(k))}
@@ -905,7 +925,7 @@ function memoryPrompt(){
   return `Using your memory of me and our past conversations (search them if you can), list everything my life-admin app LifeOS should track for me: document and residence-permit expiry dates, insurance and car renewals (NCT, motor tax), recurring bills and rent, appointments, birthdays and anniversaries, health routines, goals and ideas I mentioned.
 Only include things you actually know from our chats. Don't invent dates; if you only know the month, write the month.
 For monthly bills write the day if you know it ("Eir bill every month on the 5th"); if you don't, write "paid each month" without "every".
-Skip anything already in my list:
+Skip anything already in my list, and skip everything already in "About me" (those are facts, not tasks):
 
 ${aboutMe()}${snap}
 
@@ -1088,9 +1108,16 @@ function backupNudge(today){
   if(!b){b=document.createElement("button");Object.assign(b,{id:"backupNudge",type:"button"});b.dataset.data="backup";document.getElementById("banners").appendChild(b)}
   b.textContent=age===null?"💾 Backup nahi hua · ab karo":`💾 Backup ${age} din purana`;
 }
+function importNudge(all){
+  const n=(view===HOME||view==="today"||view==="stack")?importBatches(all).reduce((a,b)=>a+b.items.length,0):0;
+  let b=document.getElementById("importNudge");
+  if(!n){if(b)b.remove();return}
+  if(!b){b=document.createElement("button");Object.assign(b,{id:"importNudge",type:"button"});b.dataset.v="all";document.getElementById("banners").prepend(b)}
+  b.textContent=`🧹 ${n} imported items · check karo`;
+}
 function render(){
   const all=[...items.values()], today=todayDate();
-  backupNudge(today);
+  backupNudge(today); importNudge(all);
   document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.v===view));
   document.body.dataset.view=view;
   const dn=new Date(); document.getElementById("today").textContent=`${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][dn.getDay()]} · ${dn.getDate()} ${MON_SHORT[dn.getMonth()]}`;
@@ -1148,6 +1175,8 @@ document.addEventListener("click",async e=>{
   if(b.hasAttribute("data-showpaste")){showPaste=true;render();document.getElementById("paste").focus();return}
   if(b.hasAttribute("data-project")){showProject=!showProject;render();return}
   if(b.hasAttribute("data-teach")){showTeach=!showTeach;teachDraft=null;render();return}
+  if(b.dataset.batchdel){await deleteBatch(b.dataset.batchdel);return}
+  if(b.dataset.batchkeep){(settings.keptBatches=settings.keptBatches||[]).push(b.dataset.batchkeep);saveSettings();render();return}
   if(b.hasAttribute("data-teachpaste")){try{const t=await navigator.clipboard.readText();if(t&&t.trim()){teachDraft=t.trim().slice(0,CTX_MAX);render();toast("Paste ho gaya · Save dabao",false)}}catch(_){toast("Box mein long-press karke Paste karo",false)}return}
   if(b.hasAttribute("data-teachsave")){settings.lifeContext=document.getElementById("ctx").value.replace(/\b\d{6,}\b/g,"").trim().slice(0,CTX_MAX);teachDraft=null;saveSettings();render();toast("🧠 Jarvis ne yaad kar liya",false);return}
   if(b.hasAttribute("data-teachrefresh")){const t=document.getElementById("ctx");if(t){settings.lifeContext=t.value.trim().slice(0,CTX_MAX);saveSettings()}askClaude("🧠 Update my life context",refreshPrompt());return}

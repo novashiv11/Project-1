@@ -126,3 +126,8 @@
 ## Session 15 (2026-10-17): v2.5 upload fix
 - Founder: "upload click not working". Free mode Letters had no photo picker: added pick → "Claude ko bhejo" (Web Share files + prompt copied); fallback Open Claude.
 - My life: 📋 Paste button (file-viewer links can be blocked). Privacy sweep: removed real-life strings from tests/devlog, mockup images. 85 tests OK.
+
+## Session 16 (2026-10-17): v2.6 bad-import cleanup
+- Founder's Focus showed life-context facts as tasks (memory import turned About-me facts into "+" items). Prompts now say facts are never "+" lines.
+- Me → "🧹 Imports · check these": items saved together (same minute, 3+) → Delete all (undoable) / Keep. Home banner points there.
+- tests/test_imports.py. 88 tests OK. Deployed lifeos main 42b71dd.
