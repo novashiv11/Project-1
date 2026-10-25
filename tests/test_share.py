@@ -10,7 +10,7 @@ class ShareAndShortcutTest(PhoneBase):
     def test_manifest_declares_share_target_and_shortcuts(self):
         m = json.loads((Path(self.dist) / "manifest.json").read_text())
         self.assertEqual(m["share_target"]["method"], "GET")
-        self.assertEqual({s["url"] for s in m["shortcuts"]}, {"./?v=stack", "./?v=food", "./?v=finance"})
+        self.assertEqual({s["url"] for s in m["shortcuts"]}, {"./?v=stack", "./?v=food", "./?v=finance", "./?v=jarvis"})
 
     def test_shared_text_prefills_capture_and_cleans_url(self):
         self.pg.goto(self.url + "?title=Parcel&text=Your%20DPD%20parcel%20arrives%20tomorrow&url=https%3A%2F%2Fdpd.ie%2Ft%2F1")

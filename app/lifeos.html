@@ -672,7 +672,7 @@ function vReview(all,today){
   const wk=Math.floor((today-new Date(today.getFullYear(),0,1))/6048e5);
   const touched=new Set(week.map(i=>area(i.domain).id));
   const quiet=[...new Set(all.map(i=>area(i.domain).id))].filter(id=>!touched.has(id)).map(id=>area(id));
-  return `<div class="stats"><div class="stat"><div class="k">Captured</div><div class="v">${week.length}</div><div class="s">since ${start.slice(5)}</div></div><div class="stat"><div class="k">Completed</div><div class="v">${doneN}</div><div class="s">incl. repeats</div></div></div>`+
+  return `<button class="go" data-weekly style="width:100%;padding:14px;margin:0 0 12px">🧠 Claude se weekly review lo</button><div class="stats"><div class="stat"><div class="k">Captured</div><div class="v">${week.length}</div><div class="s">since ${start.slice(5)}</div></div><div class="stat"><div class="k">Completed</div><div class="v">${doneN}</div><div class="s">incl. repeats</div></div></div>`+
     statGrid(points(all,start))+
     (quiet.length?`<section><h2>Quiet this week</h2><div class="tipline">${quiet.map(a=>a.icon+" "+esc(a.label)).join(" · ")}</div></section>`:"")+
     `<section><h2>Journal prompt</h2><div class="prompt">${PROMPTS[wk%PROMPTS.length]}</div><p class="hint" style="margin:0">Answer in the box with <code>journal: …</code></p></section>`+
@@ -905,8 +905,23 @@ done #<id> for each finished item
 ${LEARN_RULE}
 Never include passport, IRP, PPSN or bank numbers.`;
 }
+let lastPrompt="", awaitingReply=false;
+// Clipboard text that is our own prompt (not Claude's reply) must never be parsed as items.
+const isOurPrompt=t=>!!t&&(t.trim()===lastPrompt.trim()||/^(You are Jarvis|Daily update for my LifeOS|Using your memory of me|You keep my "life context"|Weekly review for my LifeOS)/.test(t.trim()));
+async function pasteFromClipboard(){
+  let t=""; try{t=await navigator.clipboard.readText()}catch(_){toast("Jarvis kholo aur box mein long-press → Paste",false);view="jarvis";showPaste=true;render();return}
+  if(!t.trim()||isOurPrompt(t)){toast("Pehle Claude ka reply copy karo (reply ke neeche Copy), phir dobara tap",false);return}
+  pasteResult=parseClaude(t); awaitingReply=false; if(view!=="letters")view="jarvis"; render(); window.scrollTo(0,document.body.scrollHeight);
+}
+function pasteNudge(){
+  let b=document.getElementById("pasteNudge");
+  if(!awaitingReply||pasteResult){if(b)b.remove();return}
+  if(!b){b=document.createElement("button");Object.assign(b,{id:"pasteNudge",type:"button"});b.dataset.pasteback="1";document.getElementById("banners").prepend(b)}
+  b.textContent="📋 Claude ka reply paste karo · 1 tap";
+}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&awaitingReply)render()});
 function askClaude(q,prompt){ // must run inside a tap/submit handler: clipboard + opening the app need a user gesture
-  const text=prompt||claudePrompt(q), url="https://claude.ai/new?q="+encodeURIComponent(text);
+  const text=prompt||claudePrompt(q); lastPrompt=text; awaitingReply=true; const url="https://claude.ai/new?q="+encodeURIComponent(text);
   try{navigator.clipboard&&navigator.clipboard.writeText(text).catch(()=>{})}catch(e){}
   window.open(url.length<8000?url:"https://claude.ai/new","_blank","noopener");
   askedQ=q; view="jarvis"; render();
@@ -979,6 +994,23 @@ function dailyNudge(today){
   if(!b){b=document.createElement("button");Object.assign(b,{id:"dailyNudge",type:"button",className:"go"});b.dataset.daily="1";b.style.padding="10px 14px";document.getElementById("banners").prepend(b)}
   b.textContent="☀️ Jarvis daily update · 1 tap";
 }
+function weeklyPrompt(){
+  const today=todayDate(), start=iso(addDays(today,-6)), all=[...items.values()];
+  let snap=snapshot(today); if(snap.length>4500)snap=snap.slice(0,4500)+"\n…(more items not shown)";
+  const made=all.filter(i=>i.created.slice(0,10)>=start).map(i=>"+ "+i.text).slice(0,40), done=all.filter(i=>(i.done_at||"").slice(0,10)>=start).map(i=>"✓ "+i.text).slice(0,40);
+  return `Weekly review for my LifeOS, week ${start} → ${iso(today)}. You are Jarvis, my life coach and life-admin assistant.
+In max 8 short lines (Hinglish, plain words): 3 actions for next week (most important first), 1 thing I keep avoiding, 1 win to be proud of, 1 life area I'm neglecting. Base it only on my life below, nothing generic.
+
+${aboutMe()}${snap}
+
+This week: ${made.length} added, ${done.length} done.
+${[...made,...done].join("\n")}
+
+End with this block (skip lines that don't apply):
+LIFEOS
++ the 3 actions as items, with a day this coming week in plain words
+${LEARN_RULE}`;
+}
 function refreshPrompt(){
   let snap=snapshot(todayDate()); if(snap.length>5000)snap=snap.slice(0,5000)+"\n…(more items not shown)";
   return `You keep my "life context": the private notes my assistant Jarvis reads before every answer. Rewrite it so it is complete, current and compact.
@@ -1008,7 +1040,7 @@ function parseClaude(text){
   return {adds:[...new Set(adds)],dones:[...new Set(dones)].filter(id=>items.has(id)&&!items.get(id).done),learn:[...new Set(learn)],forget:[...new Set(forget)]};
 }
 async function applyPaste(){
-  const r=pasteResult; pasteResult=null; if(!r)return;
+  const r=pasteResult; pasteResult=null; awaitingReply=false; if(!r)return;
   if(r.context){settings.lifeContext=r.context;saveSettings();buzz(15);render();toast("🧠 Life context updated",false);return}
   for(const t of r.adds)await capture(t);
   for(const id of r.dones)await complete(id);
@@ -1150,7 +1182,7 @@ function importNudge(all){
 }
 function render(){
   const all=[...items.values()], today=todayDate();
-  backupNudge(today); importNudge(all); dailyNudge(today);
+  backupNudge(today); importNudge(all); dailyNudge(today); pasteNudge();
   document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.v===view));
   document.body.dataset.view=view;
   const dn=new Date(); document.getElementById("today").textContent=`${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][dn.getDay()]} · ${dn.getDate()} ${MON_SHORT[dn.getMonth()]}`;
@@ -1209,6 +1241,8 @@ document.addEventListener("click",async e=>{
   if(b.hasAttribute("data-project")){showProject=!showProject;render();return}
   if(b.hasAttribute("data-teach")){showTeach=!showTeach;teachDraft=null;render();return}
   if(b.dataset.daily){runDaily();return}
+  if(b.hasAttribute("data-weekly")){askClaude("🧠 Weekly review",weeklyPrompt());return}
+  if(b.dataset.pasteback){await pasteFromClipboard();return}
   if(b.dataset.batchdel){await deleteBatch(b.dataset.batchdel);return}
   if(b.dataset.batchkeep){(settings.keptBatches=settings.keptBatches||[]).push(b.dataset.batchkeep);saveSettings();render();return}
   if(b.hasAttribute("data-teachpaste")){try{const t=await navigator.clipboard.readText();if(t&&t.trim()){teachDraft=t.trim().slice(0,CTX_MAX);render();toast("Paste ho gaya · Save dabao",false)}}catch(_){toast("Box mein long-press karke Paste karo",false)}return}
@@ -1217,7 +1251,7 @@ document.addEventListener("click",async e=>{
   if(b.hasAttribute("data-copyinstr")){try{await navigator.clipboard.writeText(PROJECT_INSTRUCTIONS+(aboutMe()?"\n\n"+aboutMe():""));toast("Instructions copied ✓ Paste them in the project.",false)}catch(_){toast("Couldn't copy. Long-press to copy from docs instead.",false)}return}
   if(b.dataset.chat==="nokey"){settings.key="";delete settings.editing;saveSettings();render();return}
   if(b.dataset.askclaude!==undefined){document.getElementById("answer").hidden=true;askClaude(b.dataset.askclaude);return}
-  if(b.hasAttribute("data-readclip")){try{const t=await navigator.clipboard.readText();document.getElementById("paste").value=t}catch(_){toast("Long-press the box and tap Paste.",false)}return}
+  if(b.hasAttribute("data-readclip")){try{const t=await navigator.clipboard.readText();if(isOurPrompt(t)){toast("Ye apna sawal hai. Claude ka reply copy karo, phir Paste.",false);return}document.getElementById("paste").value=t}catch(_){toast("Long-press the box and tap Paste.",false)}return}
   if(b.dataset.paste==="cancel"){pasteResult=null;render();return}
   if(b.dataset.paste==="apply"&&backend){await applyPaste();return}
   if(b.dataset.data==="backup"){backupNow();return}

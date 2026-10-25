@@ -66,7 +66,7 @@ function queue(all,today){
   const open=all.filter(i=>!i.done&&!isFood(i)), dated=openDated(open), used=new Set();
   const take=f=>dated.filter(i=>!used.has(i.id)&&f(i)).map(i=>(used.add(i.id),i));
   const q=[...take(i=>daysLeft(i,today)<0),...take(i=>daysLeft(i,today)===0),...take(i=>windowOpen(i,today)),
-    ...take(i=>daysLeft(i,today)<=7),...open.filter(i=>!i.due).sort((a,b)=>b.id-a.id)];
+    ...take(i=>daysLeft(i,today)<=7),...open.filter(i=>!i.due&&(i.created||"").slice(0,10)>=iso(addDays(today,-14))).sort((a,b)=>b.id-a.id)]; // old undated notes stay in the list, not in Focus
   const later=S.deferred.map(id=>q.find(i=>i.id===id)).filter(Boolean);
   let out=[...q.filter(i=>!later.includes(i)),...later];
   const pin=S.pinned!=null&&items.get(S.pinned);
