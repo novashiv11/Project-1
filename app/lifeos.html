@@ -720,6 +720,7 @@ function prefsPanel(){
     <label>Your name<input id="pname" value="${esc(settings.name||"")}" autocomplete="given-name"></label>
     <label>My words (pet, people, shops → area)<textarea id="pwords" rows="3" placeholder="Bruno = pet&#10;Ravi = family&#10;Tesco = money">${esc(settings.myWords||"")}</textarea></label>
     <span class="covers">One per line. Items with these words go to that area. Stays on this phone.</span>
+    <label style="display:flex;gap:10px;align-items:center"><input id="pdaily" type="checkbox"${dailyOn()?" checked":""} style="width:22px;height:22px"> ☀️ Daily Jarvis update (morning reminder)</label>
     <label>Daily calorie goal (optional)<input id="pgoal" type="number" inputmode="numeric" value="${esc(settings.kcalGoal||"")}" placeholder="e.g. 2200"></label>
     <label>Voice language<select id="plang">${[["en-IN","English (India), good for Hinglish"],["en-IE","English (Ireland)"],["hi-IN","Hindi"]].map(([v,l])=>`<option value="${v}"${(settings.voiceLang||"en-IN")===v?" selected":""}>${l}</option>`).join("")}</select></label>
     <button class="go" type="submit" style="padding:12px">Save settings</button></form>
@@ -946,6 +947,38 @@ learn: <fact> for each lasting fact about my life you picked up (forget: <words>
 I paste that block back into the app. Learn only from my life: my list, my files, my chats.
 When I say "refresh", rewrite my whole About me (sections: Me, People, Pets, Home, Money, Health, Documents, Projects, How to help me, Unknown; max 45 lines) as a block starting with the line LIFECONTEXT.
 When I say "weekly": 3 actions for this week, 1 thing I'm avoiding, 1 win.`;
+/* ---------- Daily Jarvis update: one tap a day, Claude app + its Gmail/Calendar connectors do the reading ---------- */
+const dailyOn=()=>settings.dailyOn!==false;
+const dailyDue=today=>dailyOn()&&settings.lastDaily!==iso(today);
+function dailyPrompt(){
+  const today=todayDate(), since=settings.lastDaily||iso(addDays(today,-7));
+  let snap=snapshot(today); if(snap.length>4500)snap=snap.slice(0,4500)+"\n…(more items not shown)";
+  const ch=[...items.values()], made=ch.filter(i=>(i.created||"").slice(0,10)>=since).map(i=>"+ "+i.text).slice(0,30),
+    done=ch.filter(i=>(i.done_at||"").slice(0,10)>=since).map(i=>"✓ "+i.text).slice(0,30);
+  return `Daily update for my LifeOS (last update: ${since}). You are Jarvis, my life-admin assistant.
+1. If you have my Gmail, Google Calendar or Drive connected, search them for everything since ${since}: bills and payment due dates, renewals and expiries, appointments, deliveries and return windows, replies or forms I owe, deadlines. Also use your memory of our recent chats.
+2. Compare with my list below. Only add what is NEW and needs action. Mark finished things done.
+3. In max 5 lines (Hinglish, plain words) tell me: what's new, what's urgent today, one thing I'm avoiding.
+
+${aboutMe()}${snap}
+${made.length||done.length?`\nChanged in the app since ${since}:\n${[...made,...done].join("\n")}\n`:""}
+End with this block (skip lines that don't apply):
+LIFEOS
++ one short line per new item, with the date in plain words
+done #<id> for finished items
+${LEARN_RULE}
+Never include passport, IRP, PPSN, bank or card numbers.`;
+}
+function runDaily(){ // called from a tap: askClaude needs the user gesture
+  askClaude("☀️ Daily update",dailyPrompt());
+  settings.lastDaily=iso(todayDate()); saveSettings(); localBackend.save(); // refreshes tomorrow's reminder too
+}
+function dailyNudge(today){
+  let b=document.getElementById("dailyNudge"); const show=(view===HOME||view==="today")&&dailyDue(today);
+  if(!show){if(b)b.remove();return}
+  if(!b){b=document.createElement("button");Object.assign(b,{id:"dailyNudge",type:"button",className:"go"});b.dataset.daily="1";b.style.padding="10px 14px";document.getElementById("banners").prepend(b)}
+  b.textContent="☀️ Jarvis daily update · 1 tap";
+}
 function refreshPrompt(){
   let snap=snapshot(todayDate()); if(snap.length>5000)snap=snap.slice(0,5000)+"\n…(more items not shown)";
   return `You keep my "life context": the private notes my assistant Jarvis reads before every answer. Rewrite it so it is complete, current and compact.
@@ -992,7 +1025,7 @@ function vAskClaude(){
   return `<div class="jhead"><div class="orb"></div><div style="flex:1"><b>Jarvis</b><small>● via your Claude app · no extra cost</small></div><button class="linkbtn" data-chat="settings" aria-label="Jarvis settings">⚙︎</button></div>
     <div class="chat"><div class="msg bot">Hi${settings.name?" "+esc(settings.name):""}! 👇 Neeche sawal likho aur ↑ dabao.
 Main tumhari list ke saath <b>Claude app</b> khol dunga (tumhara subscription, koi extra paisa nahi).</div>
-    <div class="acts"><button class="ex" data-teach aria-expanded="${showTeach}">🧠 My life (${(settings.lifeContext||"").trim()?(settings.lifeContext.trim().split("\n").filter(l=>l.trim()&&!l.startsWith("#")).length+" facts"):"teach Jarvis"})</button><button class="ex" data-memimport>📥 Import what Claude knows about me</button><button class="ex" data-project aria-expanded="${showProject}">📁 Claude Project setup</button>${askedQ||pasteResult?"":`<button class="ex" data-showpaste>📋 Paste Claude's reply</button>`}</div>
+    <div class="acts"><button class="ex" data-teach aria-expanded="${showTeach}">🧠 My life (${(settings.lifeContext||"").trim()?(settings.lifeContext.trim().split("\n").filter(l=>l.trim()&&!l.startsWith("#")).length+" facts"):"teach Jarvis"})</button><button class="ex" data-daily="1">☀️ Daily update${dailyDue(todayDate())?"":" ✓"}</button><button class="ex" data-memimport>📥 Import what Claude knows about me</button><button class="ex" data-project aria-expanded="${showProject}">📁 Claude Project setup</button>${askedQ||pasteResult?"":`<button class="ex" data-showpaste>📋 Paste Claude's reply</button>`}</div>
     ${showTeach?teachPanel():""}
     ${showProject?`<div class="setup"><b>LifeOS inside a Claude Project</b>
       <span class="covers">Every chat in the project will know your list and your files. One-time setup, about 2 minutes:</span>
@@ -1117,7 +1150,7 @@ function importNudge(all){
 }
 function render(){
   const all=[...items.values()], today=todayDate();
-  backupNudge(today); importNudge(all);
+  backupNudge(today); importNudge(all); dailyNudge(today);
   document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.v===view));
   document.body.dataset.view=view;
   const dn=new Date(); document.getElementById("today").textContent=`${["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][dn.getDay()]} · ${dn.getDate()} ${MON_SHORT[dn.getMonth()]}`;
@@ -1175,6 +1208,7 @@ document.addEventListener("click",async e=>{
   if(b.hasAttribute("data-showpaste")){showPaste=true;render();document.getElementById("paste").focus();return}
   if(b.hasAttribute("data-project")){showProject=!showProject;render();return}
   if(b.hasAttribute("data-teach")){showTeach=!showTeach;teachDraft=null;render();return}
+  if(b.dataset.daily){runDaily();return}
   if(b.dataset.batchdel){await deleteBatch(b.dataset.batchdel);return}
   if(b.dataset.batchkeep){(settings.keptBatches=settings.keptBatches||[]).push(b.dataset.batchkeep);saveSettings();render();return}
   if(b.hasAttribute("data-teachpaste")){try{const t=await navigator.clipboard.readText();if(t&&t.trim()){teachDraft=t.trim().slice(0,CTX_MAX);render();toast("Paste ho gaya · Save dabao",false)}}catch(_){toast("Box mein long-press karke Paste karo",false)}return}
@@ -1212,7 +1246,7 @@ document.addEventListener("submit",async e=>{
     settings.key=document.getElementById("skey").value.trim();delete settings.editing;saveSettings();render()}
   if(e.target.id==="prefs"){e.preventDefault();settings.name=document.getElementById("pname").value.trim();
     settings.kcalGoal=document.getElementById("pgoal").value.trim();settings.voiceLang=document.getElementById("plang").value;
-    settings.myWords=document.getElementById("pwords").value.trim();saveSettings();const n=await remapMine();render();toast(n?`Saved · ${n} item${n>1?"s":""} moved`:"Settings saved",false)}
+    settings.myWords=document.getElementById("pwords").value.trim();settings.dailyOn=document.getElementById("pdaily").checked;saveSettings();const n=await remapMine();render();toast(n?`Saved · ${n} item${n>1?"s":""} moved`:"Settings saved",false)}
   if(e.target.id==="askform"){e.preventDefault();const i=document.getElementById("aq"),t=i.value.trim();if(t){i.value="";askClaude(t)}}
   if(e.target.id==="pasteform"){e.preventDefault();pasteResult=parseClaude(document.getElementById("paste").value);render()}
   if(e.target.id==="chatform"){e.preventDefault();const i=document.getElementById("cq"),t=i.value.trim();if(t&&backend){i.value="";askJarvis(t)}}

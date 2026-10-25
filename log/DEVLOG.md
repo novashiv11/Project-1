@@ -131,3 +131,8 @@
 - Founder's Focus showed life-context facts as tasks (memory import turned About-me facts into "+" items). Prompts now say facts are never "+" lines.
 - Me → "🧹 Imports · check these": items saved together (same minute, 3+) → Delete all (undoable) / Keep. Home banner points there.
 - tests/test_imports.py. 88 tests OK. Deployed lifeos main 42b71dd.
+
+## Session 17 (2026-10-25): v2.7 Daily Jarvis update
+- Founder wants Jarvis updated daily from sources. No server → 1 tap/day: home "☀️ Jarvis daily update" + morning notification (nudge kind "daily").
+- Tap → Claude app with dailyPrompt(): search Gmail/Calendar/Drive connectors + memory since last update, compare with list + About me → LIFEOS (+, done, learn:). Toggle in Me settings.
+- tests/test_daily.py. 90 tests OK. Deployed lifeos main 4db7d9e. Option B (fully automatic, server + API) not built.

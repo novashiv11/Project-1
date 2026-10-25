@@ -33,13 +33,19 @@
       const lead = leadDays(i);
       if (lead > 14) out.push({ date: iso(addDays(fromIso(d), -lead)), kind: "window", text: i.text });
     }
+    // Daily Jarvis update: due today, or tomorrow once today's was done.
+    if (typeof settings !== "undefined" && settings.dailyOn !== false) {
+      const t = today(), next = settings.lastDaily === t ? iso(addDays(fromIso(t), 1)) : t;
+      out.push({ date: next, kind: "daily", text: "☀️ Jarvis daily update: 1 tap" });
+    }
     return out;
   }
   // Same rule as sw.js nudgeLines(): keep both in sync.
   const nudgeLines = (nudges, t) => [
     ...nudges.filter(n => n.kind === "window" && n.date === t).map(n => "Start now: " + n.text),
     ...nudges.filter(n => n.kind === "due" && n.date === t).map(n => "Today: " + n.text),
-    ...nudges.filter(n => n.kind === "due" && n.date < t).map(n => "Overdue: " + n.text)];
+    ...nudges.filter(n => n.kind === "due" && n.date < t).map(n => "Overdue: " + n.text),
+  ...nudges.filter(n => n.kind === "daily" && n.date <= t).map(n => n.text)];
 
   async function notifyOnOpen(reg) {
     // Backup for phones without background sync: one nudge per day when the app is opened.

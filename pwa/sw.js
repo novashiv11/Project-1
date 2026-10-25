@@ -40,7 +40,8 @@ const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(
 const nudgeLines = (nudges, t) => [
   ...nudges.filter(n => n.kind === "window" && n.date === t).map(n => "Start now: " + n.text),
   ...nudges.filter(n => n.kind === "due" && n.date === t).map(n => "Today: " + n.text),
-  ...nudges.filter(n => n.kind === "due" && n.date < t).map(n => "Overdue: " + n.text)];
+  ...nudges.filter(n => n.kind === "due" && n.date < t).map(n => "Overdue: " + n.text),
+  ...nudges.filter(n => n.kind === "daily" && n.date <= t).map(n => n.text)];
 
 async function checkDue() {
   const lines = nudgeLines(JSON.parse((await kv("nudges")) || "[]"), today());
