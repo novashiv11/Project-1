@@ -81,7 +81,13 @@ class PhoneBase(unittest.TestCase):
     def _fake_claude(self, route):
         body = json.loads(route.request.post_data)
         self.claude_calls.append({"headers": route.request.headers, "body": body})
-        if body["messages"][-1]["content"][0].get("type") == "tool_result":
+        last = body["messages"][-1]["content"]
+        if isinstance(last, str):  # key check ("ping")
+            route.fulfill(status=200, content_type="application/json", headers=CORS,
+                          body=json.dumps({"content": [{"type": "text", "text": "pong"}], "stop_reason": "end_turn",
+                                           "usage": {"input_tokens": 8, "output_tokens": 2}}))
+            return
+        if last[0].get("type") == "tool_result":
             resp = {"content": [{"type": "text", "text": "Saved it."}], "stop_reason": "end_turn"}
         else:
             resp = {"content": [{"type": "tool_use", "id": "t1", "name": "add_item",
@@ -179,7 +185,8 @@ class PhoneAppTest(PhoneBase):
         self.pg.press("#cq", "Enter")
         self.pg.wait_for_selector(".msg.bot")
         self.assertIn("IRP card expires 2027-01-20", self.items())
-        first, second = self.claude_calls[0], self.claude_calls[1]
+        chat = [c for c in self.claude_calls if not isinstance(c["body"]["messages"][-1]["content"], str)]  # skip the key check
+        first, second = chat[0], chat[1]
         self.assertEqual(first["headers"].get("anthropic-dangerous-direct-browser-access"), "true")
         self.assertEqual(first["body"]["model"], "claude-haiku-5-5")
         self.assertEqual(second["body"]["messages"][1]["role"], "assistant")  # history appended, not edited

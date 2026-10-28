@@ -805,6 +805,7 @@ function learnFacts(learn,forget){
 /* ---------- Jarvis: chat with Claude using the user's own key (phone app only) ---------- */
 const MODEL="claude-haiku-5-5";
 const SYSTEM=`You are Jarvis, the assistant inside LifeOS, a private life-admin app. The user lives in Ireland and may write in English or Hinglish; reply in the same style, briefly (at most 4 short sentences unless asked for detail).
+You are the user's personal memory. Answer any question about their life from "About me", their LifeOS items (open and recently done) and this chat. If the answer isn't there, say you don't know yet and ask one short question; when they answer, call remember_fact.
 Each user message starts with today's date and a snapshot of their LifeOS items (id | area | due | text). Answer questions from that snapshot.
 When the user tells you something to remember, a task, a date or a plan, call add_item with one short line in their words, including the date in plain words (e.g. "IRP card expires 2027-01-20", "dentist kal 4pm", "rent every month"). Call add_item once per separate thing.
 When the user says they finished something on the list, call complete_item with its id.
@@ -820,6 +821,7 @@ const TOOLS=[
   input_schema:{type:"object",properties:{fact:{type:"string",description:"One short fact, e.g. 'Dog Bruno, female, eats kibble mixed with meat'"},
     forget:{type:"string",description:"Words from an outdated context line to remove, or empty string"}},required:["fact","forget"],additionalProperties:false}}];
 let chatMsgs=[], chatLog=[], chatBusy=false;
+const apiCost=()=>{const u=settings.apiUsage;return u&&u.month===iso(todayDate()).slice(0,7)?(u.in*0.10+u.out*0.50)/1e6:0};
 const CHAT_OK=!window.claude; // inside claude.ai the page can't reach the API; the phone app can
 function snapshot(today){
   const rows=[...items.values()].filter(i=>!i.done).sort((a,b)=>(a.due||"9999").localeCompare(b.due||"9999")).slice(0,150)
@@ -829,11 +831,20 @@ function snapshot(today){
   const m=iso(today).slice(0,7), spent=[...items.values()].filter(i=>(i.created||"").slice(0,7)===m).reduce((a,i)=>a+((i.metrics||[]).find(x=>x.name==="spent")||{value:0}).value,0);
   return `Today: ${iso(today)}\nMy LifeOS items (open):\n${rows.join("\n")||"(none yet)"}${done.length?`\nDone in the last 60 days:\n${done.join("\n")}`:""}${spent?`\nSpent this month (logged): €${+spent.toFixed(2)}`:""}`;
 }
+// true = works, false = rejected (bad key / no credit), null = couldn't check (offline)
+async function checkKey(key){
+  try{const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":key,
+      "anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      body:JSON.stringify({model:MODEL,max_tokens:16,messages:[{role:"user",content:"ping"}]})});
+    return r.ok?true:(r.status===401||r.status===403||r.status===400)?false:null}catch(_){return null}
+}
 async function callClaude(){
   const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":settings.key,
     "anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
     body:JSON.stringify({model:MODEL,max_tokens:2048,system:[{type:"text",text:SYSTEM,cache_control:{type:"ephemeral"}},...(aboutMe()?[{type:"text",text:aboutMe()}]:[])],tools:TOOLS,messages:chatMsgs,output_config:{effort:"low"},cache_control:{type:"ephemeral"}})});
   const data=await r.json().catch(()=>({}));
+  if(r.ok&&data.usage){const m=iso(todayDate()).slice(0,7),u=settings.apiUsage&&settings.apiUsage.month===m?settings.apiUsage:{month:m,in:0,out:0},x=data.usage;
+    u.in+=(x.input_tokens||0)+(x.cache_read_input_tokens||0)+(x.cache_creation_input_tokens||0);u.out+=x.output_tokens||0;settings.apiUsage=u;saveSettings()}
   if(!r.ok){const m=data.error&&data.error.message||r.statusText;throw new Error(r.status===401?"That API key didn't work. Check it in Jarvis settings.":r.status===429?"Too many requests right now. Try again in a minute.":m)}
   return data;
 }
@@ -874,7 +885,8 @@ async function askJarvis(text,image){
         results.push(typeof out==="string"?{type:"tool_result",tool_use_id:c.id,content:out}:{type:"tool_result",tool_use_id:c.id,content:out.error,is_error:true})}
       chatMsgs.push({role:"user",content:results});
     }
-  }catch(e){chatMsgs.pop();chatLog.push({who:"act",text:navigator.onLine===false?"You're offline. Jarvis needs internet; everything else works offline.":`⚠ ${e.message}`})}
+  }catch(e){chatMsgs.pop();chatLog.push({who:"act",text:navigator.onLine===false?"Offline hai. List se jawab:":`⚠ ${e.message}`});
+    if(isQuestion(text)){const a=localAnswer(text);if(a)chatLog.push({who:"bot",text:a})}}
   chatBusy=false; render();
 }
 function vJarvis(){
@@ -884,11 +896,11 @@ function vJarvis(){
     <label>Your name<input id="sname" value="${esc(settings.name||"")}" autocomplete="given-name"></label>
     <label>Claude API key<input id="skey" type="password" value="${esc(settings.key||"")}" placeholder="sk-ant-…" autocomplete="off"></label>
     <span class="covers">⚡ With a key Jarvis answers right here, from your whole life, and saves things itself. Cost: a few cents a month (billed by Anthropic). The key stays on this phone.</span>
-    <ol style="margin:0;padding-left:20px;display:grid;gap:4px;font-size:14px"><li><a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" style="color:var(--accent)">console.anthropic.com</a> → sign in → <b>API keys</b> → <b>Create key</b></li><li><b>Billing</b> → add the minimum credit (lasts months)</li><li>Copy the key, paste it below, Save</li></ol>
+    <ol style="margin:0;padding-left:20px;display:grid;gap:4px;font-size:14px"><li><a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" style="color:var(--accent)">console.anthropic.com</a> → sign in → <b>API keys</b> → <b>Create key</b></li><li><b>Billing</b> → add the minimum credit (lasts months)</li><li>Copy the key, paste it in the box above, Save</li></ol>
     <button class="go" type="submit" style="padding:12px">Save</button><button class="linkbtn" type="button" data-chat="nokey">Use my Claude app instead (free)</button></form>`;
   const bubbles=chatLog.length?chatLog.map(bubble).join(""):
     `<div class="msg bot">Hi${settings.name?" "+esc(settings.name):""}! Kuch bhi batao, main yaad rakhunga. Kuch bhi pucho, tumhari life se jawab dunga.</div>${suggestChips()}`;
-  return `<div class="jhead"><div class="orb${chatBusy?" busy":""}"></div><div style="flex:1"><b>Jarvis</b><small>● ${chatBusy?"soch raha hai…":`online · knows your ${items.size} items`}</small></div>
+  return `<div class="jhead"><div class="orb${chatBusy?" busy":""}"></div><div style="flex:1"><b>Jarvis</b><small>● ${chatBusy?"soch raha hai…":`app ke andar AI · ${items.size} cheezein yaad · is mahine $${apiCost().toFixed(apiCost()<0.01?3:2)}`}</small></div>
     <button class="linkbtn" data-teach aria-expanded="${showTeach}" aria-label="My life context">🧠</button><button class="linkbtn" data-chat="new">New</button><button class="linkbtn" data-chat="settings">⚙︎</button></div>
     ${showTeach?teachPanel():""}<div class="chat">${bubbles}${chatBusy?`<div class="msg act">Jarvis is thinking…</div>`:""}</div>
     <form class="dock" id="chatform" autocomplete="off"><input id="cq" placeholder="Kuch bhi bolo ya pucho…" aria-label="Message Jarvis">
@@ -1322,7 +1334,11 @@ document.addEventListener("click",async e=>{
 });
 document.addEventListener("submit",async e=>{
   if(e.target.id==="setup"){e.preventDefault();settings.name=document.getElementById("sname").value.trim();
-    settings.key=document.getElementById("skey").value.trim();delete settings.editing;saveSettings();render()}
+    const key=document.getElementById("skey").value.trim(), btn=e.target.querySelector("button[type=submit]");
+    if(key&&key!==settings.key){btn.disabled=true;btn.textContent="Check kar raha hoon…";const ok=await checkKey(key);btn.disabled=false;btn.textContent="Save";
+      if(ok===false){toast("Ye key nahi chali. Dobara copy karke paste karo.",false);return}
+      toast(ok?"✓ Jarvis ab app ke andar jawab dega":"Save kiya. Internet aane pe check hoga.",false)}
+    settings.key=key;delete settings.editing;saveSettings();render()}
   if(e.target.id==="prefs"){e.preventDefault();settings.name=document.getElementById("pname").value.trim();
     settings.kcalGoal=document.getElementById("pgoal").value.trim();settings.voiceLang=document.getElementById("plang").value;
     settings.myWords=document.getElementById("pwords").value.trim();settings.dailyOn=document.getElementById("pdaily").checked;saveSettings();const n=await remapMine();render();toast(n?`Saved · ${n} item${n>1?"s":""} moved`:"Settings saved",false)}

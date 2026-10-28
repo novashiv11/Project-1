@@ -148,3 +148,8 @@
 - Free mode: statements saved (capture), questions answered locally (aaj / agle 30 din / kharcha / mere baare / keyword search over items + My life), "🧠 Claude se poora jawab" for deeper. API key mode: Claude in-app (Haiku 5.5) with richer snapshot (done items, month spend).
 - ⋯ menu: Jarvis, List, Me; everything else under "More tools". Legacy orb home via settings.home="orb" (tests use it).
 - tests/test_jarvis_home.py. 96 tests OK. Deployed lifeos main be8319a.
+
+## Session 20 (2026-10-28): v3.1 API-key Jarvis polish
+- Key checked with a tiny ping before saving (bad key → not saved). Jarvis header shows this month's cost (Haiku 5.5 $0.10/$0.50 per M, tracked from usage).
+- System prompt: "personal memory" persona (ask anything; unknown → ask once → remember_fact). Offline/API error → local list answer.
+- tests/test_api_key.py. 99 tests OK. Deployed lifeos main. Founder step: create key at console.anthropic.com + minimum credit.
