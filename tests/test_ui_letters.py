@@ -34,6 +34,7 @@ class LettersViewTest(PhoneBase):
 
     def test_menu_entry(self):
         self.pg.click("#more")
+        self.pg.click("#moretools")
         self.assertIn("Letters → reminders", self.pg.inner_text("#tab-letters"))
         self.pg.click("#tab-letters")
         self.assertEqual(self.pg.inner_text("#title"), "Letters")

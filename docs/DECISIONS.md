@@ -30,3 +30,4 @@
 - 2026-10-16 · v2.0 UI = Orb home + Focus stack + Timeline + Money, as independent view modules (parallel agents; one file per module).
 - 2026-10-16: personal names → area mapping lives in phone settings (`myWords`), never in life.json/repo.
 - 2026-10-16: personal life context lives in phone settings (lifeContext) and is loaded via #ctx= fragment links; never in repo.
+- 2026-10-28: product = "ask anything about my life" Jarvis chat as home; other screens are secondary tools.

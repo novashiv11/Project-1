@@ -84,6 +84,7 @@ class FinanceViewTest(PhoneBase):
         self.assertTrue(self.pg.evaluate("[...document.querySelectorAll('#view a')].every(a => /^https:\\/\\/www\\.(revenue|citizensinformation)\\.ie\\//.test(a.href))"))
         if os.path.isdir(os.path.dirname(SHOT)):
             ctx = self.browser.new_context(viewport={"width": 390, "height": 844}, device_scale_factor=2, is_mobile=True, has_touch=True)
+            ctx.add_init_script("if(!localStorage.getItem('lifeos.settings'))localStorage.setItem('lifeos.settings','{\"home\":\"orb\"}')")
             pg = ctx.new_page()
             pg.goto(self.url)
             pg.wait_for_function("typeof items !== 'undefined' && backend")
@@ -91,7 +92,7 @@ class FinanceViewTest(PhoneBase):
                       "Netflix €12.99 each month", "Revenue self-assessment due 31 Oct 2026", "car insurance renew 20 Nov"):
                 pg.fill("#q", t); pg.press("#q", "Enter")
             pg.wait_for_function("items.size >= 7")
-            pg.click("#more"); pg.click("#tab-finance")
+            pg.click("#more"); pg.click("#moretools"); pg.click("#tab-finance")
             pg.wait_for_timeout(400)
             pg.evaluate("document.getElementById('toast').hidden = true")
             pg.screenshot(path=SHOT)

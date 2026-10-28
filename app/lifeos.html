@@ -215,6 +215,7 @@ body:not([data-view="today"]):not([data-view="orb"]) #cap{display:none}
 .sheet button:hover{background:var(--chip)}
 .sheet i{font-style:normal;font-size:22px;width:40px;height:40px;display:grid;place-items:center;background:var(--chip);border-radius:12px;flex:none}
 .sheet b{display:block;font:700 16px var(--display)}.sheet small{color:var(--muted);font-size:13px}
+#toolbox{display:grid;gap:6px;max-height:50vh;overflow:auto}#toolbox[hidden]{display:none}
 section,.brief,.cards,.chat,.setup,.scan,.answer,.guide{grid-template-columns:minmax(0,1fr)}
 </style>
 
@@ -238,15 +239,18 @@ section,.brief,.cards,.chat,.setup,.scan,.answer,.guide{grid-template-columns:mi
 </div>
 <div class="sheet" id="sheet" hidden>
   <div class="panel" role="menu">
+    <button data-v="jarvis" id="tab-jarvis" role="menuitem"><i>🧠</i><span><b>Jarvis</b><small>Ask anything about your life</small></span></button>
     <button data-v="today" id="tab-list" role="menuitem"><i>☰</i><span><b>List</b><small>Everything due, in one list</small></span></button>
+    <button data-v="all" id="tab-all" role="menuitem"><i>☺</i><span><b>Me</b><small>Settings, backup, everything</small></span></button>
+    <button id="moretools" type="button" aria-expanded="false"><i>＋</i><span><b>More tools</b><small>Focus, money, food, timeline, letters…</small></span></button>
+    <div id="toolbox" hidden>
     <button data-v="stack" id="tab-stack" role="menuitem" hidden><i>🃏</i><span><b>Focus</b><small>One thing at a time, swipe to finish</small></span></button>
     <button data-v="timeline" id="tab-timeline" role="menuitem" hidden><i>〰</i><span><b>Timeline</b><small>Your life on one line</small></span></button>
     <button data-v="finance" id="tab-finance" role="menuitem" hidden><i>💶</i><span><b>Money</b><small>Bills, spending, tax deadlines, CA check-up</small></span></button>
-    <button data-v="jarvis" id="tab-jarvis" role="menuitem"><i>🧠</i><span><b>Jarvis</b><small>Ask Claude about your life</small></span></button>
     <button data-v="food" id="tab-food" role="menuitem"><i>🍽</i><span><b>Food</b><small>Calories today, scan barcodes</small></span></button>
     <button data-v="life" id="tab-life" role="menuitem"><i>◐</i><span><b>Life areas</b><small>Home, money, documents, pets…</small></span></button>
     <button data-v="review" id="tab-review" role="menuitem"><i>▤</i><span><b>Week</b><small>What you did, what's next</small></span></button>
-    <button data-v="all" id="tab-all" role="menuitem"><i>☺</i><span><b>Me</b><small>Everything, settings, backup</small></span></button>
+    </div>
   </div>
 </div>
 <div class="toast" id="toast" hidden><span id="toastMsg"></span><button id="toastUndo" type="button">Undo</button></div>
@@ -820,7 +824,10 @@ const CHAT_OK=!window.claude; // inside claude.ai the page can't reach the API; 
 function snapshot(today){
   const rows=[...items.values()].filter(i=>!i.done).sort((a,b)=>(a.due||"9999").localeCompare(b.due||"9999")).slice(0,150)
     .map(i=>`${i.id} | ${area(i.domain).label} | ${i.due||"-"} | ${i.text}`);
-  return `Today: ${iso(today)}\nMy LifeOS items:\n${rows.join("\n")||"(none yet)"}`;
+  const since=iso(addDays(today,-60)), done=[...items.values()].filter(i=>i.done&&(i.done_at||"").slice(0,10)>=since)
+    .sort((a,b)=>(b.done_at||"").localeCompare(a.done_at||"")).slice(0,30).map(i=>`${(i.done_at||"").slice(0,10)} | ${i.text}`);
+  const m=iso(today).slice(0,7), spent=[...items.values()].filter(i=>(i.created||"").slice(0,7)===m).reduce((a,i)=>a+((i.metrics||[]).find(x=>x.name==="spent")||{value:0}).value,0);
+  return `Today: ${iso(today)}\nMy LifeOS items (open):\n${rows.join("\n")||"(none yet)"}${done.length?`\nDone in the last 60 days:\n${done.join("\n")}`:""}${spent?`\nSpent this month (logged): €${+spent.toFixed(2)}`:""}`;
 }
 async function callClaude(){
   const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":settings.key,
@@ -876,14 +883,15 @@ function vJarvis(){
   if(settings.editing)return `<div class="jhead"><div class="orb"></div><div><b>Jarvis</b><small>optional: automatic chat</small></div></div><form class="setup" id="setup"><b>Claude API key (optional)</b>
     <label>Your name<input id="sname" value="${esc(settings.name||"")}" autocomplete="given-name"></label>
     <label>Claude API key<input id="skey" type="password" value="${esc(settings.key||"")}" placeholder="sk-ant-…" autocomplete="off"></label>
-    <span class="covers">Without a key, Jarvis uses your Claude app (your subscription, no extra cost). With a key, chat happens right here and saves items itself: a few cents a month, billed by Anthropic. The key stays on this phone.</span>
+    <span class="covers">⚡ With a key Jarvis answers right here, from your whole life, and saves things itself. Cost: a few cents a month (billed by Anthropic). The key stays on this phone.</span>
+    <ol style="margin:0;padding-left:20px;display:grid;gap:4px;font-size:14px"><li><a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" style="color:var(--accent)">console.anthropic.com</a> → sign in → <b>API keys</b> → <b>Create key</b></li><li><b>Billing</b> → add the minimum credit (lasts months)</li><li>Copy the key, paste it below, Save</li></ol>
     <button class="go" type="submit" style="padding:12px">Save</button><button class="linkbtn" type="button" data-chat="nokey">Use my Claude app instead (free)</button></form>`;
-  const bubbles=chatLog.length?chatLog.map(m=>m.who==="img"?`<div class="msg img"><img src="${m.src}" alt="Photo you sent"></div>`:`<div class="msg ${m.who}">${esc(m.text)}</div>`).join(""):
-    `<div class="msg bot">Hi${settings.name?" "+esc(settings.name):""}! Tell me anything to remember, or ask: "IRP renewal kab start karun?"</div>`;
+  const bubbles=chatLog.length?chatLog.map(bubble).join(""):
+    `<div class="msg bot">Hi${settings.name?" "+esc(settings.name):""}! Kuch bhi batao, main yaad rakhunga. Kuch bhi pucho, tumhari life se jawab dunga.</div>${suggestChips()}`;
   return `<div class="jhead"><div class="orb${chatBusy?" busy":""}"></div><div style="flex:1"><b>Jarvis</b><small>● ${chatBusy?"soch raha hai…":`online · knows your ${items.size} items`}</small></div>
     <button class="linkbtn" data-teach aria-expanded="${showTeach}" aria-label="My life context">🧠</button><button class="linkbtn" data-chat="new">New</button><button class="linkbtn" data-chat="settings">⚙︎</button></div>
     ${showTeach?teachPanel():""}<div class="chat">${bubbles}${chatBusy?`<div class="msg act">Jarvis is thinking…</div>`:""}</div>
-    <form class="dock" id="chatform" autocomplete="off"><input id="cq" placeholder="Jarvis se pucho…" aria-label="Message Jarvis">
+    <form class="dock" id="chatform" autocomplete="off"><input id="cq" placeholder="Kuch bhi bolo ya pucho…" aria-label="Message Jarvis">
     <button class="db" type="button" data-chatcam aria-label="Send a photo">📷</button><button class="db go" type="submit" aria-label="Send">↑</button></form>`;
 }
 
@@ -1047,6 +1055,40 @@ async function applyPaste(){
   const n=(r.learn||[]).length||(r.forget||[]).length?learnFacts(r.learn||[],r.forget||[]):0;
   buzz(15); render(); toast(`Ho gaya ✓ ${r.adds.length} saved${r.dones.length?`, ${r.dones.length} done`:""}${n?`, ${n} learned 🧠`:""}`,false);
 }
+const isQuestion=t=>/\?\s*$/.test(t)||/^(kya|kab|kitna|kitni|kitne|kaun|kaunsa|kaise|kahan|kyun|kyu|what|when|where|who|why|how|which|show|list|any|is|are|do|does|did|can|should|tell)\b/i.test(t.trim())||
+  /\b(kab|kya|kitna|kitni|kitne|kaun|kaise|kahan|scene)\b/i.test(t)&&!parse(t,todayDate()).due;
+function localAnswer(q){
+  const today=todayDate(), all=[...items.values()], open=all.filter(i=>!i.done), line=i=>`• ${i.text}${i.due?` (${rel(daysLeft(i,today))})`:""}`;
+  if(/\b(mere|mera|meri|my)\b.*\b(baare|about)\b|\bknow about me\b|\bjaante\b/i.test(q)){
+    const facts=(settings.lifeContext||"").split("\n").filter(l=>l.trim()&&!l.startsWith("#"));
+    return facts.length?`Main tumhare baare mein ${facts.length} baatein jaanta hoon:\n${facts.slice(0,8).join("\n")}${facts.length>8?"\n…baaki 🧠 My life mein":""}`:"Abhi kuch nahi. 🧠 My life mein apne baare mein likho, ya mujhe batate raho.";}
+  if(/\b(kharch\w*|spent|spend|expense\w*|paisa)\b/i.test(q)){
+    const m=iso(today).slice(0,7), its=all.filter(i=>(i.created||"").slice(0,7)===m&&(i.metrics||[]).some(x=>x.name==="spent"));
+    const sum=its.reduce((a,i)=>a+i.metrics.find(x=>x.name==="spent").value,0);
+    return its.length?`Is mahine €${+sum.toFixed(2)} kharcha log hua (${its.length} entries):\n${its.slice(-5).map(i=>"• "+i.text).join("\n")}`:"Is mahine koi kharcha log nahi hua. Likho: \"spent €40 at tesco\".";}
+  if(/\b(aaj|today)\b/i.test(q)){
+    const its=openDated(open).filter(i=>daysLeft(i,today)<=0||windowOpen(i,today)).slice(0,8);
+    return its.length?`Aaj ye dekh lo:\n${its.map(line).join("\n")}`:"Aaj kuch pending nahi 🌿";}
+  if(/\b(agle|next|upcoming|aane|coming|month|mahine|hafte|week)\b/i.test(q)){
+    const its=openDated(open).filter(i=>daysLeft(i,today)>=0&&daysLeft(i,today)<=30).slice(0,10);
+    return its.length?`Agle 30 din:\n${its.map(line).join("\n")}`:"Agle 30 din mein kuch dated nahi.";}
+  const hits=answer(q,all,today), qt=tokens(q);
+  const facts=(settings.lifeContext||"").split("\n").filter(l=>l.trim()&&!l.startsWith("#")&&[...tokens(l)].some(x=>qt.has(x))).slice(0,3);
+  if(!hits.length&&!facts.length)return "";
+  return [...hits.map(i=>`${i.done?"✓ ":""}${line(i).slice(2)}${guideFor(i)?" · guide hai":""}`).map(x=>"• "+x),...facts.map(f=>"🧠 "+f.replace(/^[-•*]\s*/,""))].join("\n");
+}
+async function jarvisFree(t){
+  chatLog.push({who:"me",text:t});
+  if(isQuestion(t)){const a=localAnswer(t);
+    chatLog.push({who:"bot",text:a||"Ye meri list mein nahi hai.",q:t});render();window.scrollTo(0,document.body.scrollHeight);return}
+  await capture(t); const it=[...items.values()].sort((a,b)=>b.id-a.id)[0];
+  chatLog.push({who:"bot",text:`✓ Yaad rakh liya · ${area(it.domain).icon} ${area(it.domain).label}${it.due?` · ${rel(daysLeft(it,todayDate()))}`:""}`});
+  render(); window.scrollTo(0,document.body.scrollHeight);
+}
+const SUGGEST=["Aaj kya karna hai?","Agle 30 din mein kya aa raha hai?","Is mahine kitna kharcha hua?","Mere baare mein kya jaante ho?"];
+const suggestChips=()=>`<div class="acts">${SUGGEST.map(q=>`<button class="ex" data-ask="${esc(q)}">${esc(q)}</button>`).join("")}</div>`;
+const bubble=m=>m.who==="img"?`<div class="msg img"><img src="${m.src}" alt="Photo you sent"></div>`:
+  `<div class="msg ${m.who}">${esc(m.text)}${m.q?`<button class="linkbtn" style="display:block;margin-top:6px;padding:0" data-askclaude="${esc(m.q)}">🧠 Claude se poora jawab ↗</button>`:""}</div>`;
 function vAskClaude(){
   const pr=pasteResult, pv=pr?(pr.context||pr.adds.length||pr.dones.length||(pr.learn||[]).length||(pr.forget||[]).length?`<div class="setup"><b>${pr.context?"New life context":"From Claude"}</b><div class="pv">
       ${pr.context?`<div style="white-space:pre-wrap">${esc(pr.context)}</div>`:""}
@@ -1054,9 +1096,9 @@ function vAskClaude(){
       ${(pr.learn||[]).map(t=>`<div>🧠 learn: ${esc(t)}</div>`).join("")}${(pr.forget||[]).map(t=>`<div>🧹 forget: ${esc(t)}</div>`).join("")}</div>
       <div class="acts"><button class="go" style="padding:10px 14px" data-paste="apply">Save all</button><button class="linkbtn" data-paste="cancel">Cancel</button></div></div>`
     :`<div class="setup"><b>Nothing to save found.</b><span class="covers">Paste the part of Claude's reply that starts with LIFEOS.</span><button class="linkbtn" data-paste="cancel">OK</button></div>`):"";
-  return `<div class="jhead"><div class="orb"></div><div style="flex:1"><b>Jarvis</b><small>● via your Claude app · no extra cost</small></div><button class="linkbtn" data-chat="settings" aria-label="Jarvis settings">⚙︎</button></div>
-    <div class="chat"><div class="msg bot">Hi${settings.name?" "+esc(settings.name):""}! 👇 Neeche sawal likho aur ↑ dabao.
-Main tumhari list ke saath <b>Claude app</b> khol dunga (tumhara subscription, koi extra paisa nahi).</div>
+  return `<div class="jhead"><div class="orb"></div><div style="flex:1"><b>Jarvis</b><small>● free · ${items.size} cheezein yaad · <button class="linkbtn" data-chat="settings" style="padding:0;font:inherit">⚡ app ke andar AI</button></small></div><button class="linkbtn" data-chat="settings" aria-label="Jarvis settings">⚙︎</button></div>
+    <div class="chat"><div class="msg bot">Hi${settings.name?" "+esc(settings.name):""}! Kuch bhi batao, main yaad rakhunga. Kuch bhi pucho, tumhari life se jawab dunga.</div>
+    ${chatLog.map(bubble).join("")}${chatLog.length?"":suggestChips()}
     <div class="acts"><button class="ex" data-teach aria-expanded="${showTeach}">🧠 My life (${(settings.lifeContext||"").trim()?(settings.lifeContext.trim().split("\n").filter(l=>l.trim()&&!l.startsWith("#")).length+" facts"):"teach Jarvis"})</button><button class="ex" data-daily="1">☀️ Daily update${dailyDue(todayDate())?"":" ✓"}</button><button class="ex" data-memimport>📥 Import what Claude knows about me</button><button class="ex" data-project aria-expanded="${showProject}">📁 Claude Project setup</button>${askedQ||pasteResult?"":`<button class="ex" data-showpaste>📋 Paste Claude's reply</button>`}</div>
     ${showTeach?teachPanel():""}
     ${showProject?`<div class="setup"><b>LifeOS inside a Claude Project</b>
@@ -1071,7 +1113,7 @@ Main tumhari list ke saath <b>Claude app</b> khol dunga (tumhara subscription, k
     ${askedQ||pasteResult||showPaste?`<form class="setup" id="pasteform"><b>Step 2: Claude ka reply paste karo</b><span class="covers">Claude ke reply ke end mein LIFEOS wali lines copy karke yahan paste karo.</span><textarea id="paste" rows="4" placeholder="Yahan paste karo…"></textarea>
       <div class="acts"><button class="linkbtn" type="button" data-readclip>📋 Paste clipboard</button><button class="go" type="submit" style="padding:10px 14px">Check</button></div></form>`:""}
     ${pv}
-    <form class="dock" id="askform" autocomplete="off"><input id="aq" placeholder="Claude se pucho…" aria-label="Ask Claude"><button class="db go" type="submit" aria-label="Ask Claude">↑</button></form>`;
+    <form class="dock" id="askform" autocomplete="off"><input id="aq" placeholder="Kuch bhi bolo ya pucho…" aria-label="Tell or ask Jarvis"><button class="db" type="button" data-chatcam aria-label="Send a photo">📷</button><button class="db go" type="submit" aria-label="Ask Claude">↑</button></form>`;
 }
 
 /* ---------- camera: barcode → Open Food Facts, QR → text/link, other photos → Jarvis ---------- */
@@ -1163,7 +1205,7 @@ async function snooze(id,el){
 
 /* View modules (app/ui/*.js) register here: EXTRA_VIEWS.name = {title, render(all,today) → html, mount(root,all,today)} */
 const EXTRA_VIEWS=window.EXTRA_VIEWS||(window.EXTRA_VIEWS={});
-const HOME=EXTRA_VIEWS.orb?"orb":"today";
+const HOME=settings.home==="orb"&&EXTRA_VIEWS.orb?"orb":settings.home==="today"?"today":"jarvis"; // Jarvis chat is home
 let view=HOME; // the app always opens on home
 // Data lives on one phone: nudge a backup when there's enough to lose and the last one is 14+ days old (home screens only).
 function backupNudge(today){
@@ -1223,9 +1265,10 @@ for(const v of ["stack","timeline","finance"])document.getElementById("tab-"+v).
 for(const [v,x] of Object.entries(EXTRA_VIEWS))if(x.menu&&!document.getElementById("tab-"+v)){
   const b=document.createElement("button");Object.assign(b,{id:"tab-"+v,type:"button"});b.dataset.v=v;b.setAttribute("role","menuitem");
   b.innerHTML=`<i>${esc(x.menu.icon)}</i><span><b>${esc(x.menu.title)}</b><small>${esc(x.menu.sub||"")}</small></span>`;
-  document.getElementById("tab-all").before(b)}
+  document.getElementById("toolbox").append(b)}
 document.addEventListener("click",async e=>{
   const b=e.target.closest("button"); if(!b)return;
+  if(b.id==="moretools"){const t=document.getElementById("toolbox");t.hidden=!t.hidden;b.setAttribute("aria-expanded",String(!t.hidden));return}
   if(b.id==="more"){const sh=document.getElementById("sheet");sh.hidden=!sh.hidden;b.setAttribute("aria-expanded",String(!sh.hidden));return}
   if(b.hasAttribute("data-later")){showLater=!showLater;render();return}
   if(b.dataset.v){document.getElementById("sheet").hidden=true;const v=b.dataset.v==="home"?HOME:b.dataset.v;if(view!==v)window.scrollTo(0,0);view=v;lifeArea=null;try{localStorage.setItem("lifeos.view",view)}catch(_){}render();return}
@@ -1241,6 +1284,8 @@ document.addEventListener("click",async e=>{
   if(b.hasAttribute("data-project")){showProject=!showProject;render();return}
   if(b.hasAttribute("data-teach")){showTeach=!showTeach;teachDraft=null;render();return}
   if(b.dataset.daily){runDaily();return}
+  if(b.dataset.ask){if(settings.key&&CHAT_OK)askJarvis(b.dataset.ask);else await jarvisFree(b.dataset.ask);return}
+  if(b.dataset.askclaude){askClaude(b.dataset.askclaude);return}
   if(b.hasAttribute("data-weekly")){askClaude("🧠 Weekly review",weeklyPrompt());return}
   if(b.dataset.pasteback){await pasteFromClipboard();return}
   if(b.dataset.batchdel){await deleteBatch(b.dataset.batchdel);return}
@@ -1281,7 +1326,7 @@ document.addEventListener("submit",async e=>{
   if(e.target.id==="prefs"){e.preventDefault();settings.name=document.getElementById("pname").value.trim();
     settings.kcalGoal=document.getElementById("pgoal").value.trim();settings.voiceLang=document.getElementById("plang").value;
     settings.myWords=document.getElementById("pwords").value.trim();settings.dailyOn=document.getElementById("pdaily").checked;saveSettings();const n=await remapMine();render();toast(n?`Saved · ${n} item${n>1?"s":""} moved`:"Settings saved",false)}
-  if(e.target.id==="askform"){e.preventDefault();const i=document.getElementById("aq"),t=i.value.trim();if(t){i.value="";askClaude(t)}}
+  if(e.target.id==="askform"){e.preventDefault();const i=document.getElementById("aq"),t=i.value.trim();if(t&&backend){i.value="";await jarvisFree(t)}}
   if(e.target.id==="pasteform"){e.preventDefault();pasteResult=parseClaude(document.getElementById("paste").value);render()}
   if(e.target.id==="chatform"){e.preventDefault();const i=document.getElementById("cq"),t=i.value.trim();if(t&&backend){i.value="";askJarvis(t)}}
 });

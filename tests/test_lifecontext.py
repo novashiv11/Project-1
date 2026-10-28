@@ -29,6 +29,7 @@ class LifeContextTest(PhoneBase):
         self.assertIn("Dog Bruno", self.life())
         self.pg.fill("#aq", "Bruno ka vet kab hai?")
         self.pg.press("#aq", "Enter")
+        self.pg.locator("[data-askclaude]").last.click()
         prompt = unquote(self.pg.evaluate("window.__opened[0]"))
         self.assertIn("About me", prompt)
         self.assertIn("Dog Bruno", prompt)

@@ -142,3 +142,9 @@
 - Return from Claude: "📋 Claude ka reply paste karo · 1 tap" banner; ignores our own prompt on the clipboard (isOurPrompt).
 - Week: "🧠 Claude se weekly review lo" (weeklyPrompt). Manifest shortcut Jarvis. Focus skips undated notes older than 14 days.
 - 93 tests OK. Deployed lifeos main.
+
+## Session 19 (2026-10-28): v3.0 Jarvis is home
+- Founder: "notes app feel, use cases unclear; want one place to ask anything about my life". Rethink: home = Jarvis chat.
+- Free mode: statements saved (capture), questions answered locally (aaj / agle 30 din / kharcha / mere baare / keyword search over items + My life), "🧠 Claude se poora jawab" for deeper. API key mode: Claude in-app (Haiku 5.5) with richer snapshot (done items, month spend).
+- ⋯ menu: Jarvis, List, Me; everything else under "More tools". Legacy orb home via settings.home="orb" (tests use it).
+- tests/test_jarvis_home.py. 96 tests OK. Deployed lifeos main be8319a.

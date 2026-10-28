@@ -59,6 +59,8 @@ class PhoneBase(unittest.TestCase):
         self.ctx = self.browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True,
                                             accept_downloads=True)
         self.ctx.add_init_script(FAKE_SCANNER)
+        # Legacy tests were written for the orb home; Jarvis-home tests set settings.home themselves.
+        self.ctx.add_init_script("if(!localStorage.getItem('lifeos.settings'))localStorage.setItem('lifeos.settings','{\"home\":\"orb\"}')")
         self.claude_calls = []
         self.ctx.route("https://world.openfoodfacts.org/**",
                        lambda r: r.fulfill(status=200, content_type="application/json", headers=CORS, body=json.dumps(FOOD)))
@@ -93,7 +95,10 @@ class PhoneBase(unittest.TestCase):
                 self.pg.click("#tab-today")
             return
         self.pg.click("#more")
-        self.pg.click("#tab-list" if name == "today" else f"#tab-{name}")
+        target = "#tab-list" if name == "today" else f"#tab-{name}"
+        if not self.pg.is_visible(target):
+            self.pg.click("#moretools")
+        self.pg.click(target)
 
     def add(self, *texts):
         for t in texts:
@@ -187,6 +192,7 @@ class PhoneAppTest(PhoneBase):
         self.tab('jarvis')
         self.pg.fill("#aq", "IRP kab renew karun?")
         self.pg.press("#aq", "Enter")
+        self.pg.locator("[data-askclaude]").last.click()
         url = self.pg.evaluate("window.__opened[0]")
         self.assertTrue(url.startswith("https://claude.ai/new?q="))
         prompt = self.pg.evaluate("decodeURIComponent(window.__opened[0].split('?q=')[1])")

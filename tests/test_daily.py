@@ -44,6 +44,7 @@ class ReturnFromClaudeTest(PhoneBase):
         self.tab("jarvis")
         self.pg.fill("#aq", "kya pending hai?")
         self.pg.press("#aq", "Enter")
+        self.pg.locator("[data-askclaude]").last.click()
         self.tab("home")
         self.pg.wait_for_selector("#pasteNudge")
         self.pg.evaluate("window.__clip = lastPrompt; 0")  # Claude reply not copied yet: our own prompt is on the clipboard
