@@ -150,6 +150,15 @@ h2{font:500 12px var(--mono);text-transform:uppercase;letter-spacing:.1em;color:
 .jhead{display:flex;gap:12px;align-items:center}
 .orb{width:42px;height:42px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#a8f0dc,#2c9b7f 55%,#0f3d32);box-shadow:0 0 22px rgb(95 208 178 / .45);flex:none}
 .orb.busy{animation:pulse 1.2s ease-in-out infinite}
+.jhero{display:grid;justify-items:center;gap:8px;text-align:center;padding:4px 0 6px}
+.jorb{width:132px;height:132px;border-radius:50%;border:0;padding:0;cursor:pointer;background:radial-gradient(circle at 34% 28%,#d6fff3,#3fd6b0 38%,#1d6f9a 70%,#2a1660);
+  box-shadow:0 0 44px rgb(80 220 190 / .45),inset 0 -12px 30px rgb(0 0 0 / .28);animation:breathe 4s ease-in-out infinite}
+.jorb.listening{animation:listen .8s ease-in-out infinite;box-shadow:0 0 0 12px rgb(255 95 95 / .16),0 0 54px rgb(255 120 120 / .55)}
+.jorb.thinking{animation:pulse .9s ease-in-out infinite;filter:saturate(1.4)}
+.jorb.speaking{animation:talk .3s ease-in-out infinite alternate}
+.jsay{font:600 15px var(--body);color:var(--fg);min-height:22px;max-width:32ch;overflow-wrap:anywhere}
+.jsub{justify-content:center;flex-wrap:wrap;gap:4px 10px}.jsub small{color:var(--muted)}
+@keyframes breathe{50%{transform:scale(1.04)}}@keyframes listen{50%{transform:scale(1.1)}}@keyframes talk{to{transform:scale(1.07)}}
 .jhead b{font:700 18px var(--display);display:block}.jhead small{color:var(--accent);font-size:12px}
 .chat{display:grid;gap:10px}
 .msg{max-width:86%;padding:11px 14px;border-radius:20px;white-space:pre-wrap;overflow-wrap:anywhere}
@@ -183,7 +192,7 @@ nav.tabs{position:fixed;z-index:6;left:0;right:0;bottom:0;height:calc(var(--navh
 @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes pulse{50%{transform:scale(1.06);opacity:.85}}
 @media (prefers-reduced-motion:no-preference){#view>*{animation:rise .28s ease-out both}#view>*:nth-child(2){animation-delay:.04s}#view>*:nth-child(3){animation-delay:.08s}#view>*:nth-child(4){animation-delay:.12s}}
-@media (prefers-reduced-motion:reduce){.card.leaving,.card.snoozing{transition:none}.orb.busy,.db.on{animation:none}}
+@media (prefers-reduced-motion:reduce){.card.leaving,.card.snoozing{transition:none}.orb.busy,.db.on,.jorb{animation:none}}
 #view{display:grid;gap:18px;grid-template-columns:minmax(0,1fr)}
 /* simple home */
 h1#title{font:800 34px/1.05 var(--display);letter-spacing:-.02em;margin:2px 0 4px}
@@ -724,6 +733,7 @@ function prefsPanel(){
     <label>Your name<input id="pname" value="${esc(settings.name||"")}" autocomplete="given-name"></label>
     <label>My words (pet, people, shops → area)<textarea id="pwords" rows="3" placeholder="Bruno = pet&#10;Ravi = family&#10;Tesco = money">${esc(settings.myWords||"")}</textarea></label>
     <span class="covers">One per line. Items with these words go to that area. Stays on this phone.</span>
+    <label style="display:flex;gap:10px;align-items:center"><input id="pvoice" type="checkbox"${settings.voiceReply!==false?" checked":""} style="width:22px;height:22px"> 🔊 Jarvis bol ke jawab de (jab tum bolo)</label>
     <label style="display:flex;gap:10px;align-items:center"><input id="pdaily" type="checkbox"${dailyOn()?" checked":""} style="width:22px;height:22px"> ☀️ Daily Jarvis update (morning reminder)</label>
     <label>Daily calorie goal (optional)<input id="pgoal" type="number" inputmode="numeric" value="${esc(settings.kcalGoal||"")}" placeholder="e.g. 2200"></label>
     <label>Voice language<select id="plang">${[["en-IN","English (India), good for Hinglish"],["en-IE","English (Ireland)"],["hi-IN","Hindi"]].map(([v,l])=>`<option value="${v}"${(settings.voiceLang||"en-IN")===v?" selected":""}>${l}</option>`).join("")}</select></label>
@@ -899,9 +909,10 @@ function vJarvis(){
     <ol style="margin:0;padding-left:20px;display:grid;gap:4px;font-size:14px"><li><a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" style="color:var(--accent)">console.anthropic.com</a> → sign in → <b>API keys</b> → <b>Create key</b></li><li><b>Billing</b> → add the minimum credit (lasts months)</li><li>Copy the key, paste it in the box above, Save</li></ol>
     <button class="go" type="submit" style="padding:12px">Save</button><button class="linkbtn" type="button" data-chat="nokey">Use my Claude app instead (free)</button></form>`;
   const bubbles=chatLog.length?chatLog.map(bubble).join(""):
-    `<div class="msg bot">Hi${settings.name?" "+esc(settings.name):""}! Kuch bhi batao, main yaad rakhunga. Kuch bhi pucho, tumhari life se jawab dunga.</div>${suggestChips()}`;
-  return `<div class="jhead"><div class="orb${chatBusy?" busy":""}"></div><div style="flex:1"><b>Jarvis</b><small>● ${chatBusy?"soch raha hai…":`app ke andar AI · ${items.size} cheezein yaad · is mahine $${apiCost().toFixed(apiCost()<0.01?3:2)}`}</small></div>
-    <button class="linkbtn" data-teach aria-expanded="${showTeach}" aria-label="My life context">🧠</button><button class="linkbtn" data-chat="new">New</button><button class="linkbtn" data-chat="settings">⚙︎</button></div>
+    `<div class="msg bot">${esc(briefingText())}
+Kuch bhi bolo ya pucho: orb dabao ya neeche likho.</div>${suggestChips()}`;
+  return `${jarvisHero(`● app ke andar AI · ${items.size} cheezein yaad · is mahine $${apiCost().toFixed(apiCost()<0.01?3:2)}`,
+    `<button class="linkbtn" data-teach aria-expanded="${showTeach}" aria-label="My life context">🧠</button><button class="linkbtn" data-chat="new">New</button><button class="linkbtn" data-chat="settings">⚙︎</button>`)}
     ${showTeach?teachPanel():""}<div class="chat">${bubbles}${chatBusy?`<div class="msg act">Jarvis is thinking…</div>`:""}</div>
     <form class="dock" id="chatform" autocomplete="off"><input id="cq" placeholder="Kuch bhi bolo ya pucho…" aria-label="Message Jarvis">
     <button class="db" type="button" data-chatcam aria-label="Send a photo">📷</button><button class="db go" type="submit" aria-label="Send">↑</button></form>`;
@@ -1097,6 +1108,43 @@ async function jarvisFree(t){
   chatLog.push({who:"bot",text:`✓ Yaad rakh liya · ${area(it.domain).icon} ${area(it.domain).label}${it.due?` · ${rel(daysLeft(it,todayDate()))}`:""}`});
   render(); window.scrollTo(0,document.body.scrollHeight);
 }
+/* ---------- Jarvis voice: tap the orb, talk, it answers out loud ---------- */
+let voiceTurn=false, jstate="";
+const SRec=window.SpeechRecognition||window.webkitSpeechRecognition;
+function briefingText(){
+  const today=todayDate(), [hi]=greeting(), open=openDated([...items.values()].filter(i=>!i.done));
+  const now=open.filter(i=>daysLeft(i,today)<=0), win=open.filter(i=>daysLeft(i,today)>0&&windowOpen(i,today)), soon=open.filter(i=>daysLeft(i,today)>0&&daysLeft(i,today)<=7&&!windowOpen(i,today));
+  let t=`${hi}${settings.name?" "+settings.name:""}.`;
+  t+=now.length?` Aaj ${now.length} kaam: ${now.slice(0,3).map(i=>i.text).join(", ")}.`:" Aaj kuch pending nahi.";
+  if(win.length)t+=` ${win[0].text}: shuru karne ka time aa gaya.`;
+  if(soon.length)t+=` Is hafte: ${soon.slice(0,2).map(i=>i.text).join(", ")}.`;
+  return t;
+}
+const jarvisHero=(sub,buttons)=>`<div class="jhero"><button class="jorb ${chatBusy?"thinking":jstate}" data-talk aria-label="Jarvis se bolo"></button>
+  <div class="jsay" id="jsay">${chatBusy?"Soch raha hoon…":jstate==="listening"?"Sun raha hoon…":SRec?"Orb dabao aur bolo":"Neeche likho"}</div>
+  <div class="jhead jsub"><small>${sub}</small><button class="linkbtn" data-brief aria-label="Briefing suno">▶ Briefing</button>${buttons}</div></div>`;
+function setJ(st,text){jstate=st;const o=document.querySelector(".jorb"),say=document.getElementById("jsay");
+  if(o)o.className="jorb "+st; if(say)say.textContent=text||(st==="listening"?"Sun raha hoon…":st==="speaking"?"Bol raha hoon…":SRec?"Orb dabao aur bolo":"Neeche likho")}
+function speak(t){
+  if(settings.voiceReply===false||!window.speechSynthesis||!t)return;
+  const clean=t.replace(/[•✓🧠⚠🌿📋☀️]/gu,"").replace(/\(in (\d+)d\)/g,"($1 din mein)").replace(/\((\d+)d overdue\)/g,"($1 din late)").replace(/€(\d+)/g,"$1 euro").slice(0,700);
+  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(clean);u.lang=settings.voiceLang||"en-IN";u.rate=1.05;
+    u.onstart=()=>setJ("speaking");u.onend=u.onerror=()=>setJ("");speechSynthesis.speak(u)}catch(_){}
+}
+async function jarvisTurn(t){
+  if(settings.key&&CHAT_OK)await askJarvis(t);else await jarvisFree(t);
+  if(voiceTurn){voiceTurn=false;const last=[...chatLog].reverse().find(m=>m.who==="bot");if(last)speak(last.text)}
+}
+function listen(){
+  if(!SRec){toast("Is browser mein voice nahi chalti. Neeche likho.",false);return}
+  try{window.speechSynthesis&&speechSynthesis.cancel()}catch(_){}
+  const rec=new SRec(); rec.lang=settings.voiceLang||"en-IN"; rec.interimResults=true; let heard="";
+  setJ("listening");
+  rec.onresult=ev=>{heard=[...ev.results].map(x=>x[0].transcript).join(" ");setJ("listening",heard)};
+  rec.onerror=ev=>{if(ev.error==="not-allowed"||ev.error==="service-not-allowed")toast("Mic blocked hai. Phone settings mein LifeOS ko mic allow karo.",false)};
+  rec.onend=async()=>{setJ("");const t=heard.trim();if(!t||!backend)return;voiceTurn=true;await jarvisTurn(t);window.scrollTo(0,document.body.scrollHeight)};
+  rec.start();
+}
 const SUGGEST=["Aaj kya karna hai?","Agle 30 din mein kya aa raha hai?","Is mahine kitna kharcha hua?","Mere baare mein kya jaante ho?"];
 const suggestChips=()=>`<div class="acts">${SUGGEST.map(q=>`<button class="ex" data-ask="${esc(q)}">${esc(q)}</button>`).join("")}</div>`;
 const bubble=m=>m.who==="img"?`<div class="msg img"><img src="${m.src}" alt="Photo you sent"></div>`:
@@ -1108,8 +1156,10 @@ function vAskClaude(){
       ${(pr.learn||[]).map(t=>`<div>🧠 learn: ${esc(t)}</div>`).join("")}${(pr.forget||[]).map(t=>`<div>🧹 forget: ${esc(t)}</div>`).join("")}</div>
       <div class="acts"><button class="go" style="padding:10px 14px" data-paste="apply">Save all</button><button class="linkbtn" data-paste="cancel">Cancel</button></div></div>`
     :`<div class="setup"><b>Nothing to save found.</b><span class="covers">Paste the part of Claude's reply that starts with LIFEOS.</span><button class="linkbtn" data-paste="cancel">OK</button></div>`):"";
-  return `<div class="jhead"><div class="orb"></div><div style="flex:1"><b>Jarvis</b><small>● free · ${items.size} cheezein yaad · <button class="linkbtn" data-chat="settings" style="padding:0;font:inherit">⚡ app ke andar AI</button></small></div><button class="linkbtn" data-chat="settings" aria-label="Jarvis settings">⚙︎</button></div>
-    <div class="chat"><div class="msg bot">Hi${settings.name?" "+esc(settings.name):""}! Kuch bhi batao, main yaad rakhunga. Kuch bhi pucho, tumhari life se jawab dunga.</div>
+  return `${jarvisHero(`● free · ${items.size} cheezein yaad · <button class="linkbtn" data-chat="settings" style="padding:0;font:inherit">⚡ app ke andar AI</button>`,
+    `<button class="linkbtn" data-chat="settings" aria-label="Jarvis settings">⚙︎</button>`)}
+    <div class="chat"><div class="msg bot">${esc(briefingText())}
+Kuch bhi bolo ya pucho: orb dabao ya neeche likho.</div>
     ${chatLog.map(bubble).join("")}${chatLog.length?"":suggestChips()}
     <div class="acts"><button class="ex" data-teach aria-expanded="${showTeach}">🧠 My life (${(settings.lifeContext||"").trim()?(settings.lifeContext.trim().split("\n").filter(l=>l.trim()&&!l.startsWith("#")).length+" facts"):"teach Jarvis"})</button><button class="ex" data-daily="1">☀️ Daily update${dailyDue(todayDate())?"":" ✓"}</button><button class="ex" data-memimport>📥 Import what Claude knows about me</button><button class="ex" data-project aria-expanded="${showProject}">📁 Claude Project setup</button>${askedQ||pasteResult?"":`<button class="ex" data-showpaste>📋 Paste Claude's reply</button>`}</div>
     ${showTeach?teachPanel():""}
@@ -1296,7 +1346,9 @@ document.addEventListener("click",async e=>{
   if(b.hasAttribute("data-project")){showProject=!showProject;render();return}
   if(b.hasAttribute("data-teach")){showTeach=!showTeach;teachDraft=null;render();return}
   if(b.dataset.daily){runDaily();return}
-  if(b.dataset.ask){if(settings.key&&CHAT_OK)askJarvis(b.dataset.ask);else await jarvisFree(b.dataset.ask);return}
+  if(b.dataset.ask){await jarvisTurn(b.dataset.ask);return}
+  if(b.hasAttribute("data-talk")){if(jstate==="speaking"){speechSynthesis.cancel();setJ("");return}if(!chatBusy)listen();return}
+  if(b.hasAttribute("data-brief")){speak(briefingText());return}
   if(b.dataset.askclaude){askClaude(b.dataset.askclaude);return}
   if(b.hasAttribute("data-weekly")){askClaude("🧠 Weekly review",weeklyPrompt());return}
   if(b.dataset.pasteback){await pasteFromClipboard();return}
@@ -1341,7 +1393,7 @@ document.addEventListener("submit",async e=>{
     settings.key=key;delete settings.editing;saveSettings();render()}
   if(e.target.id==="prefs"){e.preventDefault();settings.name=document.getElementById("pname").value.trim();
     settings.kcalGoal=document.getElementById("pgoal").value.trim();settings.voiceLang=document.getElementById("plang").value;
-    settings.myWords=document.getElementById("pwords").value.trim();settings.dailyOn=document.getElementById("pdaily").checked;saveSettings();const n=await remapMine();render();toast(n?`Saved · ${n} item${n>1?"s":""} moved`:"Settings saved",false)}
+    settings.myWords=document.getElementById("pwords").value.trim();settings.dailyOn=document.getElementById("pdaily").checked;settings.voiceReply=document.getElementById("pvoice").checked;saveSettings();const n=await remapMine();render();toast(n?`Saved · ${n} item${n>1?"s":""} moved`:"Settings saved",false)}
   if(e.target.id==="askform"){e.preventDefault();const i=document.getElementById("aq"),t=i.value.trim();if(t&&backend){i.value="";await jarvisFree(t)}}
   if(e.target.id==="pasteform"){e.preventDefault();pasteResult=parseClaude(document.getElementById("paste").value);render()}
   if(e.target.id==="chatform"){e.preventDefault();const i=document.getElementById("cq"),t=i.value.trim();if(t&&backend){i.value="";askJarvis(t)}}

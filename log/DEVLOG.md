@@ -153,3 +153,8 @@
 - Key checked with a tiny ping before saving (bad key → not saved). Jarvis header shows this month's cost (Haiku 5.5 $0.10/$0.50 per M, tracked from usage).
 - System prompt: "personal memory" persona (ask anything; unknown → ask once → remember_fact). Offline/API error → local list answer.
 - tests/test_api_key.py. 99 tests OK. Deployed lifeos main. Founder step: create key at console.anthropic.com + minimum credit.
+
+## Session 21 (2026-10-29): v3.2 Voice Jarvis
+- Founder: "Jarvis bana". Big orb on Jarvis home: tap → speech recognition (en-IN) → same brain (free local / API) → answer spoken (speechSynthesis) when asked by voice. "▶ Briefing" speaks today/window/this week. Greeting bubble = briefing.
+- Settings toggle "🔊 bol ke jawab". Reduced-motion stops the orb animation.
+- tests/test_voice.py (fake SpeechRecognition + speechSynthesis). 102 tests OK. Deployed lifeos main 930b1df.
