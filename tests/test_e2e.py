@@ -166,7 +166,7 @@ class PhoneAppTest(PhoneBase):
         dl.value.save_as(path)
         self.pg.evaluate("settings.key = 'sk-secret'; saveSettings()")
         self.assertNotIn("sk-secret", Path(path).read_text())
-        self.pg.evaluate("localStorage.removeItem('lifeos.items.v1')")
+        self.pg.evaluate("localStorage.removeItem('lifeos.items.v1'); localStorage.removeItem('lifeos.v2')")  # phone data lost
         self.pg.reload()
         self.pg.wait_for_function("typeof items !== 'undefined' && backend")
         self.assertEqual(self.items(), [])

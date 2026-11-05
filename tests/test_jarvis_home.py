@@ -10,7 +10,7 @@ STUB = "window.__opened=[]; window.open=(u)=>{window.__opened.push(u);return nul
 class JarvisHomeTest(PhoneBase):
     def setUp(self):
         super().setUp()
-        self.pg.evaluate("localStorage.setItem('lifeos.settings', '{}'); 0")  # a fresh user: Jarvis home
+        self.pg.evaluate("localStorage.setItem('lifeos.settings', '{\"home\":\"jarvis\"}'); 0")  # a fresh user: Jarvis home
         self.pg.reload()
         self.pg.wait_for_function("typeof items !== 'undefined' && backend")
         self.pg.evaluate(STUB)

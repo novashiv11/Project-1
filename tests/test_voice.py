@@ -18,7 +18,7 @@ class VoiceJarvisTest(PhoneBase):
         super().setUp()
         self.ctx.add_init_script(FAKE_VOICE)
         self.pg.emulate_media(reduced_motion="reduce")  # the breathing orb never "settles" for clicks otherwise
-        self.pg.evaluate("localStorage.setItem('lifeos.settings', '{}'); 0")  # fresh user → Jarvis home
+        self.pg.evaluate("localStorage.setItem('lifeos.settings', '{\"home\":\"jarvis\"}'); 0")  # fresh user → Jarvis home
         self.pg.reload()
         self.pg.wait_for_function("typeof items !== 'undefined' && backend")
 

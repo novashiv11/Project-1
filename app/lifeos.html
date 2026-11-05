@@ -201,7 +201,7 @@ header .date{display:flex;gap:4px;flex-wrap:wrap}
 .capbox{display:flex;gap:8px;align-items:center;background:var(--card2);border:1px solid var(--line);border-radius:20px;padding:8px 8px 8px 16px}
 .capbox input{flex:1;min-width:0;background:transparent;border:0;color:var(--fg);font:17px var(--body);padding:8px 0}
 .capbox input::placeholder{color:var(--muted)}.capbox input:focus{outline:none}
-body:not([data-view="today"]):not([data-view="orb"]) #cap{display:none}
+body:not([data-view="today"]):not([data-view="orb"]):not([data-view="now"]) #cap{display:none}
 .grp{display:grid;gap:2px}
 .grp h2{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 4px}
 .grp h2 span{color:var(--accent);letter-spacing:0}
@@ -248,6 +248,8 @@ section,.brief,.cards,.chat,.setup,.scan,.answer,.guide{grid-template-columns:mi
 </div>
 <div class="sheet" id="sheet" hidden>
   <div class="panel" role="menu">
+    <button data-v="now" id="tab-now" role="menuitem" hidden><i>☀️</i><span><b>Today</b><small>Max 5 things that matter now</small></span></button>
+    <button data-v="cases" id="tab-cases" role="menuitem" hidden><i>⚖️</i><span><b>Cases</b><small>Disputes, refunds, claims</small></span></button>
     <button data-v="jarvis" id="tab-jarvis" role="menuitem"><i>🧠</i><span><b>Jarvis</b><small>Ask anything about your life</small></span></button>
     <button data-v="today" id="tab-list" role="menuitem"><i>☰</i><span><b>List</b><small>Everything due, in one list</small></span></button>
     <button data-v="all" id="tab-all" role="menuitem"><i>☺</i><span><b>Me</b><small>Settings, backup, everything</small></span></button>
@@ -405,10 +407,11 @@ let items=new Map(), backend=null, undoStack=[];
 const LS_KEY="lifeos.items.v1";
 const localBackend={
   label:"Saved on this device only",
-  load(){try{const raw=localStorage.getItem(LS_KEY);(raw?JSON.parse(raw):[]).forEach(i=>items.set(i.id,upgrade(i)))}catch(e){}},
-  save(){try{localStorage.setItem(LS_KEY,JSON.stringify([...items.values()]))}catch(e){}hook("save",[...items.values()])},
-  async put(it){items.set(it.id,it);this.save();render()},
-  async del(id){items.delete(id);this.save();render()}
+  // After the v4 migration, records live in "lifeos.v2" (app/ui/records.js); "lifeos.items.v1" stays as the backup.
+  load(){if(window.R2&&R2.load())return;try{const raw=localStorage.getItem(LS_KEY);(raw?JSON.parse(raw):[]).forEach(i=>items.set(i.id,upgrade(i)))}catch(e){}},
+  save(){if(window.R2&&R2.migrated)R2.save();else try{localStorage.setItem(LS_KEY,JSON.stringify([...items.values()]))}catch(e){}hook("save",[...items.values()])},
+  async put(it){if(window.R2)it=R2.normalize(it);items.set(it.id,it);this.save();render()},
+  async del(id){if(window.R2&&R2.migrated&&items.has(id))R2.softDelete(items.get(id));items.delete(id);this.save();render()}
 };
 async function connect(){
   try{
@@ -1020,7 +1023,7 @@ function runDaily(){ // called from a tap: askClaude needs the user gesture
   settings.lastDaily=iso(todayDate()); saveSettings(); localBackend.save(); // refreshes tomorrow's reminder too
 }
 function dailyNudge(today){
-  let b=document.getElementById("dailyNudge"); const show=(view===HOME||view==="today")&&dailyDue(today);
+  let b=document.getElementById("dailyNudge"); const show=(view==="jarvis"||view==="today"||(view===HOME&&view!=="now"))&&dailyDue(today); // Today stays calm: max 5 things
   if(!show){if(b)b.remove();return}
   if(!b){b=document.createElement("button");Object.assign(b,{id:"dailyNudge",type:"button",className:"go"});b.dataset.daily="1";b.style.padding="10px 14px";document.getElementById("banners").prepend(b)}
   b.textContent="☀️ Jarvis daily update · 1 tap";
@@ -1267,7 +1270,7 @@ async function snooze(id,el){
 
 /* View modules (app/ui/*.js) register here: EXTRA_VIEWS.name = {title, render(all,today) → html, mount(root,all,today)} */
 const EXTRA_VIEWS=window.EXTRA_VIEWS||(window.EXTRA_VIEWS={});
-const HOME=settings.home==="orb"&&EXTRA_VIEWS.orb?"orb":settings.home==="today"?"today":"jarvis"; // Jarvis chat is home
+const HOME=settings.home==="orb"&&EXTRA_VIEWS.orb?"orb":settings.home==="today"?"today":settings.home==="jarvis"||!EXTRA_VIEWS.now?"jarvis":"now"; // v4: Today is home
 let view=HOME; // the app always opens on home
 // Data lives on one phone: nudge a backup when there's enough to lose and the last one is 14+ days old (home screens only).
 function backupNudge(today){
@@ -1278,7 +1281,7 @@ function backupNudge(today){
   b.textContent=age===null?"💾 Backup nahi hua · ab karo":`💾 Backup ${age} din purana`;
 }
 function importNudge(all){
-  const n=(view===HOME||view==="today"||view==="stack")?importBatches(all).reduce((a,b)=>a+b.items.length,0):0;
+  const n=((view===HOME&&view!=="now")||view==="today"||view==="stack")?importBatches(all).reduce((a,b)=>a+b.items.length,0):0;
   let b=document.getElementById("importNudge");
   if(!n){if(b)b.remove();return}
   if(!b){b=document.createElement("button");Object.assign(b,{id:"importNudge",type:"button"});b.dataset.v="all";document.getElementById("banners").prepend(b)}
@@ -1322,7 +1325,7 @@ document.getElementById("cap").addEventListener("submit",async e=>{
   else{document.getElementById("answer").hidden=true;await capture(text)}
 });
 document.getElementById("sheet").addEventListener("click",e=>{if(e.target.id==="sheet")e.target.hidden=true});
-for(const v of ["stack","timeline","finance"])document.getElementById("tab-"+v).hidden=!EXTRA_VIEWS[v];
+for(const v of ["stack","timeline","finance","now","cases"])document.getElementById("tab-"+v).hidden=!EXTRA_VIEWS[v];
 // Modules with a `menu:{icon,title,sub}` get a ⋯ menu entry automatically (inserted before "Me").
 for(const [v,x] of Object.entries(EXTRA_VIEWS))if(x.menu&&!document.getElementById("tab-"+v)){
   const b=document.createElement("button");Object.assign(b,{id:"tab-"+v,type:"button"});b.dataset.v=v;b.setAttribute("role","menuitem");

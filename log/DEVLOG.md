@@ -158,3 +158,11 @@
 - Founder: "Jarvis bana". Big orb on Jarvis home: tap → speech recognition (en-IN) → same brain (free local / API) → answer spoken (speechSynthesis) when asked by voice. "▶ Briefing" speaks today/window/this week. Greeting bubble = briefing.
 - Settings toggle "🔊 bol ke jawab". Reduced-motion stops the orb animation.
 - tests/test_voice.py (fake SpeechRecognition + speechSynthesis). 102 tests OK. Deployed lifeos main 930b1df.
+
+## Session 22 (2026-11-05): v4.0 Phase 1 — typed records, Cases, Today
+- Founder wrote a full refactor spec; plan in docs/REFACTOR_PLAN.md, approved ("Next").
+- app/ui/records.js: typed records layered on classic items (text/domain/due/done kept in sync both ways), store lifeos.v2 {records, trash}; v1 key kept as backup; Irish working days (bank holidays computed).
+- app/ui/v4.js: reviewed migration (type/area/title per row, Split, Skip, preference lines → settings), Trash in Me (restore / delete now, 30-day purge); fresh phones start on v4.
+- app/ui/cases.js (agent): case list/detail, 4-rung Irish ladder, log contact → +5 working days, legal-window deadlines from delivery date, resolve/reopen with undo.
+- app/ui/today.js: Today home, max 5 ranked rows (late → 7 days → Needs-info → project → decide-for-me), Cases strip, quick-add.
+- 113 tests OK. Deployed lifeos main 07df2e1. Next: Phase 2 (Jarvis JSON actions + confirm cards, settings in prompt, relevant-context only).

@@ -34,7 +34,7 @@ Record (all types)
   id, type, area, title, notes, status: open|waiting|done|archived,
   created_at, updated_at, deleted_at|null, links: [id]
   type ∈ task | recurring | deadline | case | job | project | fact | journal
-  area ∈ home | money | nova(pet) | documents | shopping | family | health | projects | ideas
+  area ∈ home | money | pets | documents | shopping | family | health | projects | ideas
 
 task       due_date|null, priority: 1-3
 recurring  amount|null, every, unit(day|week|month|year), day_of_month|null, paid_each_month: bool, next_date|null

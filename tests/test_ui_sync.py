@@ -107,7 +107,7 @@ class DriveSyncTest(PhoneBase):
         self.pg.wait_for_function("items.size === 3")
         texts = set(self.items())
         self.assertEqual(texts, {"remote passport renew 2027-05-01", "NCT due in 20 days", "dentist moved to monday"})
-        self.assertIn("remote passport renew", self.pg.evaluate("localStorage.getItem('lifeos.items.v1')"))
+        self.assertIn("remote passport renew", self.pg.evaluate("localStorage.getItem('lifeos.v2') || localStorage.getItem('lifeos.items.v1')"))
         self.assertEqual(self.drive_items(), texts)  # merged copy pushed back
         self.assertIn("Last synced:", self.me())
         self.assertNotIn("not yet", self.pg.inner_text("[data-sync-last]"))
