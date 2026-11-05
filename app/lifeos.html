@@ -831,7 +831,10 @@ const TOOLS=[
   input_schema:{type:"object",properties:{fact:{type:"string",description:"One short fact, e.g. 'Dog Bruno, female, eats kibble mixed with meat'"},
     forget:{type:"string",description:"Words from an outdated context line to remove, or empty string"}},required:["fact","forget"],additionalProperties:false}}];
 let chatMsgs=[], chatLog=[], chatBusy=false;
-const apiCost=()=>{const u=settings.apiUsage;return u&&u.month===iso(todayDate()).slice(0,7)?(u.in*0.10+u.out*0.50)/1e6:0};
+// Token saving: the item snapshot and any photo ride only on the CURRENT turn (injected at send time), never stay in history,
+// so a long chat doesn't re-send old snapshots/photos every message (and never nears Haiku's 100k price cliff).
+let turnStart=-1, turnExtra=null;
+const apiCost=()=>{const u=settings.apiUsage;return u&&u.month===iso(todayDate()).slice(0,7)?(u.in*0.10+u.out*0.50)/1e6:0}; // u.in is stored price-weighted (cache read 0.1x, write 1.25x)
 const CHAT_OK=!window.claude; // inside claude.ai the page can't reach the API; the phone app can
 function snapshot(today){
   const rows=[...items.values()].filter(i=>!i.done).sort((a,b)=>(a.due||"9999").localeCompare(b.due||"9999")).slice(0,150)
@@ -851,10 +854,10 @@ async function checkKey(key){
 async function callClaude(){
   const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":settings.key,
     "anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-    body:JSON.stringify({model:MODEL,max_tokens:2048,system:[{type:"text",text:SYSTEM,cache_control:{type:"ephemeral"}},...(aboutMe()?[{type:"text",text:aboutMe()}]:[])],tools:TOOLS,messages:chatMsgs,output_config:{effort:"low"},cache_control:{type:"ephemeral"}})});
+    body:JSON.stringify({model:MODEL,max_tokens:2048,system:[{type:"text",text:SYSTEM,cache_control:{type:"ephemeral"}},...(aboutMe()?[{type:"text",text:aboutMe()}]:[])],tools:TOOLS,messages:chatMsgs.map((m,i)=>i===turnStart&&turnExtra?{role:"user",content:[...turnExtra,...m.content]}:m),output_config:{effort:"low"},cache_control:{type:"ephemeral"}})});
   const data=await r.json().catch(()=>({}));
   if(r.ok&&data.usage){const m=iso(todayDate()).slice(0,7),u=settings.apiUsage&&settings.apiUsage.month===m?settings.apiUsage:{month:m,in:0,out:0},x=data.usage;
-    u.in+=(x.input_tokens||0)+(x.cache_read_input_tokens||0)+(x.cache_creation_input_tokens||0);u.out+=x.output_tokens||0;settings.apiUsage=u;saveSettings()}
+    u.in+=(x.input_tokens||0)+0.1*(x.cache_read_input_tokens||0)+1.25*(x.cache_creation_input_tokens||0);u.out+=x.output_tokens||0;settings.apiUsage=u;saveSettings()}
   if(!r.ok){const m=data.error&&data.error.message||r.statusText;throw new Error(r.status===401?"That API key didn't work. Check it in Jarvis settings.":r.status===429?"Too many requests right now. Try again in a minute.":m)}
   return data;
 }
@@ -875,12 +878,15 @@ async function runTool(b){
 }
 async function askJarvis(text,image){
   if(chatBusy)return;
-  if(chatMsgs.length>40){chatMsgs=[];chatLog.push({who:"act",text:"(started a fresh chat)"})}
+  if(chatMsgs.length>24){ // keep ~the last 6 exchanges, cut at a real user message (never orphan a tool_result)
+    let cut=chatMsgs.length-12;
+    while(cut<chatMsgs.length&&(chatMsgs[cut].role!=="user"||chatMsgs[cut].content.some(c=>c.type==="tool_result")))cut++;
+    chatMsgs=chatMsgs.slice(cut)}
   chatBusy=true; if(image)chatLog.push({who:"img",src:image.url}); chatLog.push({who:"me",text}); render();
-  const content=[{type:"text",text:snapshot(todayDate())}];
-  if(image)content.push({type:"image",source:{type:"base64",media_type:"image/jpeg",data:image.b64}});
-  content.push({type:"text",text});
-  chatMsgs.push({role:"user",content});
+  turnExtra=[{type:"text",text:snapshot(todayDate())}];
+  if(image)turnExtra.push({type:"image",source:{type:"base64",media_type:"image/jpeg",data:image.b64}});
+  turnStart=chatMsgs.length;
+  chatMsgs.push({role:"user",content:[{type:"text",text:image?`(sent a photo) ${text}`:text}]});
   try{
     for(let step=0;step<5;step++){
       const res=await callClaude();
@@ -895,9 +901,9 @@ async function askJarvis(text,image){
         results.push(typeof out==="string"?{type:"tool_result",tool_use_id:c.id,content:out}:{type:"tool_result",tool_use_id:c.id,content:out.error,is_error:true})}
       chatMsgs.push({role:"user",content:results});
     }
-  }catch(e){chatMsgs.pop();chatLog.push({who:"act",text:navigator.onLine===false?"Offline hai. List se jawab:":`⚠ ${e.message}`});
+  }catch(e){chatMsgs.length=turnStart; // drop the whole failed turn, so no tool_use is left without its resultchatLog.push({who:"act",text:navigator.onLine===false?"Offline hai. List se jawab:":`⚠ ${e.message}`});
     if(isQuestion(text)){const a=localAnswer(text);if(a)chatLog.push({who:"bot",text:a})}}
-  chatBusy=false; render();
+  turnExtra=null; chatBusy=false; render();
 }
 function vJarvis(){
   if(!CHAT_OK)return `<div class="jhead"><div class="orb"></div><div><b>Jarvis</b><small>phone app only</small></div></div><div class="setup"><b>Jarvis chat works in the phone app.</b><span class="covers">Open LifeOS on your phone to chat.</span></div>`;
@@ -1340,7 +1346,7 @@ document.addEventListener("click",async e=>{
   if(b.dataset.area!==undefined){lifeArea=b.dataset.area||null;render();window.scrollTo(0,0);return}
   if(b.dataset.fill){const q=document.getElementById("q");q.value=b.dataset.fill;q.focus();return}
   if(b.dataset.guide){const id=+b.dataset.guide;openGuides.has(id)?openGuides.delete(id):openGuides.add(id);render();return}
-  if(b.dataset.chat==="new"){chatMsgs=[];chatLog=[];render();return}
+  if(b.dataset.chat==="new"){chatMsgs=[];chatLog=[];turnStart=-1;turnExtra=null;render();return}
   if(b.hasAttribute("data-memimport")){askClaude("🧠 Import what Claude knows about me",memoryPrompt());return}
   if(b.hasAttribute("data-showpaste")){showPaste=true;render();document.getElementById("paste").focus();return}
   if(b.hasAttribute("data-project")){showProject=!showProject;render();return}

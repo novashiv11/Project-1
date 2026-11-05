@@ -15,7 +15,9 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
+import os as _os, shutil as _sh
+CHROME = next((c for c in (_os.environ.get("CHROME"), "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
+               _sh.which("google-chrome"), _sh.which("chromium")) if c and Path(c).exists()), "")
 try:
     from playwright.sync_api import sync_playwright
 except ImportError:  # pragma: no cover
@@ -190,6 +192,15 @@ class PhoneAppTest(PhoneBase):
         self.assertEqual(first["headers"].get("anthropic-dangerous-direct-browser-access"), "true")
         self.assertEqual(first["body"]["model"], "claude-haiku-5-5")
         self.assertEqual(second["body"]["messages"][1]["role"], "assistant")  # history appended, not edited
+        snap = lambda m: any(c.get("text", "").startswith("Today:") for c in m["content"] if isinstance(c, dict))
+        self.assertTrue(snap(second["body"]["messages"][0]))  # same turn: prefix unchanged, so it stays cached
+        n = len(self.pg.query_selector_all(".msg.bot"))
+        self.pg.fill("#cq", "dentist kal 4pm")
+        self.pg.press("#cq", "Enter")
+        self.pg.wait_for_function(f"document.querySelectorAll('.msg.bot').length > {n}")
+        later = [c for c in self.claude_calls if not isinstance(c["body"]["messages"][-1]["content"], str)][2]["body"]["messages"]
+        self.assertFalse(snap(later[0]))  # old turns don't re-send the item snapshot (token saving)
+        self.assertTrue(snap(later[-1]))  # the current turn carries a fresh one
 
 
     def test_ask_claude_free_flow(self):

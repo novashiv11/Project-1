@@ -158,3 +158,9 @@
 - Founder: "Jarvis bana". Big orb on Jarvis home: tap → speech recognition (en-IN) → same brain (free local / API) → answer spoken (speechSynthesis) when asked by voice. "▶ Briefing" speaks today/window/this week. Greeting bubble = briefing.
 - Settings toggle "🔊 bol ke jawab". Reduced-motion stops the orb animation.
 - tests/test_voice.py (fake SpeechRecognition + speechSynthesis). 102 tests OK. Deployed lifeos main 930b1df.
+
+## Session 22 (2026-11-05): v3.3 Jarvis token diet + chat bug fix
+- Item snapshot + photo now ride only on the current turn (injected at send); history keeps plain text → long chats stop re-sending old snapshots/photos, stay far below Haiku's 100k price cliff. Same-turn tool loop keeps the cached prefix.
+- History trims to the last ~6 exchanges instead of wiping at 40. Cost meter now weights cache reads 0.1x / writes 1.25x (was overcounting).
+- Bug: an API error mid tool-loop left a tool_use with no result → every later message failed. Now the whole failed turn is dropped.
+- Tests/build find system Chrome (CHROME env or google-chrome). 102 tests OK (e2e asserts old turns carry no snapshot).

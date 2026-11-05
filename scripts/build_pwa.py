@@ -14,7 +14,8 @@ from urllib.parse import urlparse
 ROOT = Path(__file__).resolve().parent.parent
 DIST = Path(os.environ.get("LIFEOS_DIST", ROOT / "dist"))  # override so parallel builds/tests don't collide
 PUBLIC_URL = "https://novashiv11.github.io/lifeos/"  # where dist/ is served (GitHub Pages)
-CHROME = "/opt/pw-browsers/chromium-1194/chrome-linux/chrome"
+CHROME = next((c for c in (os.environ.get("CHROME"), "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
+               shutil.which("google-chrome"), shutil.which("chromium")) if c and Path(c).exists()), None)
 
 subprocess.run([sys.executable, str(ROOT / "scripts/build_app.py")], check=True)
 page = (ROOT / "app/lifeos.html").read_text(encoding="utf-8")
