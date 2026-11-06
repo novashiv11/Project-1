@@ -54,9 +54,22 @@ def ad_slot():
     )
 
 
+def is_real(value):
+    """False for empty or placeholder values (example.com), so they never reach the live site."""
+    return bool(value) and "example." not in value
+
+
+def contact_html():
+    email = CFG.get("contact_email", "")
+    if is_real(email):
+        return f'<a href="mailto:{html.escape(email)}">{html.escape(email)}</a>'
+    return '<a href="https://github.com/novashiv11/Project-1/issues" rel="noopener">our feedback page</a>'
+
+
 def affiliates(slug):
     # A link with a "tools" list only shows on those tool pages; without one it shows everywhere.
-    links = [l for l in CFG.get("affiliate_links") or [] if slug in l.get("tools", [slug])]
+    links = [l for l in CFG.get("affiliate_links") or []
+             if slug in l.get("tools", [slug]) and is_real(l.get("url"))]
     if not links:
         return ""
     items = "".join(
@@ -87,6 +100,12 @@ def layout(meta, main, depth):
             ],
         }
         head_extra += f'<script type="application/ld+json">{json.dumps(ld)}</script>'
+    if meta.get("category"):  # tool pages: tell Google it's a free web app (eligible for richer results)
+        app = {"@context": "https://schema.org", "@type": "WebApplication", "name": meta["title"],
+               "description": meta["description"], "url": url, "applicationCategory": "UtilitiesApplication",
+               "operatingSystem": "Any (runs in the browser)", "isAccessibleForFree": True,
+               "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}}
+        head_extra += f'<script type="application/ld+json">{json.dumps(app)}</script>'
     title = meta["title"] if not meta["slug"] else f'{meta["title"]} | {CFG["site_name"]}'
     year = datetime.date.today().year
     return f"""<!doctype html>
@@ -98,6 +117,8 @@ def layout(meta, main, depth):
 <meta property="og:title" content="{html.escape(meta["title"])}">
 <meta property="og:description" content="{html.escape(meta["description"])}">
 <meta property="og:url" content="{url}">
+<meta property="og:type" content="website"><meta property="og:site_name" content="{html.escape(CFG["site_name"])}">
+<meta name="twitter:card" content="summary"><meta name="theme-color" content="#ffffff">
 <link rel="icon" href="{base}favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="{base}style.css">
 {head_extra}
@@ -165,7 +186,7 @@ def main():
 
     for p in pages:
         body = p["content"].replace("{{site_name}}", CFG["site_name"]).replace(
-            "{{contact_email}}", CFG["contact_email"])
+            "{{contact}}", contact_html())
         write(p["slug"], layout(p, f'<h1>{p["title"]}</h1>{body}', 1))
 
     cats = sorted({t["category"] for t in tools},
@@ -187,10 +208,9 @@ def main():
                      f'<p id="none" class="muted" hidden>No tool found. Try another word.</p>'
                      f'{ad_slot()}<div id="cats">{cards}</div>{SEARCH_JS}', 0))
 
-    today = datetime.date.today().isoformat()
     slugs = [""] + [t["slug"] for t in tools] + [p["slug"] for p in pages]
     urls = "".join(
-        f'<url><loc>{CFG["site_url"]}/{s + "/" if s else ""}</loc><lastmod>{today}</lastmod></url>'
+        f'<url><loc>{CFG["site_url"]}/{s + "/" if s else ""}</loc></url>'  # no fake "changed today" lastmod
         for s in slugs
     )
     (OUT / "sitemap.xml").write_text(
@@ -200,6 +220,12 @@ def main():
     if CFG["adsense_client"]:
         pub = CFG["adsense_client"].replace("ca-", "")
         (OUT / "ads.txt").write_text(f"google.com, {pub}, DIRECT, f08c47fec0942fa0\n")
+    nf = {"slug": "404", "title": "Page not found", "description": "This page doesn't exist."}
+    page404 = layout(nf, '<h1>Page not found</h1><p>That page doesn\'t exist. '
+                     f'<a href="{CFG["site_url"]}/">See all {len(tools)} free tools</a>.</p>', 0)
+    # <base> makes every relative link work from any missing URL depth
+    (OUT / "404.html").write_text(page404.replace('<link rel="canonical"', f'<base href="{CFG["site_url"]}/">'
+                                  '<meta name="robots" content="noindex"><link rel="canonical"', 1))
     (OUT / ".nojekyll").write_text("")
     print(f"Built {len(tools)} tools and {len(pages)} pages into {OUT}")
 
