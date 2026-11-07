@@ -89,5 +89,25 @@ class MoneyScreenTest(PhoneBase):
         self.assertIn("Plumber cash,-90", csv)
 
 
+class MoneyFilesTest(PhoneBase):
+    """The import button also takes the tracker .xlsx (Ledger sheet) and an ESB smart-meter file."""
+    def test_xlsx_ledger_and_esb(self):
+        from tests.test_money_import import make_xlsx, hdf, native
+        from datetime import date as _d, timedelta
+        xp, ep = Path(self.tmp) / "tracker.xlsx", Path(self.tmp) / "esb.csv"
+        make_xlsx(xp)
+        ep.write_text(hdf([_d(2026, 10, 1) + timedelta(days=i) for i in range(10)], native)[0])
+        self.tab("money")
+        self.pg.wait_for_selector("#mnFile", state="attached")
+        self.pg.set_input_files("#mnFile", [str(xp)])
+        self.pg.wait_for_function("EXTRA_VIEWS.money._test.S.txns.length > 0")
+        kinds = self.pg.evaluate("[...new Set(EXTRA_VIEWS.money._test.S.txns.map(t => t.kind))].sort()")
+        self.assertIn("SPEND", kinds)
+        self.assertIn("INCOME", kinds)
+        self.assertTrue(self.pg.evaluate("Object.keys(EXTRA_VIEWS.money._test.S.settings.rules).length > 0"))  # rules learned from the tracker
+        self.pg.set_input_files("#mnFile", [str(ep)])
+        self.pg.wait_for_function("EXTRA_VIEWS.money._test.S.esb && EXTRA_VIEWS.money._test.S.esb.daily.length >= 8")
+
+
 if __name__ == "__main__":
     unittest.main()

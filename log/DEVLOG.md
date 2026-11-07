@@ -171,3 +171,12 @@
 - app/ui/cases.js (agent): case list/detail, 4-rung Irish ladder, log contact → +5 working days, legal-window deadlines from delivery date, resolve/reopen with undo.
 - app/ui/today.js: Today home, max 5 ranked rows (late → 7 days → Needs-info → project → decide-for-me), Cases strip, quick-add.
 - 113 tests OK. Deployed lifeos main 07df2e1. Next: Phase 2 (Jarvis JSON actions + confirm cards, settings in prompt, relevant-context only).
+
+## Session 23 (2026-11-07): Money Phase 1
+- Founder spec: Money module (local-first, encrypted). Built in the existing stack (app/ui modules, no framework).
+- money-core.js (node-testable): Revolut + bank CSV parsing, ids/de-dup (n-th identical row), pending→completed, REVERTED skipped,
+  SPEND/SAVE/INTERNAL/INCOME detection ("my names" setting for own-account transfers), refund netting, learning merchant rules,
+  dashboard (fixed bills not extrapolated), tie-out with gap rows, what-changed, merchant frequency.
+- money-xlsx.js + money-esb.js (agent): zip/xlsx reader for the tracker Ledger sheet; ESB HDF register reads with day/month-swap repair.
+- money.js: encrypted IndexedDB store (AES-GCM, non-extractable device key), dashboard, stacked bars, share, trend, merchants, drill-down on every number, manual entry, export/restore.
+- 131 tests OK. Deployed. Next: Phase 2 (budgets, bills, electricity charts).
