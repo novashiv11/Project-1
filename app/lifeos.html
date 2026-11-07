@@ -249,6 +249,7 @@ section,.brief,.cards,.chat,.setup,.scan,.answer,.guide{grid-template-columns:mi
 <div class="sheet" id="sheet" hidden>
   <div class="panel" role="menu">
     <button data-v="now" id="tab-now" role="menuitem" hidden><i>☀️</i><span><b>Today</b><small>Max 5 things that matter now</small></span></button>
+    <button data-v="money" id="tab-money" role="menuitem" hidden><i>💶</i><span><b>Money</b><small>Spending, savings, where it goes</small></span></button>
     <button data-v="cases" id="tab-cases" role="menuitem" hidden><i>⚖️</i><span><b>Cases</b><small>Disputes, refunds, claims</small></span></button>
     <button data-v="jarvis" id="tab-jarvis" role="menuitem"><i>🧠</i><span><b>Jarvis</b><small>Ask anything about your life</small></span></button>
     <button data-v="today" id="tab-list" role="menuitem"><i>☰</i><span><b>List</b><small>Everything due, in one list</small></span></button>
@@ -257,7 +258,7 @@ section,.brief,.cards,.chat,.setup,.scan,.answer,.guide{grid-template-columns:mi
     <div id="toolbox" hidden>
     <button data-v="stack" id="tab-stack" role="menuitem" hidden><i>🃏</i><span><b>Focus</b><small>One thing at a time, swipe to finish</small></span></button>
     <button data-v="timeline" id="tab-timeline" role="menuitem" hidden><i>〰</i><span><b>Timeline</b><small>Your life on one line</small></span></button>
-    <button data-v="finance" id="tab-finance" role="menuitem" hidden><i>💶</i><span><b>Money</b><small>Bills, spending, tax deadlines, CA check-up</small></span></button>
+    <button data-v="finance" id="tab-finance" role="menuitem" hidden><i>🧾</i><span><b>Tax & CA</b><small>Irish tax calendar, CA check-up</small></span></button>
     <button data-v="food" id="tab-food" role="menuitem"><i>🍽</i><span><b>Food</b><small>Calories today, scan barcodes</small></span></button>
     <button data-v="life" id="tab-life" role="menuitem"><i>◐</i><span><b>Life areas</b><small>Home, money, documents, pets…</small></span></button>
     <button data-v="review" id="tab-review" role="menuitem"><i>▤</i><span><b>Week</b><small>What you did, what's next</small></span></button>
@@ -1331,7 +1332,7 @@ document.getElementById("cap").addEventListener("submit",async e=>{
   else{document.getElementById("answer").hidden=true;await capture(text)}
 });
 document.getElementById("sheet").addEventListener("click",e=>{if(e.target.id==="sheet")e.target.hidden=true});
-for(const v of ["stack","timeline","finance","now","cases"])document.getElementById("tab-"+v).hidden=!EXTRA_VIEWS[v];
+for(const v of ["stack","timeline","finance","now","cases","money"])document.getElementById("tab-"+v).hidden=!EXTRA_VIEWS[v];
 // Modules with a `menu:{icon,title,sub}` get a ⋯ menu entry automatically (inserted before "Me").
 for(const [v,x] of Object.entries(EXTRA_VIEWS))if(x.menu&&!document.getElementById("tab-"+v)){
   const b=document.createElement("button");Object.assign(b,{id:"tab-"+v,type:"button"});b.dataset.v=v;b.setAttribute("role","menuitem");
