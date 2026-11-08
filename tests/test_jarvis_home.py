@@ -25,10 +25,13 @@ class JarvisHomeTest(PhoneBase):
     def test_home_is_jarvis_and_menu_is_short(self):
         self.assertEqual(self.pg.get_attribute("body", "data-view"), "jarvis")
         self.pg.click("#more")
-        self.assertTrue(self.pg.is_visible("#tab-list"))
+        for t in ("#tab-now", "#tab-jarvis", "#tab-cases", "#tab-money", "#tab-all"):
+            self.assertTrue(self.pg.is_visible(t), t)
+        self.assertFalse(self.pg.is_visible("#tab-list"))
         self.assertFalse(self.pg.is_visible("#tab-food"))
         self.pg.click("#moretools")
         self.assertTrue(self.pg.is_visible("#tab-food"))
+        self.assertTrue(self.pg.is_visible("#tab-list"))
         self.assertEqual(self.pg.evaluate("document.documentElement.scrollWidth"), 390)
 
     def test_tell_then_ask(self):

@@ -32,3 +32,4 @@
 - 2026-10-16: personal life context lives in phone settings (lifeContext) and is loaded via #ctx= fragment links; never in repo.
 - 2026-10-28: product = "ask anything about my life" Jarvis chat as home; other screens are secondary tools.
 - 2026-11-05: v4 typed records live in lifeos.v2 as a superset of classic items (old screens keep working); Python CLI frozen at v1.
+- 2026-11-08: product point = "Jarvis sorts your Irish life admin and gets you what you are owed"; home = one feed (chase → don't forget → claim, max 5) + money line. Replaces Jarvis-home / Today-home decisions.

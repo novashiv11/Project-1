@@ -180,3 +180,10 @@
 - money-xlsx.js + money-esb.js (agent): zip/xlsx reader for the tracker Ledger sheet; ESB HDF register reads with day/month-swap repair.
 - money.js: encrypted IndexedDB store (AES-GCM, non-extractable device key), dashboard, stacked bars, share, trend, merchants, drill-down on every number, manual entry, export/restore.
 - 131 tests OK. Deployed. Next: Phase 2 (budgets, bills, electricity charts).
+
+## Session 24 (2026-11-08): PM review + v4.1 home feed
+- Founder: "point of whole app is missing" and asked a PM (agent with his chats + life context) to answer all open questions.
+- PM decisions: point = "Jarvis sorts your Irish life admin and gets you what you're owed"; home = one feed, max 5 cards (⚖️ chase → ⏳ don't forget → 💶 claim) + 📊 money one-liner; doer MVP = PRSI dental + optical only (hearing later, no LLM rewrite); panel data via allowed hosts (fallback: founder download); Money: fix parsing on real files before Phase 2; privacy: make Project-1 private, no force-push.
+- Built: today.js feed per that order (claims via window.LIFEOS_CLAIMS hook for S2), money one-liner, home bar routes questions to Jarvis, ⋯ menu = Home · Money · Cases · Jarvis · Me (+ More tools).
+- lifeos repo history checked: only generic broker names, no personal data → no recreate needed.
+- 133 tests OK. Deployed. Next: S2 doer MVP (dental + eye).
