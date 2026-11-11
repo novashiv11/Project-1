@@ -58,24 +58,6 @@ class ReturnFromClaudeTest(PhoneBase):
         self.assertEqual(self.pg.query_selector_all("#pasteNudge"), [])
         self.assertIn("prefers mornings", self.pg.evaluate("settings.lifeContext"))
 
-    def test_weekly_review_button(self):
-        self.pg.evaluate(STUB)
-        self.add("gym every monday 7am")
-        self.tab("review")
-        self.pg.click("[data-weekly]")
-        prompt = unquote(self.pg.evaluate("window.__opened[0]"))
-        self.assertIn("?q=Weekly review for my LifeOS", prompt)
-        self.assertIn("+ gym every monday 7am", prompt)
-
-    def test_focus_skips_old_undated_notes(self):
-        self.pg.evaluate("""(()=>{const old={id:1,created:'2025-01-01T09:00:00',done:false,...parse('old random thought',todayDate())};
-          items.set(1,old);backend.save()})(); 0""")
-        self.add("fresh random thought")
-        self.pg.wait_for_function("items.size >= 2")
-        self.tab("stack")
-        txt = self.pg.inner_text("#view")
-        self.assertIn("fresh random thought", txt)
-        self.assertNotIn("old random thought", txt)
 
 
 if __name__ == "__main__":

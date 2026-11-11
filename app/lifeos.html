@@ -201,7 +201,7 @@ header .date{display:flex;gap:4px;flex-wrap:wrap}
 .capbox{display:flex;gap:8px;align-items:center;background:var(--card2);border:1px solid var(--line);border-radius:20px;padding:8px 8px 8px 16px}
 .capbox input{flex:1;min-width:0;background:transparent;border:0;color:var(--fg);font:17px var(--body);padding:8px 0}
 .capbox input::placeholder{color:var(--muted)}.capbox input:focus{outline:none}
-body:not([data-view="today"]):not([data-view="orb"]):not([data-view="now"]) #cap{display:none}
+body:not([data-view="today"]):not([data-view="now"]) #cap{display:none}
 .grp{display:grid;gap:2px}
 .grp h2{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 4px}
 .grp h2 span{color:var(--accent);letter-spacing:0}
@@ -253,15 +253,9 @@ section,.brief,.cards,.chat,.setup,.scan,.answer,.guide{grid-template-columns:mi
     <button data-v="cases" id="tab-cases" role="menuitem" hidden><i>⚖️</i><span><b>Cases</b><small>Disputes, refunds, claims</small></span></button>
     <button data-v="jarvis" id="tab-jarvis" role="menuitem"><i>🧠</i><span><b>Jarvis</b><small>Ask anything about your life</small></span></button>
     <button data-v="all" id="tab-all" role="menuitem"><i>☺</i><span><b>Me</b><small>Settings, backup, everything</small></span></button>
-    <button id="moretools" type="button" aria-expanded="false"><i>＋</i><span><b>More tools</b><small>List, Focus, timeline, food, tax, letters…</small></span></button>
+    <button id="moretools" type="button" aria-expanded="false"><i>＋</i><span><b>More tools</b><small>Full list, letters</small></span></button>
     <div id="toolbox" hidden>
     <button data-v="today" id="tab-list" role="menuitem"><i>☰</i><span><b>List</b><small>Everything, in one list</small></span></button>
-    <button data-v="stack" id="tab-stack" role="menuitem" hidden><i>🃏</i><span><b>Focus</b><small>One thing at a time, swipe to finish</small></span></button>
-    <button data-v="timeline" id="tab-timeline" role="menuitem" hidden><i>〰</i><span><b>Timeline</b><small>Your life on one line</small></span></button>
-    <button data-v="finance" id="tab-finance" role="menuitem" hidden><i>🧾</i><span><b>Tax & CA</b><small>Irish tax calendar, CA check-up</small></span></button>
-    <button data-v="food" id="tab-food" role="menuitem"><i>🍽</i><span><b>Food</b><small>Calories today, scan barcodes</small></span></button>
-    <button data-v="life" id="tab-life" role="menuitem"><i>◐</i><span><b>Life areas</b><small>Home, money, documents, pets…</small></span></button>
-    <button data-v="review" id="tab-review" role="menuitem"><i>▤</i><span><b>Week</b><small>What you did, what's next</small></span></button>
     </div>
   </div>
 </div>
@@ -471,37 +465,7 @@ setMyWords(settings.myWords);
 const GUIDES=(LIFE.guides||[]).map(g=>({...g,rx:new RegExp(`\\b(?:${g.pattern})\\b`,"i")}));
 const guideFor=it=>GUIDES.find(g=>g.rx.test(it.text));
 const openGuides=new Set();
-function briefLines(all,today){
-  const open=openDated(all), out=[];
-  const late=open.filter(i=>daysLeft(i,today)<0), now=open.filter(i=>daysLeft(i,today)===0);
-  if(late.length)out.push(["overdue",`${late.length} overdue: ${late.slice(0,2).map(i=>i.text).join(", ")}`]);
-  if(now.length)out.push(["today",now.slice(0,3).map(i=>i.text).join(", ")]);
-  // long-notice items (renewals): say when the action window opens
-  open.filter(i=>leadDays(i)>14).forEach(i=>{const n=daysLeft(i,today),opens=n-leadDays(i);
-    if(opens>0&&opens<=14)out.push([`in ${opens}d`,`Window opens for: ${i.text}. Get documents ready.`]);
-    else if(opens<=0&&opens>-30&&n>0)out.push(["start now",`${i.text} (${n} days left)`]);});
-  const soon=open.filter(i=>{const n=daysLeft(i,today);return n>0&&n<=3&&leadDays(i)<=14});
-  if(soon.length)out.push(["next 3 days",soon.slice(0,3).map(i=>i.text).join(", ")]);
-  const lb=settings.lastBackup?Math.round((today-fromIso(settings.lastBackup))/864e5):null;
-  if(all.length>=10&&(lb===null||lb>14))out.push(["backup",lb===null?"Never backed up. Tap All → Back up now.":`Last backup ${lb} days ago. Tap All → Back up now.`]);
-  return out.slice(0,5);
-}
-const AREA_COLORS={idea:"#a07cf0",pet:"#d9944a",vehicle:"#5b8cff",kids:"#ec7fb0",travel:"#2fb8d8",document:"#4f7fe8",family:"#f0708f",
-  work:"#7d8bff",home:"#e6b02e",money:"#3fbf8f",health:"#ef6b62",mind:"#b07cf0",growth:"#6cc070",shopping:"#c99a5b",social:"#f39a3d",calendar:"#6e9cf5",journal:"#8aa196"};
-const colorOf=id=>AREA_COLORS[area(id).id]||"#8aa196";
-const buzz=ms=>{try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}};
 function greeting(){const h=new Date().getHours();return h<5?["Late night","🌙"]:h<12?["Good morning","☀️"]:h<17?["Good afternoon","🌤️"]:["Good evening","🌙"]}
-function briefCard(all,today){
-  const [hi,emo]=greeting(), name=settings.name?`,<br>${esc(settings.name)}`:"";
-  const lines=briefLines(all,today), open=openDated(all);
-  const nowN=open.filter(i=>{const n=daysLeft(i,today);return n<=0||(leadDays(i)>14&&n-leadDays(i)<=0)}).length;
-  const start=lines.find(l=>l[0]==="start now"), late=lines.find(l=>l[0]==="overdue");
-  const extra=lines.filter(([k])=>k==="backup"||/^in \d+d$/.test(k)); // the rest is already on the cards below
-  const sub=late?`<b>${esc(late[1])}</b>`:start?`${nowN>1?`${nowN} cheezein aaj. `:""}<b>${esc(start[1].replace(/\s*\(\d+ days left\)$/,""))}: ab start karo.</b>`
-    :nowN?`${nowN} cheez${nowN>1?"ein":""} aaj.`:"Aaj sab clear hai ✨";
-  return `<div class="brief"><div class="hello">${hi}${name} ${emo}</div><div class="sub">${sub}</div>
-    ${extra.length?`<div class="lines">${extra.map(([k,t])=>`<span><b>${esc(k)}</b>${esc(t)}</span>`).join("")}</div>`:""}</div>`;
-}
 function guidePanel(it){
   const g=guideFor(it); if(!g||it.done||!openGuides.has(it.id))return "";
   return `<div class="guide"><h3>${esc(g.title)}</h3><ol>${g.steps.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>${g.links.length?`<div class="links">${g.links.map(l=>`<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>`).join("")}</div>`:""}</div>`;
@@ -539,7 +503,7 @@ function row(it,today,{del=false}={}){
   const acts=[];
   const g=guideFor(it);
   if(g&&!it.done)chips.push(`<button class="gbtn" data-guide="${it.id}" aria-expanded="${openGuides.has(it.id)}">${openGuides.has(it.id)?"Hide guide":"Guide ›"}</button>`);
-  if(!it.done&&!isFood(it))acts.push(`<button class="tick" data-done="${it.id}" aria-label="Mark done: ${esc(it.text)}">✓</button>`);
+  if(!it.done)acts.push(`<button class="tick" data-done="${it.id}" aria-label="Mark done: ${esc(it.text)}">✓</button>`);
   if(del)acts.push(`<button class="del" data-del="${it.id}">Delete</button>`);
   const panel=guidePanel(it);
   return `<div class="row${it.done?" done":""}">${when}<div class="what">${esc(it.text)}<div class="meta">${chips.join("")}</div></div><div class="act">${acts.join("")}</div></div>${panel}`;
@@ -548,42 +512,6 @@ const list=(arr,today,empty,o)=>`<div class="list">${arr.length?arr.map(i=>row(i
 const EXAMPLES=LIFE.start_examples||AREAS.map(a=>a.examples[0]);
 const openDated=arr=>arr.filter(i=>i.due&&!i.done).sort((a,b)=>a.due.localeCompare(b.due));
 
-const isFood=i=>/^\s*food\s*:/i.test(i.text)||(i.metrics||[]).some(m=>m.name==="kcal");
-let showFoodLog=false;
-function foodTile(all,today){
-  const t=iso(today), eaten=all.filter(i=>isFood(i)&&i.created.slice(0,10)===t);
-  const sum=n=>eaten.reduce((a,i)=>a+((i.metrics||[]).find(m=>m.name===n)||{value:0}).value,0);
-  const kcal=Math.round(sum("kcal")), goal=+settings.kcalGoal||0, pct=goal?Math.min(100,kcal/goal*100):0;
-  return `<button class="tile food" data-foodlog aria-expanded="${showFoodLog}"><span class="k">Food today</span><span class="big">${kcal}</span>
-    <span class="s">${goal?`of ${goal} kcal`:eaten.length?`kcal · ${+sum("protein").toFixed(1)} g protein`:"kcal · tap 📷 to scan"}</span>
-    ${goal?`<span class="bar"><i class="${kcal>goal?"over":""}" style="width:${pct}%"></i></span>`:""}</button>`;
-}
-function foodLog(all,today){
-  if(!showFoodLog)return "";
-  const t=iso(today), eaten=all.filter(i=>isFood(i)&&i.created.slice(0,10)===t).sort((a,b)=>b.id-a.id);
-  return `${foodFavs(all,today)}<section><h2>Food log · today</h2>${list(eaten,today,"Nothing logged yet. Scan a barcode with 📷 or type “lunch 650 kcal”.",{del:true})}</section>`;
-}
-const kcalOf=i=>((i.metrics||[]).find(m=>m.name==="kcal")||{value:0}).value;
-// "Same as yesterday": the foods you log most (last 60 days), one tap to log again.
-function foodFavs(all,today){
-  const since=iso(addDays(today,-60)), seen=new Map();
-  all.filter(i=>isFood(i)&&i.created.slice(0,10)>=since).sort((a,b)=>a.id-b.id).forEach(i=>{
-    const k=i.text.trim().toLowerCase(), f=seen.get(k)||{text:i.text.trim(),n:0,last:0};f.n++;f.last=i.id;seen.set(k,f)});
-  const favs=[...seen.values()].sort((a,b)=>b.n-a.n||b.last-a.last).slice(0,6);
-  if(!favs.length)return "";
-  return `<section><h2>Phir se khaya? · 1 tap</h2><div class="favs">${favs.map(f=>{
-    const name=f.text.replace(/^\s*food\s*:\s*/i,"").split(/\s*·\s*/)[0].replace(/\s*\d+(?:\.\d+)?\s*kcal\b.*$/i,""), kc=kcalOf({metrics:parseMetrics(f.text)});
-    return `<button class="fav" data-refood="${esc(f.text)}" aria-label="Log again: ${esc(f.text)}">↻ ${esc(name.length>26?name.slice(0,25)+"…":name)}${kc?` <b>${Math.round(kc)}</b>`:""}</button>`}).join("")}</div></section>`;
-}
-function kcalWeek(all,today){
-  const days=[...Array(7)].map((_,k)=>addDays(today,k-6)), goal=+settings.kcalGoal||0;
-  const tot=days.map(d=>Math.round(all.filter(i=>isFood(i)&&i.created.slice(0,10)===iso(d)).reduce((a,i)=>a+kcalOf(i),0)));
-  if(!tot.some(Boolean))return "";
-  const max=Math.max(goal,...tot)||1, logged=tot.filter(Boolean), avg=Math.round(logged.reduce((a,b)=>a+b,0)/logged.length);
-  return `<section><h2>Last 7 days · avg ${avg} kcal${goal?` · goal ${goal} ┄`:""}</h2><div class="kweek" role="img" aria-label="Calories per day for the last 7 days, average ${avg}">
-    ${goal?`<i class="kgoal" style="bottom:calc(19px + (100% - 41px) * ${(goal/max).toFixed(3)})"></i>`:""}
-    ${days.map((d,k)=>`<div class="kday"><div class="kbar${goal&&tot[k]>goal?" over":""}${k===6?" now":""}" style="height:${tot[k]/max*100}%"><span>${tot[k]||""}</span></div><small>${"SMTWTFS"[d.getDay()]}</small></div>`).join("")}</div></section>`;
-}
 let showLater=false;
 const windowOpen=(it,today)=>{const n=daysLeft(it,today),L=leadDays(it);return L>14&&n>14&&n-L<=0};
 function sLabel(it,today){
@@ -608,7 +536,7 @@ const grp=(title,arr,today)=>arr.length?`<section class="grp"><h2>${title}<span>
 function vToday(all,today){
   if(!all.length)return `<section class="grp"><h2>Shuru karo</h2><p class="allclear">Upar box mein kuch bhi likho ya bolo 🎤. Main date samajh ke sahi time pe yaad dila dunga.</p>
     <div class="examples">${EXAMPLES.slice(0,6).map(e=>`<button class="ex" data-ex="${esc(e)}">${esc(e)}</button>`).join("")}</div></section>`;
-  const open=all.filter(i=>!i.done&&!isFood(i)), dated=openDated(open), used=new Set();
+  const open=all.filter(i=>!i.done), dated=openDated(open), used=new Set();
   const take=f=>dated.filter(i=>!used.has(i.id)&&f(i)).map(i=>(used.add(i.id),i));
   const aaj=take(i=>daysLeft(i,today)<=0||windowOpen(i,today));
   const week=take(i=>daysLeft(i,today)<=7);
@@ -619,82 +547,6 @@ function vToday(all,today){
   return (aaj.length?grp("Aaj",aaj,today):`<section class="grp"><h2>Aaj</h2><p class="allclear">Aaj kuch nahi ✨</p></section>`)+
     grp("Is hafte",week,today)+grp("Jaldi aane wala",soon,today)+laterHtml+
     (aaj.length+week.length?`<div class="swipehint">tap ◯ = done · swipe ← = kal tak</div>`:"");
-}
-function vFood(all,today){
-  return `<div class="tiles">${foodTile(all,today)}<div class="tile"><span class="k">Scan</span><span class="big">📷</span><span class="s">barcode → calories</span></div></div>`+foodFavs(all,today)+kcalWeek(all,today)+
-    `<section><h2>Food log · today</h2>${list(all.filter(i=>isFood(i)&&i.created.slice(0,10)===iso(today)).sort((a,b)=>b.id-a.id),today,"Nothing logged yet. Scan a barcode with 📷 on the Aaj screen, or type “lunch 650 kcal”.",{del:true})}</section>`;
-}
-
-/* metrics */
-function points(arr,since){
-  const out={};
-  [...arr].sort((a,b)=>a.id-b.id).forEach(i=>{const d=i.created.slice(0,10);if(since&&d<since)return;
-    (i.metrics||[]).forEach(m=>(out[m.name]=out[m.name]||[]).push([d,m.value]))});
-  return out;
-}
-function statCard(name,s){
-  const u=unitOf(name), vals=s.map(x=>x[1]), label=name.replace("me.","my ").replace("pet.","pet ");
-  if(isSum(name))return `<div class="stat"><div class="k">${esc(label)}</div><div class="v">${u}${+vals.reduce((a,b)=>a+b,0).toFixed(2)}</div><div class="s">${vals.length} entries</div></div>`;
-  const avg=vals.reduce((a,b)=>a+b,0)/vals.length;
-  return `<div class="stat"><div class="k">${esc(label)}</div><div class="v">${vals[vals.length-1]}<small style="font-size:14px"> ${esc(u)}</small></div><div class="s">${vals.slice(-5).join(" → ")} · avg ${+avg.toFixed(1)}</div></div>`;
-}
-const statGrid=pts=>Object.keys(pts).length?`<div class="stats">${Object.entries(pts).map(([n,s])=>statCard(n,s)).join("")}</div>`:"";
-
-/* life wheel + one area */
-let lifeArea=null;
-function wheelSvg(parts,total){
-  const r=58,C=2*Math.PI*r; let off=0;
-  const segs=parts.map(([id,n])=>{const len=C*n/total, gap=parts.length>1?3:0;
-    const el=`<circle cx="75" cy="75" r="${r}" fill="none" stroke="${colorOf(id)}" stroke-width="16" stroke-dasharray="${Math.max(0,len-gap)} ${C}" stroke-dashoffset="${-off}"/>`;off+=len;return el}).join("");
-  return `<svg width="150" height="150" viewBox="0 0 150 150" role="img" aria-label="${total} open items across your life areas">
-    <g transform="rotate(-90 75 75)"><circle cx="75" cy="75" r="${r}" fill="none" stroke="var(--chip)" stroke-width="16"/>${segs}</g>
-    <text x="75" y="76" text-anchor="middle" font-family="Bricolage Grotesque,sans-serif" font-weight="800" font-size="34" fill="var(--fg)">${total}</text>
-    <text x="75" y="96" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="10" letter-spacing="1" fill="var(--muted)">OPEN</text></svg>`;
-}
-function vLife(all,today){
-  if(lifeArea)return vArea(all,lifeArea,today);
-  const by={}; all.forEach(i=>{const id=area(i.domain).id;(by[id]=by[id]||[]).push(i)});
-  const used=[...AREAS,FALLBACK].filter(a=>by[a.id]), quiet=AREAS.filter(a=>!by[a.id]);
-  const openBy=used.map(a=>[a.id,by[a.id].filter(i=>!i.done).length]).filter(x=>x[1]).sort((x,y)=>y[1]-x[1]);
-  const total=openBy.reduce((t,x)=>t+x[1],0);
-  const top=openBy.slice(0,5), rest=openBy.slice(5).reduce((t,x)=>t+x[1],0);
-  const parts=rest?[...top,["journal",rest]]:top;
-  const acard=a=>{const its=by[a.id], nx=openDated(its)[0], open=its.filter(i=>!i.done).length;
-    return `<button class="acard" data-area="${a.id}" style="--c:${colorOf(a.id)}">${a.icon}<b>${esc(a.label)}</b><small>${nx?`${esc(nx.text.slice(0,26))} · ${rel(daysLeft(nx,today))}`:`${open} open`}</small></button>`};
-  const name=settings.name?`${esc(settings.name)} ki life`:"Your life";
-  return `<div class="brief"><div class="hello">${name},<br>at a glance</div></div>`+
-    (total?`<div class="wheel">${wheelSvg(parts,total)}<div class="legend">${parts.map(([id,n])=>`<div style="--c:${colorOf(id)}"><span></span>${rest&&id==="journal"&&!top.some(t=>t[0]==="journal")?"Other":esc(area(id).label)} ${n}</div>`).join("")}</div></div>`:"")+
-    (used.length?`<section><h2>Your areas</h2><div class="strip">${used.map(acard).join("")}</div></section>`:"")+
-    (quiet.length?`<section><h2>${used.length?"Not tracking yet":"Every part of life"}</h2><div class="qchips">${quiet.map(a=>`<button data-area="${a.id}">${a.icon} ${esc(a.label)}</button>`).join("")}</div></section>`:"");
-}
-function vArea(all,id,today){
-  const a=area(id), its=all.filter(i=>area(i.domain).id===a.id);
-  const sched=openDated(its), notes=its.filter(i=>!i.due&&!i.done).sort((x,y)=>y.id-x.id).slice(0,6);
-  const hist=its.filter(i=>i.done||(i.completions||[]).length).sort((x,y)=>y.id-x.id).slice(0,6);
-  return `<button class="back" data-area="">← All areas</button><div class="brief"><div class="hello">${a.icon} ${esc(a.label)}</div><div class="sub">${esc(a.covers)}</div></div>`+
-    statGrid(points(its))+
-    `<section><h2>Scheduled</h2>${sched.length?cards(sched,today):`<div class="list"><div class="empty">Nothing scheduled.</div></div>`}</section>`+
-    `<section><h2>Notes</h2>${list(notes,today,"No notes yet.")}</section>`+
-    `<section><h2>Done</h2>${list(hist,today,"Nothing completed yet.")}</section>`+
-    `<section><h2>Try typing</h2><div class="examples" style="padding:0">${(a.examples||[]).map(e=>`<button class="ex" data-fill="${esc(e)}">${esc(e)}</button>`).join("")}</div><div class="tipline">${esc(a.tip)}</div></section>`;
-}
-
-const PROMPTS=["What gave you energy this week, and what drained it?","One thing you're proud of, one thing you'd redo?","Which part of your life got no attention this week?","What are you avoiding? What's the smallest next step?","Who do you want to spend more time with next week?","What would make next week feel like a win?"];
-function vReview(all,today){
-  const start=iso(addDays(today,-6)), end=iso(addDays(today,7));
-  const week=all.filter(i=>i.created.slice(0,10)>=start);
-  const doneN=all.filter(i=>(i.done_at||"").slice(0,10)>=start).length+all.reduce((n,i)=>n+(i.completions||[]).filter(c=>c.slice(0,10)>=start).length,0);
-  const ideas=week.filter(i=>i.domain==="idea");
-  const next=openDated(all).filter(i=>i.due.slice(0,10)>=iso(today)&&i.due.slice(0,10)<=end);
-  const wk=Math.floor((today-new Date(today.getFullYear(),0,1))/6048e5);
-  const touched=new Set(week.map(i=>area(i.domain).id));
-  const quiet=[...new Set(all.map(i=>area(i.domain).id))].filter(id=>!touched.has(id)).map(id=>area(id));
-  return `<button class="go" data-weekly style="width:100%;padding:14px;margin:0 0 12px">🧠 Claude se weekly review lo</button><div class="stats"><div class="stat"><div class="k">Captured</div><div class="v">${week.length}</div><div class="s">since ${start.slice(5)}</div></div><div class="stat"><div class="k">Completed</div><div class="v">${doneN}</div><div class="s">incl. repeats</div></div></div>`+
-    statGrid(points(all,start))+
-    (quiet.length?`<section><h2>Quiet this week</h2><div class="tipline">${quiet.map(a=>a.icon+" "+esc(a.label)).join(" · ")}</div></section>`:"")+
-    `<section><h2>Journal prompt</h2><div class="prompt">${PROMPTS[wk%PROMPTS.length]}</div><p class="hint" style="margin:0">Answer in the box with <code>journal: …</code></p></section>`+
-    `<section><h2>Ideas this week</h2>${list(ideas,today,"No ideas yet. Prefix with idea:")}</section>`+
-    `<section><h2>Next 7 days</h2>${list(next,today,"Nothing scheduled.")}</section>`;
 }
 let filter="", showDone=false;
 // Items saved together (same minute, 3+) are an import. Show them so a bad import can be removed in one tap.
@@ -739,7 +591,6 @@ function prefsPanel(){
     <span class="covers">One per line. Items with these words go to that area. Stays on this phone.</span>
     <label style="display:flex;gap:10px;align-items:center"><input id="pvoice" type="checkbox"${settings.voiceReply!==false?" checked":""} style="width:22px;height:22px"> 🔊 Jarvis bol ke jawab de (jab tum bolo)</label>
     <label style="display:flex;gap:10px;align-items:center"><input id="pdaily" type="checkbox"${dailyOn()?" checked":""} style="width:22px;height:22px"> ☀️ Daily Jarvis update (morning reminder)</label>
-    <label>Daily calorie goal (optional)<input id="pgoal" type="number" inputmode="numeric" value="${esc(settings.kcalGoal||"")}" placeholder="e.g. 2200"></label>
     <label>Voice language<select id="plang">${[["en-IN","English (India), good for Hinglish"],["en-IE","English (Ireland)"],["hi-IN","Hindi"]].map(([v,l])=>`<option value="${v}"${(settings.voiceLang||"en-IN")===v?" selected":""}>${l}</option>`).join("")}</select></label>
     <button class="go" type="submit" style="padding:12px">Save settings</button></form>
     <p class="hint" style="margin:8px 0 0"><a href="privacy.html" target="_blank" rel="noopener" style="color:var(--accent)">Privacy: what stays on your phone</a></p></section>`;
@@ -783,7 +634,7 @@ function exportIcs(){
 }
 function backupNow(){
   const data={app:"LifeOS",format:1,exported:new Date().toISOString(),items:[...items.values()],
-    settings:{name:settings.name||"",kcalGoal:settings.kcalGoal||"",voiceLang:settings.voiceLang||"",myWords:settings.myWords||"",lifeContext:settings.lifeContext||""}}; // API key is never exported
+    settings:{name:settings.name||"",voiceLang:settings.voiceLang||"",myWords:settings.myWords||"",lifeContext:settings.lifeContext||""}}; // API key is never exported
   const name=`lifeos-backup-${iso(todayDate())}.json`, file=new File([JSON.stringify(data,null,1)],name,{type:"application/json"});
   const done=()=>{settings.lastBackup=iso(todayDate());saveSettings();render();toast("Backup saved",false)};
   shareFile(file,"LifeOS backup",done);
@@ -1035,23 +886,6 @@ function dailyNudge(today){
   if(!b){b=document.createElement("button");Object.assign(b,{id:"dailyNudge",type:"button",className:"go"});b.dataset.daily="1";b.style.padding="10px 14px";document.getElementById("banners").prepend(b)}
   b.textContent="☀️ Jarvis daily update · 1 tap";
 }
-function weeklyPrompt(){
-  const today=todayDate(), start=iso(addDays(today,-6)), all=[...items.values()];
-  let snap=snapshot(today); if(snap.length>4500)snap=snap.slice(0,4500)+"\n…(more items not shown)";
-  const made=all.filter(i=>i.created.slice(0,10)>=start).map(i=>"+ "+i.text).slice(0,40), done=all.filter(i=>(i.done_at||"").slice(0,10)>=start).map(i=>"✓ "+i.text).slice(0,40);
-  return `Weekly review for my LifeOS, week ${start} → ${iso(today)}. You are Jarvis, my life coach and life-admin assistant.
-In max 8 short lines (Hinglish, plain words): 3 actions for next week (most important first), 1 thing I keep avoiding, 1 win to be proud of, 1 life area I'm neglecting. Base it only on my life below, nothing generic.
-
-${aboutMe()}${snap}
-
-This week: ${made.length} added, ${done.length} done.
-${[...made,...done].join("\n")}
-
-End with this block (skip lines that don't apply):
-LIFEOS
-+ the 3 actions as items, with a day this coming week in plain words
-${LEARN_RULE}`;
-}
 function refreshPrompt(){
   let snap=snapshot(todayDate()); if(snap.length>5000)snap=snap.slice(0,5000)+"\n…(more items not shown)";
   return `You keep my "life context": the private notes my assistant Jarvis reads before every answer. Rewrite it so it is complete, current and compact.
@@ -1188,7 +1022,7 @@ Kuch bhi bolo ya pucho: orb dabao ya neeche likho.</div>
     <form class="dock" id="askform" autocomplete="off"><input id="aq" placeholder="Kuch bhi bolo ya pucho…" aria-label="Tell or ask Jarvis"><button class="db" type="button" data-chatcam aria-label="Send a photo">📷</button><button class="db go" type="submit" aria-label="Ask Claude">↑</button></form>`;
 }
 
-/* ---------- camera: barcode → Open Food Facts, QR → text/link, other photos → Jarvis ---------- */
+/* ---------- camera: barcode / QR → note or link, other photos → Jarvis ---------- */
 let scanned=null;
 async function shrink(file,max=1568){ // downscale before decoding/sending: fewer tokens, faster
   const bmp=await createImageBitmap(file), k=Math.min(1,max/Math.max(bmp.width,bmp.height));
@@ -1200,24 +1034,8 @@ async function readCodes(bmp){
   if(!("BarcodeDetector" in window))return [];
   try{const formats=await BarcodeDetector.getSupportedFormats();return await new BarcodeDetector({formats}).detect(bmp)}catch(e){return []}
 }
-const n1=v=>v==null||v===""?"–":(+v).toFixed(+v<10?1:0);
-async function lookupFood(code){
-  const r=await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=product_name,brands,quantity,nutriscore_grade,nutriments,image_front_small_url,serving_quantity`);
-  const d=await r.json(); if(d.status!==1||!d.product)return null;
-  const p=d.product, n=p.nutriments||{};
-  return {kind:"food",code,name:[p.product_name,p.brands].filter(Boolean).join(" · ")||`Product ${code}`,qty:p.quantity||"",grade:(p.nutriscore_grade||"").toLowerCase(),
-    img:p.image_front_small_url||"",serving:+p.serving_quantity||0,kcal:n["energy-kcal_100g"],sugar:n.sugars_100g,fat:n.fat_100g,sat:n["saturated-fat_100g"],protein:n.proteins_100g,salt:n.salt_100g};
-}
 function scanCard(){
   const x=scanned; if(!x)return "";
-  if(x.kind==="food"){
-    const g=["a","b","c","d","e"].includes(x.grade)?x.grade:"x";
-    return `<div class="scan"><div class="top">${x.img?`<img src="${esc(x.img)}" alt="">`:""}<div style="flex:1;min-width:0"><div class="nm">${esc(x.name)}</div><span class="covers">${esc(x.qty)} · per 100 g</span></div><span class="ns ns-${g}" title="Nutri-Score">${g==="x"?"?":g.toUpperCase()}</span></div>
-      <div class="nutri"><div><b>${n1(x.kcal)}</b>kcal</div><div><b>${n1(x.sugar)}g</b>sugar</div><div><b>${n1(x.fat)}g</b>fat</div><div><b>${n1(x.sat)}g</b>sat fat</div><div><b>${n1(x.protein)}g</b>protein</div><div><b>${n1(x.salt)}g</b>salt</div></div>
-      <div class="acts"><label class="grams">I ate <input id="fgrams" type="number" inputmode="decimal" min="1" value="${x.serving||100}" aria-label="grams eaten"> g</label>
-      <button class="go" style="padding:10px 14px" data-scan="food">Add to food log</button><button class="linkbtn" data-scan="close">Close</button></div>
-      <span class="covers">Data: Open Food Facts</span></div>`;
-  }
   const isUrl=/^https?:\/\//i.test(x.text);
   return `<div class="scan"><b>${x.kind==="qr"?"QR code":"Barcode"}</b><div style="overflow-wrap:anywhere">${isUrl?`<a href="${esc(x.text)}" target="_blank" rel="noopener">${esc(x.text)} ↗</a>`:esc(x.text)}</div>
     <div class="acts"><button class="go" style="padding:10px 14px" data-scan="save">Save as note</button><button class="linkbtn" data-scan="close">Close</button></div></div>`;
@@ -1228,13 +1046,7 @@ async function onPhoto(file){
   toast("Reading photo…",false);
   let img; try{img=await shrink(file)}catch(e){toast("Couldn't open that photo.",false);return}
   const codes=await readCodes(img.bmp);
-  const prod=codes.find(c=>/ean|upc/.test(c.format)), other=codes[0];
-  if(prod){
-    try{const f=await lookupFood(prod.rawValue);
-      scanned=f||{kind:"code",text:prod.rawValue}; if(!f)toast("Product not in Open Food Facts yet.",false); else document.getElementById("toast").hidden=true}
-    catch(e){scanned={kind:"code",text:prod.rawValue};toast("No internet: saved the barcode only.",false)}
-    showScan(); return;
-  }
+  const other=codes[0];
   if(other){scanned={kind:other.format==="qr_code"?"qr":"code",text:other.rawValue};document.getElementById("toast").hidden=true;showScan();return}
   if(CHAT_OK&&settings.key){document.getElementById("toast").hidden=true;view="jarvis";render();
     askJarvis("What's in this photo? Save anything I need to act on (expiry or renewal dates, bills and due dates). Don't copy any ID or account numbers.",img);return}
@@ -1277,7 +1089,7 @@ async function snooze(id,el){
 
 /* View modules (app/ui/*.js) register here: EXTRA_VIEWS.name = {title, render(all,today) → html, mount(root,all,today)} */
 const EXTRA_VIEWS=window.EXTRA_VIEWS||(window.EXTRA_VIEWS={});
-const HOME=settings.home==="orb"&&EXTRA_VIEWS.orb?"orb":settings.home==="today"?"today":settings.home==="jarvis"||!EXTRA_VIEWS.now?"jarvis":"now"; // v4: Today is home
+const HOME=settings.home==="today"?"today":settings.home==="jarvis"||!EXTRA_VIEWS.now?"jarvis":"now"; // v4: Today is home
 let view=HOME; // the app always opens on home
 // Data lives on one phone: nudge a backup when there's enough to lose and the last one is 14+ days old (home screens only).
 function backupNudge(today){
@@ -1303,7 +1115,7 @@ function render(){
 
   const cq=document.getElementById("cq")||document.getElementById("aq"), draft=cq?cq.value:"", focused=document.activeElement===cq, pasteDraft=(document.getElementById("paste")||{}).value||"";
   const ext=EXTRA_VIEWS[view], root=document.getElementById("view");
-  root.innerHTML=ext?ext.render(all,today):({today:vToday,life:vLife,review:vReview,all:vAll,jarvis:vJarvis,food:vFood}[view]||vToday)(all,today);
+  root.innerHTML=ext?ext.render(all,today):({today:vToday,all:vAll,jarvis:vJarvis}[view]||vToday)(all,today);
   if(ext&&ext.mount)ext.mount(root,all,today);
   document.getElementById("title").textContent=(ext&&ext.title)||{today:"Aaj",life:"Life",review:"Week",all:"Me",jarvis:"Jarvis",food:"Food"}[view]||"Aaj";
   document.getElementById("tab-today").hidden=view===HOME;
@@ -1333,7 +1145,7 @@ document.getElementById("cap").addEventListener("submit",async e=>{
   else{document.getElementById("answer").hidden=true;await capture(text)}
 });
 document.getElementById("sheet").addEventListener("click",e=>{if(e.target.id==="sheet")e.target.hidden=true});
-for(const v of ["stack","timeline","finance","now","cases","money"])document.getElementById("tab-"+v).hidden=!EXTRA_VIEWS[v];
+for(const v of ["now","cases","money"])document.getElementById("tab-"+v).hidden=!EXTRA_VIEWS[v];
 // Modules with a `menu:{icon,title,sub}` get a ⋯ menu entry automatically (inserted before "Me").
 for(const [v,x] of Object.entries(EXTRA_VIEWS))if(x.menu&&!document.getElementById("tab-"+v)){
   const b=document.createElement("button");Object.assign(b,{id:"tab-"+v,type:"button"});b.dataset.v=v;b.setAttribute("role","menuitem");
@@ -1344,11 +1156,8 @@ document.addEventListener("click",async e=>{
   if(b.id==="moretools"){const t=document.getElementById("toolbox");t.hidden=!t.hidden;b.setAttribute("aria-expanded",String(!t.hidden));return}
   if(b.id==="more"){const sh=document.getElementById("sheet");sh.hidden=!sh.hidden;b.setAttribute("aria-expanded",String(!sh.hidden));return}
   if(b.hasAttribute("data-later")){showLater=!showLater;render();return}
-  if(b.dataset.v){document.getElementById("sheet").hidden=true;const v=b.dataset.v==="home"?HOME:b.dataset.v;if(view!==v)window.scrollTo(0,0);view=v;lifeArea=null;try{localStorage.setItem("lifeos.view",view)}catch(_){}render();return}
-  if(b.hasAttribute("data-foodlog")){showFoodLog=!showFoodLog;render();return}
-  if(b.dataset.refood){await capture(b.dataset.refood);return}
+  if(b.dataset.v){document.getElementById("sheet").hidden=true;const v=b.dataset.v==="home"?HOME:b.dataset.v;if(view!==v)window.scrollTo(0,0);view=v;try{localStorage.setItem("lifeos.view",view)}catch(_){}render();return}
   if(b.hasAttribute("data-chatcam")){document.getElementById("cam").click();return}
-  if(b.dataset.area!==undefined){lifeArea=b.dataset.area||null;render();window.scrollTo(0,0);return}
   if(b.dataset.fill){const q=document.getElementById("q");q.value=b.dataset.fill;q.focus();return}
   if(b.dataset.guide){const id=+b.dataset.guide;openGuides.has(id)?openGuides.delete(id):openGuides.add(id);render();return}
   if(b.dataset.chat==="new"){chatMsgs=[];chatLog=[];turnStart=-1;turnExtra=null;render();return}
@@ -1361,7 +1170,6 @@ document.addEventListener("click",async e=>{
   if(b.hasAttribute("data-talk")){if(jstate==="speaking"){speechSynthesis.cancel();setJ("");return}if(!chatBusy)listen();return}
   if(b.hasAttribute("data-brief")){speak(briefingText());return}
   if(b.dataset.askclaude){askClaude(b.dataset.askclaude);return}
-  if(b.hasAttribute("data-weekly")){askClaude("🧠 Weekly review",weeklyPrompt());return}
   if(b.dataset.pasteback){await pasteFromClipboard();return}
   if(b.dataset.batchdel){await deleteBatch(b.dataset.batchdel);return}
   if(b.dataset.batchkeep){(settings.keptBatches=settings.keptBatches||[]).push(b.dataset.batchkeep);saveSettings();render();return}
@@ -1379,10 +1187,7 @@ document.addEventListener("click",async e=>{
   if(b.dataset.data==="restore"){document.getElementById("restoreFile").click();return}
   if(b.dataset.data==="restore-no"){pendingRestore=null;render();return}
   if(b.dataset.data==="restore-yes"&&backend){await applyRestore();return}
-  if(b.dataset.scan){const x=scanned, gIn=document.getElementById("fgrams"), grams=gIn?+gIn.value:0; scanned=null; showScan();
-    if(b.dataset.scan==="food"&&x&&backend){
-      const g=Math.max(1,grams||100), k=g/100, part=(v,u)=>v==null?"":` · ${+(v*k).toFixed(1)} ${u}`;
-      await capture(`food: ${x.name} (${g} g)${x.kcal!=null?` · ${Math.round(x.kcal*k)} kcal`:""}${part(x.protein,"g protein")}${part(x.sugar,"g sugar")} · Nutri-Score ${x.grade?x.grade.toUpperCase():"?"}`)}
+  if(b.dataset.scan){const x=scanned; scanned=null; showScan();
     if(b.dataset.scan==="save"&&x&&backend)await capture(`${x.kind==="qr"?"QR":"barcode"}: ${x.text}`);
     return}
   if(b.dataset.chat==="settings"){settings.editing=true;render();return}
@@ -1403,7 +1208,7 @@ document.addEventListener("submit",async e=>{
       toast(ok?"✓ Jarvis ab app ke andar jawab dega":"Save kiya. Internet aane pe check hoga.",false)}
     settings.key=key;delete settings.editing;saveSettings();render()}
   if(e.target.id==="prefs"){e.preventDefault();settings.name=document.getElementById("pname").value.trim();
-    settings.kcalGoal=document.getElementById("pgoal").value.trim();settings.voiceLang=document.getElementById("plang").value;
+    settings.voiceLang=document.getElementById("plang").value;
     settings.myWords=document.getElementById("pwords").value.trim();settings.dailyOn=document.getElementById("pdaily").checked;settings.voiceReply=document.getElementById("pvoice").checked;saveSettings();const n=await remapMine();render();toast(n?`Saved · ${n} item${n>1?"s":""} moved`:"Settings saved",false)}
   if(e.target.id==="askform"){e.preventDefault();const i=document.getElementById("aq"),t=i.value.trim();if(t&&backend){i.value="";await jarvisFree(t)}}
   if(e.target.id==="pasteform"){e.preventDefault();pasteResult=parseClaude(document.getElementById("paste").value);render()}
@@ -1425,7 +1230,7 @@ document.addEventListener("submit",async e=>{
 })();
 // Android share-sheet (manifest share_target, GET: ?title=&text=&url=) and home-screen shortcuts (?v=…) land here
 const launch=new URLSearchParams(location.search);
-if(launch.has("v")&&(EXTRA_VIEWS[launch.get("v")]||["today","life","review","all","jarvis","food"].includes(launch.get("v"))))view=launch.get("v");
+if(launch.has("v")&&(EXTRA_VIEWS[launch.get("v")]||["today","all","jarvis"].includes(launch.get("v"))))view=launch.get("v");
 const shared=["title","text","url"].some(k=>launch.has(k));
 const sharedText=shared?[...new Set(["title","text","url"].map(k=>(launch.get(k)||"").trim()).filter(Boolean))].join(" ").slice(0,500):"";
 if(shared||launch.has("v"))history.replaceState(null,"",location.pathname);

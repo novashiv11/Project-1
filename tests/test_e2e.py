@@ -61,8 +61,8 @@ class PhoneBase(unittest.TestCase):
         self.ctx = self.browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True,
                                             accept_downloads=True)
         self.ctx.add_init_script(FAKE_SCANNER)
-        # Legacy tests were written for the orb home; Jarvis-home tests set settings.home themselves.
-        self.ctx.add_init_script("if(!localStorage.getItem('lifeos.settings'))localStorage.setItem('lifeos.settings','{\"home\":\"orb\"}')")
+        # Older tests were written with the full List as home; Jarvis-home tests set settings.home themselves.
+        self.ctx.add_init_script("if(!localStorage.getItem('lifeos.settings'))localStorage.setItem('lifeos.settings','{\"home\":\"today\"}')")
         self.claude_calls = []
         self.ctx.route("https://world.openfoodfacts.org/**",
                        lambda r: r.fulfill(status=200, content_type="application/json", headers=CORS, body=json.dumps(FOOD)))
@@ -102,6 +102,8 @@ class PhoneBase(unittest.TestCase):
             if self.pg.is_visible("#tab-today"):
                 self.pg.click("#tab-today")
             return
+        if name == "today" and self.pg.get_attribute("body", "data-view") == "today":
+            return
         self.pg.click("#more")
         target = "#tab-list" if name == "today" else f"#tab-{name}"
         if not self.pg.is_visible(target):
@@ -120,8 +122,8 @@ class PhoneBase(unittest.TestCase):
 
 class PhoneAppTest(PhoneBase):
     def test_fits_phone_width_on_every_tab(self):
-        self.add("passport expires 2027-03-14", "NCT due in 20 days", "lunch 650 kcal")
-        for tab in ("today", "life", "review", "all", "jarvis", "food"):
+        self.add("passport expires 2027-03-14", "NCT due in 20 days", "spent €40 at tesco")
+        for tab in ("now", "money", "cases", "jarvis", "all", "today"):
             self.tab(tab)
             self.assertEqual(self.pg.evaluate("document.documentElement.scrollWidth"), 390, tab)
 
@@ -137,20 +139,6 @@ class PhoneAppTest(PhoneBase):
         kinds = {(n["kind"], n["text"]) for n in nudges}
         self.assertIn(("window", "IRP card expires in 60 days"), kinds)  # 84-day lead → window already open
         self.assertIn(("due", "NCT due in 20 days"), kinds)
-
-    def test_food_scan_portion_and_daily_total(self):
-        self.pg.evaluate("settings.kcalGoal = '2000'")
-        self.add("lunch 650 kcal")
-        self.pg.evaluate("window.__code = {format: 'ean_13', rawValue: '5391500100046'}")
-        self.pg.set_input_files("#cam", self.photo)
-        self.pg.wait_for_selector("#fgrams")
-        self.assertEqual(self.pg.input_value("#fgrams"), "125")
-        self.pg.fill("#fgrams", "150")
-        self.pg.click("button[data-scan=food]")
-        self.tab('food')
-        self.pg.wait_for_selector(".food")
-        self.assertEqual(self.pg.inner_text(".food .big"), "796")  # 650 + 97*1.5
-        self.assertIn("of 2000 kcal", self.pg.inner_text(".food"))
 
     def test_qr_code(self):
         self.pg.evaluate("window.__code = {format: 'qr_code', rawValue: 'https://www.ncts.ie/'}")
