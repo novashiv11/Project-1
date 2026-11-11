@@ -28,9 +28,9 @@ class JarvisHomeTest(PhoneBase):
         for t in ("#tab-now", "#tab-jarvis", "#tab-cases", "#tab-money", "#tab-all"):
             self.assertTrue(self.pg.is_visible(t), t)
         self.assertFalse(self.pg.is_visible("#tab-list"))
-        self.assertFalse(self.pg.is_visible("#tab-food"))
+        for gone in ("#tab-food", "#tab-stack", "#tab-timeline", "#tab-finance", "#tab-life", "#tab-review"):
+            self.assertEqual(self.pg.query_selector_all(gone), [], gone)  # legacy screens removed in P0
         self.pg.click("#moretools")
-        self.assertTrue(self.pg.is_visible("#tab-food"))
         self.assertTrue(self.pg.is_visible("#tab-list"))
         self.assertEqual(self.pg.evaluate("document.documentElement.scrollWidth"), 390)
 

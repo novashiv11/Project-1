@@ -11,7 +11,7 @@
 ## Working rules (token-optimised)
 1. Read only: this file → last entry of `log/DEVLOG.md` → "Now" in `docs/ROADMAP.md`. Never read `log/ARCHIVE.md` or `docs/archive/`.
 2. One roadmap item per session, end to end, with tests.
-3. `app/lifeos.html` is ~1,450 lines: grep it, don't read it whole.
+3. `app/lifeos.html` is ~1,250 lines: grep it, don't read it whole.
 4. While working run only the touched tests (`python3 -m unittest -q tests.test_x`); run the full suite once before deploy.
 5. Agents only for work in separate files; ask for ≤200-word reports. Screenshots only when a screen changed.
 6. Append ≤8 lines to `log/DEVLOG.md`; hard-to-reverse calls → one line in `docs/DECISIONS.md`.
@@ -25,7 +25,7 @@
 - `app/ui/records.js` typed records (`lifeos.v2`, Trash, undo, Irish working days) · `v4.js` migration + Trash UI · `today.js` home feed (`now`)
 - `app/ui/cases.js` disputes · `money-core.js` (pure, node-tested) + `money.js` (encrypted IndexedDB, UI) + `money-xlsx.js` / `money-esb.js` importers
 - `app/ui/letters.js` photo → dates · `sync.js` Drive sync (off: needs client ID, `docs/DRIVE_SYNC.md`)
-- Legacy, to be removed in P0: `orb.js`, `stack.js`, `timeline.js`, `finance.js`, and food / life wheel / week review inside `lifeos.html`
+- Classic List view (`vToday`, view `today`) lives in `lifeos.html`; older tests use it as home via `settings.home="today"`
 - `lifeos/life.json` areas, keywords, lead times, guides (run `scripts/build_app.py` after editing) · `lifeos/*.py` CLI, frozen at v1
 - `pwa/` (pwa.js nudges/install, sw.js offline + periodic sync, privacy.html) · `scripts/build_pwa.py` → `dist/` → `cp -r dist/. ../lifeos/` → push `lifeos` main (GitHub Pages)
 - Tests: `tests/test_e2e.py` has `PhoneBase` (headless Chromium, 390×844, APIs faked); `test_v2_*`, `test_money_*`, `test_home_feed.py`

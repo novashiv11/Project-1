@@ -465,6 +465,10 @@ setMyWords(settings.myWords);
 const GUIDES=(LIFE.guides||[]).map(g=>({...g,rx:new RegExp(`\\b(?:${g.pattern})\\b`,"i")}));
 const guideFor=it=>GUIDES.find(g=>g.rx.test(it.text));
 const openGuides=new Set();
+const AREA_COLORS={idea:"#a07cf0",pet:"#d9944a",vehicle:"#5b8cff",kids:"#ec7fb0",travel:"#2fb8d8",document:"#4f7fe8",family:"#f0708f",
+  work:"#7d8bff",home:"#e6b02e",money:"#3fbf8f",health:"#ef6b62",mind:"#b07cf0",growth:"#6cc070",shopping:"#c99a5b",social:"#f39a3d",calendar:"#6e9cf5",journal:"#8aa196"};
+const colorOf=id=>AREA_COLORS[area(id).id]||"#8aa196";
+const buzz=ms=>{try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}};
 function greeting(){const h=new Date().getHours();return h<5?["Late night","🌙"]:h<12?["Good morning","☀️"]:h<17?["Good afternoon","🌤️"]:["Good evening","🌙"]}
 function guidePanel(it){
   const g=guideFor(it); if(!g||it.done||!openGuides.has(it.id))return "";

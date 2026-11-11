@@ -3,7 +3,7 @@
 Plan of record: `docs/MASTER_PLAN.md` (the point, categories, phases, rules). History: `log/ARCHIVE.md`.
 
 ## Now: P0 Clean and prove
-- [ ] Remove legacy screens and their tests: orb, stack, timeline, food, life wheel, week review, old tax screen (`finance.js`)
+- [x] Remove legacy screens and their tests (v4.2)
 - [ ] Founder: run the v4 upgrade and one Money import on the phone, send a screenshot of the real home feed
 - [ ] Founder: make Project-1 private; allow gov.ie, citizensinformation.ie, openstreetmap.org for this environment
 

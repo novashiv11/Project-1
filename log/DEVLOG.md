@@ -31,3 +31,10 @@ Older entries: `log/ARCHIVE.md`.
 - docs/MASTER_PLAN.md: honest review (6 home pivots, 0 real-data validation, ~1,100 legacy lines), fixed point, category map, product rules, P0–P5 with exit criteria, risks, token rules.
 - ROADMAP rewritten (Now = P0 clean and prove). CLAUDE.md rewritten for the new point, map and cheaper sessions.
 - DEVLOG trimmed to 3 entries (24 moved to log/ARCHIVE.md); STRATEGY/VISION/LIFE_MAP moved to docs/archive/.
+
+## Session 26 (2026-11-11): v4.2 P0 clean-up
+- Removed legacy screens and tests: orb, Focus stack, timeline, tax calendar (`finance.js`), food (incl. Open Food Facts lookup), life wheel, week review, weekly prompt. Camera now: barcode/QR → note, photo → Jarvis.
+- `lifeos.html` 1,443 → 1,252 lines; 4 modules + 5 test files deleted; manifest shortcuts = Money, Cases, Jarvis; privacy page updated.
+- Lesson: a range cut also removed `buzz`/`colorOf`/`AREA_COLORS` (56 test failures); found by diffing defined names old vs new. Always run that check after cutting.
+- Older tests now run with the List as home (`settings.home="today"`). 103 tests OK. Deployed lifeos main f552611.
+- P0 still open on the founder side: v4 upgrade + one Money import on his phone; make Project-1 private; allow gov.ie hosts.
