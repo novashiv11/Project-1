@@ -50,3 +50,7 @@ Older entries: `log/ARCHIVE.md`.
 - Founder: "I don't understand what this does. I want what I do daily in chats with you, all in one place with my context; offload more over time. Think yourself, don't ask."
 - Decision: his second brain = a Claude Project "Jarvis" (instructions with his context, playbooks for entitlements / disputes / money / buying / tradespeople, commands status · brief · refresh · offload). Sent him a private setup page (not in the repo).
 - App stays deployed at v4.4, no new features. ROADMAP and CLAUDE.md updated. No code changed.
+
+## Session 29 (2026-11-12): v4.5 growth add-on
+- Founder asked for a small learning/growth add-on. Home feed: one "🌱" question a day (lowest priority card), answer saved as a journal record, streak in `settings.grow`; "Aaj nahi" skips.
+- Jarvis Project instructions (private file) gained `learn <topic>`, `reflect` and a light GROWTH rule. 112 tests OK. Deployed.

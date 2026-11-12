@@ -14,6 +14,7 @@ const css=`
 .td-case{flex:none;max-width:72%;display:grid;gap:2px;text-align:left;padding:10px 12px;border-radius:14px;background:var(--chip);color:var(--fg)}
 .td-case small{color:var(--muted);font:11px var(--mono)}
 .td-empty{color:var(--muted);padding:6px 2px}
+.td-streak{color:var(--muted);font:11px var(--mono)}
 .td-tag{margin:0 0 4px;color:var(--muted);font-size:14px}
 .td-money{width:100%;text-align:left;margin-top:12px;padding:14px;border-radius:18px;border:1px solid var(--line);background:var(--card);color:var(--fg);font:600 15px var(--body)}`;
 document.head.insertAdjacentHTML("beforeend",`<style>${css}</style>`);
@@ -33,13 +34,22 @@ function rank(all,today){
   const q=v.find(r=>r.type==="deadline"&&!r.date_known&&!(settings.askedLater||[]).includes(r.id));
   if(q)rows.push({r:q,kind:"ask"});
   for(const f of (window.LIFEOS_CLAIMS||[]))try{(f(today)||[]).forEach(c=>rows.push({c,kind:"claim"}))}catch(e){}
+  if(growDue())rows.push({kind:"grow"}); // lowest priority: only shows when there is room
   return rows.slice(0,5);
 }
+// Growth: one small question a day; the answer is saved as a journal note. settings.grow = {last, streak}.
+const GROW=["Aaj ek cheez jo seekhi?","What gave you energy today?","Ek cheez jo kal 1% better karoge?","What are you avoiding, and what's the smallest first step?",
+  "Aaj kis baat ka shukr hai?","One thing you did well today?","Kaunsi skill pe is hafte 20 minute lagaoge?","What would make tomorrow a good day?",
+  "Kis se baat karke accha lagega is hafte?","One habit to drop, one to start?"];
+const growDue=()=>settings.growOff!==true&&(settings.grow||{}).last!==R2.todayIso();
+const growQ=()=>GROW[Math.floor(Date.parse(R2.todayIso())/864e5)%GROW.length];
 function caseLine(r,today){
   if(r.next_action_date&&daysLeft(r,today)<0&&r.waiting_on==="them")return `No reply from ${r.seller||"them"} · chase / escalate`;
   return r.next_action||"Next step?";
 }
 function row({r,c,kind},today){
+  if(kind==="grow")return `<div class="td-q"><b>🌱 ${esc(growQ())}</b>${(settings.grow||{}).streak>1?`<small class="td-streak">${settings.grow.streak} din lagataar</small>`:""}
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><input type="text" id="tdGrow" placeholder="Ek line kaafi hai" aria-label="Your answer" style="flex:1"><button class="go" style="padding:10px 14px" data-td-grow>Save</button><button class="linkbtn" data-td-growskip>Aaj nahi</button></div></div>`;
   if(kind==="claim")return `<div class="td-row"><div class="td-main"><b>💶 ${esc(c.title)}</b><small>${esc(c.sub||"")}</small></div>${c.action||""}</div>`;
   if(kind==="ask")return `<div class="td-q"><b>❓ ${esc(r.title)}: date kya hai?</b>
     <div style="display:flex;gap:8px;flex-wrap:wrap"><input type="date" id="tdDate" data-td-date="${r.id}" aria-label="Date for ${esc(r.title)}"><button class="go" style="padding:10px 14px" data-td-setdate="${r.id}">Save</button><button class="linkbtn" data-td-later="${r.id}">Pata nahi</button></div></div>`;
@@ -74,6 +84,13 @@ document.addEventListener("click",async e=>{const b=e.target.closest&&e.target.c
   if(b.dataset.tdSetdate){const id=+b.dataset.tdSetdate,v=(document.querySelector(`[data-td-date="${id}"]`)||{}).value;
     if(!v){toast("Date chuno pehle",false);return}
     if(R2.migrated)await R2.update(id,{date:v,date_known:true},"Date saved ✓");else await change(id,Object.assign(clone(items.get(id)),{due:v}),"Date saved ✓");return}
+  if(b.hasAttribute("data-td-grow")||b.hasAttribute("data-td-growskip")){
+    const t=R2.todayIso(), g=settings.grow||{}, ans=b.hasAttribute("data-td-grow")?(document.getElementById("tdGrow")||{}).value.trim():"";
+    if(b.hasAttribute("data-td-grow")&&!ans){toast("Ek line likho, ya \"Aaj nahi\"",false);return}
+    if(ans){settings.grow={last:t,streak:g.last===R2.addDays(t,-1)?(g.streak||0)+1:1};saveSettings();
+      await R2.create("journal",{title:`🌱 ${growQ()} → ${ans}`,area:"ideas"},`Saved 🌱 ${settings.grow.streak} din`)}
+    else{settings.grow={last:t,streak:g.streak||0};saveSettings();render()}
+    return}
   if(b.dataset.tdLater){(settings.askedLater=settings.askedLater||[]).push(+b.dataset.tdLater);saveSettings();render();return}
 });
 

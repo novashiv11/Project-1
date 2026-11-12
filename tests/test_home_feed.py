@@ -33,6 +33,20 @@ class HomeFeedTest(PhoneBase):
         self.assertIn("passport expires 2027-03-14", self.pg.locator(".msg.bot").last.inner_text())
         self.assertEqual(self.pg.evaluate("items.size"), 1)
 
+    def test_daily_growth_question(self):
+        self.assertIn("🌱", self.pg.inner_text("#view"))
+        self.pg.click("[data-td-grow]")                                   # empty answer is not saved
+        self.assertEqual(self.pg.evaluate("items.size"), 0)
+        self.pg.fill("#tdGrow", "finished the tax form early")
+        self.pg.click("[data-td-grow]")
+        self.pg.wait_for_function("items.size === 1")
+        rec = self.pg.evaluate("[...items.values()][0]")
+        self.assertEqual(rec["type"], "journal")
+        self.assertIn("finished the tax form early", rec["title"])
+        self.assertEqual(self.pg.evaluate("settings.grow.streak"), 1)
+        self.assertNotIn("🌱", self.pg.inner_text("#view"))               # once a day
+        self.assertFalse(rec["due"])                                      # a note, never a reminder
+
 
 if __name__ == "__main__":
     unittest.main()
