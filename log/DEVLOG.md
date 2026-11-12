@@ -45,3 +45,8 @@ Older entries: `log/ARCHIVE.md`.
 - `case-draft.js`: message per escalation step (1 support, 2 formal complaint, 3–4 summary + ECC/CCPC/Small Claims links); "I sent it" logs contact and sets +5 working days.
 - Fixed: Claim form redrew on change and dropped the keyboard. 111 tests OK. Deployed.
 - Founder (mid-session): "app needs to be like my second brain" → proposal sent, awaiting his pick.
+
+## Session 28 (2026-11-12): direction change — Jarvis in Claude, app parked
+- Founder: "I don't understand what this does. I want what I do daily in chats with you, all in one place with my context; offload more over time. Think yourself, don't ask."
+- Decision: his second brain = a Claude Project "Jarvis" (instructions with his context, playbooks for entitlements / disputes / money / buying / tradespeople, commands status · brief · refresh · offload). Sent him a private setup page (not in the repo).
+- App stays deployed at v4.4, no new features. ROADMAP and CLAUDE.md updated. No code changed.

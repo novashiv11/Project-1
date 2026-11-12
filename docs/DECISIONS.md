@@ -34,3 +34,4 @@
 - 2026-11-05: v4 typed records live in lifeos.v2 as a superset of classic items (old screens keep working); Python CLI frozen at v1.
 - 2026-11-08: product point = "Jarvis sorts your Irish life admin and gets you what you are owed"; home = one feed (chase → don't forget → claim, max 5) + money line. Replaces Jarvis-home / Today-home decisions.
 - 2026-11-10: docs/MASTER_PLAN.md is the plan of record; legacy screens (orb, stack, timeline, food, wheel, week, tax) get removed in P0.
+- 2026-11-12: personal use moves to a Claude Project ("Jarvis in Claude"); the PWA is parked. Reason: his real work happens in chat; app screens never matched it.

@@ -1,6 +1,8 @@
 # LifeOS / Jarvis: self-prompt (read first, every session)
 
-**Point (fixed):** "Jarvis sorts your Irish life admin and gets you what you're owed." Phone PWA → Play Store (€1–2/month), Ireland first. Loop: Capture → Understand → Find (owed / due / stuck) → Do (draft, book, pay) → Remind → Learn. Plan of record: `docs/MASTER_PLAN.md`.
+**Direction (2026-11-12):** the founder's daily life-admin now happens in a Claude Project ("Jarvis") with his context; this app is parked. Don't add app features unless he asks. Help him offload: skills, checklists, scheduled checks.
+
+**App point (if resumed):** "Jarvis sorts your Irish life admin and gets you what you're owed." Phone PWA → Play Store (€1–2/month), Ireland first. Loop: Capture → Understand → Find (owed / due / stuck) → Do (draft, book, pay) → Remind → Learn. Plan of record: `docs/MASTER_PLAN.md`.
 
 ## Talking to the founder (most important)
 - Reply in **≤5 lines, Hinglish, plain words**. Details go in files, not chat.
