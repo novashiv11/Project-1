@@ -38,3 +38,10 @@ Older entries: `log/ARCHIVE.md`.
 - Lesson: a range cut also removed `buzz`/`colorOf`/`AREA_COLORS` (56 test failures); found by diffing defined names old vs new. Always run that check after cutting.
 - Older tests now run with the List as home (`settings.home="today"`). 103 tests OK. Deployed lifeos main f552611.
 - P0 still open on the founder side: v4 upgrade + one Money import on his phone; make Project-1 private; allow gov.ie hosts.
+
+## Session 27 (2026-11-12): v4.3 Claim (P1) + v4.4 case drafts
+- P1 doer MVP: `entitle-core.js` (pure rules, renewals, draft, PPS scrub, mailto/BCC, router), `schemes.js` (PRSI dental + optical, gov.ie links), `benefits.js` (profile once, cards, provider step = Maps + official list, email draft, Mark booked → deadline for next eligibility), home claim cards, typing "dental check-up" opens the scheme (dated notes like "dentist on friday" still save).
+- Scheme facts came from search extracts of gov.ie/citizensinformation.ie (hosts blocked here): re-read the pages when allowed; provider panel data still missing.
+- `case-draft.js`: message per escalation step (1 support, 2 formal complaint, 3–4 summary + ECC/CCPC/Small Claims links); "I sent it" logs contact and sets +5 working days.
+- Fixed: Claim form redrew on change and dropped the keyboard. 111 tests OK. Deployed.
+- Founder (mid-session): "app needs to be like my second brain" → proposal sent, awaiting his pick.

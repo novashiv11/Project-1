@@ -249,6 +249,7 @@ section,.brief,.cards,.chat,.setup,.scan,.answer,.guide{grid-template-columns:mi
 <div class="sheet" id="sheet" hidden>
   <div class="panel" role="menu">
     <button data-v="now" id="tab-now" role="menuitem" hidden><i>🏠</i><span><b>Home</b><small>What Jarvis found for you</small></span></button>
+    <button data-v="benefits" id="tab-benefits" role="menuitem" hidden><i>💶</i><span><b>Claim</b><small>What you're owed: free check-ups and more</small></span></button>
     <button data-v="money" id="tab-money" role="menuitem" hidden><i>💶</i><span><b>Money</b><small>Spending, savings, where it goes</small></span></button>
     <button data-v="cases" id="tab-cases" role="menuitem" hidden><i>⚖️</i><span><b>Cases</b><small>Disputes, refunds, claims</small></span></button>
     <button data-v="jarvis" id="tab-jarvis" role="menuitem"><i>🧠</i><span><b>Jarvis</b><small>Ask anything about your life</small></span></button>
@@ -638,7 +639,7 @@ function exportIcs(){
 }
 function backupNow(){
   const data={app:"LifeOS",format:1,exported:new Date().toISOString(),items:[...items.values()],
-    settings:{name:settings.name||"",voiceLang:settings.voiceLang||"",myWords:settings.myWords||"",lifeContext:settings.lifeContext||""}}; // API key is never exported
+    settings:{name:settings.name||"",voiceLang:settings.voiceLang||"",myWords:settings.myWords||"",lifeContext:settings.lifeContext||"",profile:settings.profile||"",claims:settings.claims||""}}; // API key is never exported
   const name=`lifeos-backup-${iso(todayDate())}.json`, file=new File([JSON.stringify(data,null,1)],name,{type:"application/json"});
   const done=()=>{settings.lastBackup=iso(todayDate());saveSettings();render();toast("Backup saved",false)};
   shareFile(file,"LifeOS backup",done);
@@ -949,6 +950,7 @@ function localAnswer(q){
   return [...hits.map(i=>`${i.done?"✓ ":""}${line(i).slice(2)}${guideFor(i)?" · guide hai":""}`).map(x=>"• "+x),...facts.map(f=>"🧠 "+f.replace(/^[-•*]\s*/,""))].join("\n");
 }
 async function jarvisFree(t){
+  if(window.ENT_ROUTE&&ENT_ROUTE(t))return;
   chatLog.push({who:"me",text:t});
   if(isQuestion(t)){const a=localAnswer(t);
     chatLog.push({who:"bot",text:a||"Ye meri list mein nahi hai.",q:t});render();window.scrollTo(0,document.body.scrollHeight);return}
@@ -1143,13 +1145,14 @@ function showAnswer(q){
 document.getElementById("cap").addEventListener("submit",async e=>{
   e.preventDefault(); const inp=document.getElementById("q"), text=inp.value.trim(); if(!text||!backend)return;
   inp.value="";
+  if(window.ENT_ROUTE&&ENT_ROUTE(text)){document.getElementById("answer").hidden=true;return}
   if(view==="now"&&!/^\w+\s*:/.test(text)&&isQuestion(text)){document.getElementById("answer").hidden=true;view="jarvis";render();await jarvisTurn(text);return}
   if(text.endsWith("?")&&!/^\w+\s*:/.test(text)){
     if(CHAT_OK&&settings.key){view="jarvis";document.getElementById("answer").hidden=true;askJarvis(text)}else showAnswer(text)}
   else{document.getElementById("answer").hidden=true;await capture(text)}
 });
 document.getElementById("sheet").addEventListener("click",e=>{if(e.target.id==="sheet")e.target.hidden=true});
-for(const v of ["now","cases","money"])document.getElementById("tab-"+v).hidden=!EXTRA_VIEWS[v];
+for(const v of ["now","cases","money","benefits"])document.getElementById("tab-"+v).hidden=!EXTRA_VIEWS[v];
 // Modules with a `menu:{icon,title,sub}` get a ⋯ menu entry automatically (inserted before "Me").
 for(const [v,x] of Object.entries(EXTRA_VIEWS))if(x.menu&&!document.getElementById("tab-"+v)){
   const b=document.createElement("button");Object.assign(b,{id:"tab-"+v,type:"button"});b.dataset.v=v;b.setAttribute("role","menuitem");

@@ -130,6 +130,17 @@ function evidenceForm(){
     <label>Note<input name="note" type="text"></label>
     <div class="acts"><button class="go" type="submit">Add</button><button class="linkbtn" type="button" data-case="close-form">Cancel</button></div></form>`;
 }
+// Step-aware message: steps 1–2 are an email to the seller, steps 3–4 a summary to paste into the official form.
+function draftBox(c){
+  if(!window.CaseDraft)return "";
+  const m=CaseDraft.draft(c,settings.name||""), blk=(label,text,id)=>`<div class="pv" style="white-space:pre-wrap;overflow-wrap:anywhere"><small class="covers">${label} · <button type="button" class="linkbtn" style="padding:0" data-case-copy="${id}">Copy</button></small>\n<span id="${id}">${esc(text)}</span></div>`;
+  return `<div class="setup" data-case-draft><b>${m.kind==="email"?`Message for step ${m.step}`:`Summary to paste · step ${m.step}`}</b>
+    ${blk("Subject",m.subject,"csSub")}${blk("Message",m.body,"csBody")}
+    <div class="acts">${m.kind==="email"?`<a class="go" style="text-decoration:none;padding:10px 14px" href="mailto:?subject=${encodeURIComponent(m.subject)}&body=${encodeURIComponent(m.body)}">Open in email app</a>`
+      :m.links.map(([l,u])=>`<a class="go" style="text-decoration:none;padding:10px 14px" href="${esc(u)}" target="_blank" rel="noopener">${esc(l)} ↗</a>`).join("")}
+      <button type="button" class="cs-sec" data-case="sent">I sent it · log it</button><button type="button" class="linkbtn" data-case="close-form">Close</button></div>
+    <span class="covers">Short and factual. Once they agree to fix it, stop arguing and just confirm.</span></div>`;
+}
 function vDetail(c){
   const rung=Math.min(4,Math.max(1,+c.escalation||1)), od=overdue(c);
   const tl=(c.timeline||[]).map((t,i)=>[t,i]).sort((a,b)=>String(b[0].at).localeCompare(String(a[0].at))||b[1]-a[1]);
@@ -141,12 +152,13 @@ function vDetail(c){
     <div class="cs-box"><span class="cs-t" data-case-title>${esc(c.title||c.text||"Case")}</span>${waitPill(c)}
       <ol class="cs-ladder" aria-label="Escalation ladder">${RUNGS.slice(1).map((r,i)=>`<li class="${i+1===rung?"on":i+1<rung?"past":""}"${i+1===rung?' aria-current="step"':""}><i>${i+1}</i><span>${r.t}<small>${r.s}</small></span></li>`).join("")}</ol></div>
     ${OPEN(c)?`<div class="cs-box${od?" overdue":""}" data-case-nextbox><span class="cs-h">Next action</span>${nextLine(c)||'<div class="cs-next">Nothing planned</div>'}
-      <div class="acts"><button type="button" class="go" data-case="contact">Log contact</button>
+      <div class="acts"><button type="button" class="go" data-case="draft">✉️ Draft message</button><button type="button" class="cs-sec" data-case="contact">Log contact</button>
         <button type="button" class="cs-sec" data-case="escalate"${rung>=4?" disabled":""}>Escalate ↑</button>
         <button type="button" class="cs-sec" data-case="resolve">Mark resolved</button></div></div>`
     :`<div class="cs-box"><span class="cs-h">Closed</span><div class="acts"><button type="button" class="cs-sec" data-case="reopen">Reopen</button></div></div>`}
     ${ui.confirm?`<div class="setup" data-case-confirm role="alertdialog" aria-label="Confirm resolve"><b>Mark this case resolved?</b><span class="covers">You can undo or reopen it later.</span>
       <div class="acts"><button type="button" class="go" data-case="resolve-yes">Yes, resolved</button><button type="button" class="linkbtn" data-case="resolve-no">Not yet</button></div></div>`:""}
+    ${f==="draft"?draftBox(c):""}
     ${f==="contact"?contactForm():f==="evidence"?evidenceForm():f==="edit"?factsForm(c):""}
     <section><h2>Timeline</h2>${tl.length?`<ol class="cs-tl" data-case-tl>${tl.map(([t])=>`<li class="${t.by==="them"?"them":"me"}"><b>${fmt(t.at)} · ${esc(t.channel||"")} · ${t.by==="them"?"they":"me"}${t.person?` (${esc(t.person)})`:""}</b>
       ${t.they_said?`<p>They: ${esc(t.they_said)}</p>`:""}${t.i_said?`<p>Me: ${esc(t.i_said)}</p>`:""}</li>`).join("")}</ol>`:`<p class="cs-note">No contact logged yet.</p>`}</section>
@@ -198,16 +210,23 @@ document.addEventListener("submit",async e=>{
 document.addEventListener("click",async e=>{
   const nav=e.target.closest&&e.target.closest("[data-v=cases]"); if(nav){ui={mode:"list",id:null,form:null,confirm:false};return} // runs before the page's menu handler
   const o=e.target.closest&&e.target.closest("[data-case-open]"); if(o){window.openCase(+o.dataset.caseOpen);return}
+  const cp=e.target.closest&&e.target.closest("[data-case-copy]");
+  if(cp){try{await navigator.clipboard.writeText(document.getElementById(cp.dataset.caseCopy).textContent);cp.textContent="Copied ✓"}catch(_){toast("Long-press to copy",false)}return}
   const b=e.target.closest&&e.target.closest("[data-case]"); if(!b)return;
   const a=b.dataset.case;
   if(a==="new")return go({mode:"new",form:null});
   if(a==="list")return go({mode:"list",id:null,form:null,confirm:false});
   if(a==="cancel"){if(ui.mode==="new")return go({mode:"list"});ui.form=null;render();return}
   if(a==="close-form"){ui.form=null;render();return}
-  if(["contact","evidence","edit"].includes(a)){ui.form=ui.form===a?null:a;ui.confirm=false;render();return}
+  if(["contact","evidence","edit","draft"].includes(a)){ui.form=ui.form===a?null:a;ui.confirm=false;render();return}
   if(typeof backend==="undefined"||!backend||!window.R2)return;
   const c=cur(); if(!c)return;
-  if(a==="escalate"){const n=Math.min(4,(+c.escalation||1)+1); if(n===+c.escalation)return;
+  if(a==="sent"){ // the drafted message went out: log it and start the 5-working-day clock
+    const m=CaseDraft.draft(c,settings.name||""), nd=isoOf(R2.addWorkingDays(todayDate(),5));
+    ui.form=null;
+    await R2.update(c.id,{timeline:[...(c.timeline||[]),{at:R2.todayIso(),channel:m.kind==="email"?"email":"web form",person:"",they_said:"",i_said:m.subject,by:"me"}],
+      waiting_on:"them",status:"waiting",next_action:"Chase if no reply",next_action_date:nd},`Logged ✓ · chase on ${fmt(nd)}`);return}
+  if(a==="escalate"){const n=Math.min(4,(+c.escalation||1)+1); if(n===+c.escalation)return;ui.form=null;
     await R2.update(c.id,{escalation:n,next_action:RUNGS[n].next,next_action_date:R2.todayIso(),waiting_on:"me",status:"open"},`Step ${n}: ${RUNGS[n].t} · Undo`);return}
   if(a==="resolve"){ui.confirm=true;ui.form=null;render();return}
   if(a==="resolve-no"){ui.confirm=false;render();return}

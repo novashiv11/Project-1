@@ -145,6 +145,42 @@ class CasesViewTest(PhoneBase):
         self.assertEqual(self.pg.evaluate("document.documentElement.scrollWidth"), 390)
 
 
+class CaseDraftTest(PhoneBase):
+    """Draft message per escalation step; "I sent it" logs the contact and sets the chase date."""
+    def setUp(self):
+        super().setUp()
+        self.pg.evaluate("R2.migrated=true; backend.save(); 0")
+
+    def test_draft_steps_and_sent(self):
+        self.pg.evaluate("""(async()=>{settings.name='Asha Example';
+          const c=await R2.create('case',{title:'BrandX: Speaker',seller:'BrandX',product:'Speaker',order_date:'2026-10-01',delivery_date:'2026-10-05',price:199,
+            problem:'left channel is dead PPS 1234567AB',want:'a replacement in the same colour',escalation:1,timeline:[],evidence:[],links:[],area:'shopping'});
+          openCase(c.id)})(); 0""")
+        self.pg.wait_for_selector("[data-case=draft]")
+        self.pg.click("[data-case=draft]")
+        body = self.pg.inner_text("#csBody")
+        for part in ("Speaker from BrandX", "ordered 1 Oct 2026", "€199", "left channel is dead", "same colour", "5 working days", "Asha Example"):
+            self.assertIn(part, body)
+        self.assertNotIn("1234567", body)                                  # ID numbers never go into a draft
+        self.assertTrue(self.pg.get_attribute("[data-case-draft] a.go", "href").startswith("mailto:?subject=Problem%20with%20Speaker"))
+        self.pg.click("[data-case=sent]")
+        self.pg.wait_for_function("[...items.values()].find(r=>r.type==='case').timeline.length === 1")
+        c = self.pg.evaluate("[...items.values()].find(r=>r.type==='case')")
+        self.assertEqual((c["waiting_on"], c["status"]), ("them", "waiting"))
+        self.assertEqual(c["next_action_date"], self.pg.evaluate("(d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`)(R2.addWorkingDays(todayDate(),5))"))
+        # step 2 = formal complaint that mentions the first contact; step 3 = summary + official links
+        self.pg.click("[data-case=escalate]")
+        self.pg.click("[data-case=draft]")
+        self.assertIn("formal complaint", self.pg.inner_text("#csBody").lower())
+        self.assertIn("I first contacted you on", self.pg.inner_text("#csBody"))
+        self.pg.click("[data-case=escalate]")
+        self.pg.click("[data-case=draft]")
+        self.assertIn("What happened:", self.pg.inner_text("#csBody"))
+        hrefs = self.pg.eval_on_selector_all("[data-case-draft] a.go", "els => els.map(e => e.href)")
+        self.assertEqual(hrefs, ["https://www.eccireland.ie/", "https://www.ccpc.ie/consumers/"])
+        self.assertEqual(self.pg.evaluate("document.documentElement.scrollWidth"), 390)
+
+
 if __name__ == "__main__":
     import unittest
     unittest.main()

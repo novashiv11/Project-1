@@ -23,7 +23,7 @@
 ## Map
 - `app/lifeos.html`: shell, parser (mirror of `lifeos/parse.py`, guarded by `tests/test_parity.py`), Jarvis (free: `jarvisFree`/`localAnswer`; key: `askJarvis`/`callClaude`), reminders glue, hooks (`LIFEOS_HOOKS` save/boot/prefs, `EXTRA_VIEWS`, `LIFEOS_CLAIMS`)
 - `app/ui/records.js` typed records (`lifeos.v2`, Trash, undo, Irish working days) · `v4.js` migration + Trash UI · `today.js` home feed (`now`)
-- `app/ui/cases.js` disputes · `money-core.js` (pure, node-tested) + `money.js` (encrypted IndexedDB, UI) + `money-xlsx.js` / `money-esb.js` importers
+- `app/ui/benefits.js` Claim UI + `entitle-core.js` (pure rules/drafts) + `schemes.js` (scheme facts with official links) · `cases.js` disputes + `case-draft.js` (pure message drafts) · `money-core.js` (pure, node-tested) + `money.js` (encrypted IndexedDB, UI) + `money-xlsx.js` / `money-esb.js` importers
 - `app/ui/letters.js` photo → dates · `sync.js` Drive sync (off: needs client ID, `docs/DRIVE_SYNC.md`)
 - Classic List view (`vToday`, view `today`) lives in `lifeos.html`; older tests use it as home via `settings.home="today"`
 - `lifeos/life.json` areas, keywords, lead times, guides (run `scripts/build_app.py` after editing) · `lifeos/*.py` CLI, frozen at v1
